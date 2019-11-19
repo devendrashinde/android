@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#03A9F4">
+
+    <EditText
+        android:id="@+id/etKrutisheelName"
+        android:layout_width="250dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="4dp"
+        android:hint="@string/rate_date"
+        android:textSize="18sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageButton
+        android:id="@+id/imgBtnTea1"
+        android:layout_width="46dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="4dp"
+        android:contentDescription="@string/tea"
+        app:layout_constraintStart_toStartOf="@+id/etKrutisheelName"
+        app:layout_constraintTop_toBottomOf="@+id/etKrutisheelName"
+        app:srcCompat="@drawable/ic_tea_black" />
+
+    <ImageButton
+        android:id="@+id/imgBtnCoffe1"
+        android:layout_width="48dp"
+        android:layout_height="43dp"
+        android:layout_marginTop="8dp"
+        android:contentDescription="@string/coffe"
+        app:layout_constraintStart_toStartOf="@+id/imgBtnTea1"
+        app:layout_constraintTop_toBottomOf="@+id/imgBtnTea1"
+        app:srcCompat="@drawable/ic_coffe_black" />
+
+    <ListView
+        android:id="@+id/list"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:scrollbars="vertical"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="1.0sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView4" />
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="72dp"
+        android:layout_height="38dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="@string/tea"
+        android:textAlignment="textStart"
+        android:textSize="22sp"
+        app:layout_constraintStart_toEndOf="@+id/imgBtnTea1"
+        app:layout_constraintTop_toTopOf="@+id/imgBtnTea1" />
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="69dp"
+        android:layout_height="38dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="@string/coffe"
+        android:textAlignment="textStart"
+        android:textSize="22sp"
+        app:layout_constraintStart_toEndOf="@+id/imgBtnCoffe1"
+        app:layout_constraintTop_toTopOf="@+id/imgBtnCoffe1" />
+
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="121dp"
+        android:layout_height="19dp"
+        android:layout_marginTop="8dp"
+        android:text="@string/rates"
+        app:layout_constraintStart_toStartOf="@+id/imgBtnCoffe1"
+        app:layout_constraintTop_toBottomOf="@+id/imgBtnCoffe1" />
+
+    <EditText
+        android:id="@+id/etTeaRate"
+        android:layout_width="111dp"
+        android:layout_height="47dp"
+        android:layout_marginStart="12dp"
+        android:hint="@string/tea_rate"
+        android:inputType="numberDecimal"
+        android:textSize="18sp"
+        app:layout_constraintStart_toEndOf="@+id/textView2"
+        app:layout_constraintTop_toTopOf="@+id/textView2" />
+
+    <EditText
+        android:id="@+id/etCoffeRate"
+        android:layout_width="115dp"
+        android:layout_height="44dp"
+        android:layout_marginStart="12dp"
+        android:hint="@string/coffe_rate"
+        android:inputType="numberDecimal"
+        android:textSize="18sp"
+        app:layout_constraintStart_toEndOf="@+id/textView3"
+        app:layout_constraintTop_toTopOf="@+id/textView3" />
+
+</android.support.constraint.ConstraintLayout>

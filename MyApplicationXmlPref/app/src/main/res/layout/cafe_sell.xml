@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#03A9F4">
+
+    <TextView
+        android:id="@+id/etSellDate"
+        android:layout_width="196dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="4dp"
+        android:hint="@string/sellDate"
+        android:textSize="18sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageButton
+        android:id="@+id/imgBtnTea1"
+        android:layout_width="74dp"
+        android:layout_height="81dp"
+        android:layout_marginTop="12dp"
+        android:contentDescription="@string/tea"
+        app:layout_constraintStart_toStartOf="@+id/etSellDate"
+        app:layout_constraintTop_toBottomOf="@+id/etSellDate"
+        app:srcCompat="@drawable/ic_tea_black" />
+
+    <ImageButton
+        android:id="@+id/imgBtnCoffe1"
+        android:layout_width="74dp"
+        android:layout_height="83dp"
+        android:layout_marginTop="8dp"
+        android:contentDescription="@string/coffe"
+        app:layout_constraintStart_toStartOf="@+id/imgBtnTea1"
+        app:layout_constraintTop_toBottomOf="@+id/imgBtnTea1"
+        app:srcCompat="@drawable/ic_coffe_black" />
+
+    <RadioGroup
+        android:id="@+id/radioGroupTea"
+        android:layout_width="270dp"
+        android:layout_height="41dp"
+        android:layout_marginStart="8dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.116"
+        app:layout_constraintStart_toEndOf="@+id/imgBtnTea1"
+        app:layout_constraintTop_toTopOf="@+id/imgBtnTea1">
+
+        <RadioButton
+            android:id="@+id/tea1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/one"
+            android:textSize="25sp" />
+
+        <RadioButton
+            android:id="@+id/tea2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/two"
+            android:textSize="25sp" />
+
+        <RadioButton
+            android:id="@+id/tea3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/three"
+            android:textSize="25sp" />
+
+        <RadioButton
+            android:id="@+id/tea4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/four"
+            android:textSize="25sp" />
+
+        <RadioButton
+            android:id="@+id/tea5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/five"
+            android:textSize="25sp" />
+    </RadioGroup>
+
+    <RadioGroup
+        android:id="@+id/radioGroupCoffe"
+        android:layout_width="269dp"
+        android:layout_height="41dp"
+        android:orientation="horizontal"
+        app:layout_constraintStart_toStartOf="@+id/radioGroupTea"
+        app:layout_constraintTop_toTopOf="@+id/imgBtnCoffe1">
+
+        <RadioButton
+            android:id="@+id/coffe1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/one"
+            android:textSize="25sp" />
+
+        <RadioButton
+            android:id="@+id/coffe2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/two"
+            android:textSize="25sp" />
+
+        <RadioButton
+            android:id="@+id/coffe3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/three"
+            android:textSize="25sp" />
+
+        <RadioButton
+            android:id="@+id/coffe4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/four"
+            android:textSize="25sp" />
+
+        <RadioButton
+            android:id="@+id/coffe5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/five"
+            android:textSize="25sp" />
+    </RadioGroup>
+
+    <RadioGroup
+        android:id="@+id/radioGroupPayment"
+        android:layout_width="228dp"
+        android:layout_height="36dp"
+        android:orientation="horizontal"
+        app:layout_constraintStart_toStartOf="@+id/imgBtnCoffe1"
+        app:layout_constraintTop_toBottomOf="@+id/imgBtnCoffe1">
+
+        <RadioButton
+            android:id="@+id/radioButtonPaid"
+            android:layout_width="4dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/paid"
+            android:textSize="22sp" />
+
+        <RadioButton
+            android:id="@+id/radioButtonUnpaid"
+            android:layout_width="42dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/notPaid"
+            android:textSize="22sp" />
+    </RadioGroup>
+
+    <ListView
+        android:id="@+id/list"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:scrollbars="vertical"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="1.0sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView4" />
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="75dp"
+        android:layout_height="31dp"
+        android:text="@string/tea"
+        android:textAlignment="textStart"
+        android:textSize="22sp"
+        app:layout_constraintStart_toStartOf="@+id/radioGroupTea"
+        app:layout_constraintTop_toBottomOf="@+id/radioGroupTea" />
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="75dp"
+        android:layout_height="31dp"
+        android:text="@string/coffe"
+        android:textAlignment="textStart"
+        android:textSize="22sp"
+        app:layout_constraintStart_toStartOf="@+id/radioGroupCoffe"
+        app:layout_constraintTop_toBottomOf="@+id/radioGroupCoffe" />
+
+    <ImageButton
+        android:id="@+id/imageButton2"
+        android:layout_width="35dp"
+        android:layout_height="34dp"
+        android:onClick="noCoffe"
+        app:layout_constraintEnd_toEndOf="@+id/radioGroupCoffe"
+        app:layout_constraintTop_toBottomOf="@+id/radioGroupCoffe"
+        app:srcCompat="@drawable/ic_clear_black_24dp" />
+
+    <ImageButton
+        android:id="@+id/imageButton3"
+        android:layout_width="35dp"
+        android:layout_height="34dp"
+        android:onClick="noTea"
+        app:layout_constraintEnd_toEndOf="@+id/radioGroupTea"
+        app:layout_constraintTop_toBottomOf="@+id/radioGroupTea"
+        app:srcCompat="@drawable/ic_clear_black_24dp" />
+
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="121dp"
+        android:layout_height="19dp"
+        android:text="@string/previousSell"
+        app:layout_constraintStart_toStartOf="@+id/radioGroupPayment"
+        app:layout_constraintTop_toBottomOf="@+id/radioGroupPayment" />
+
+    <TextView
+        android:id="@+id/etTeaRate"
+        android:layout_width="75dp"
+        android:layout_height="31dp"
+        android:layout_marginStart="4dp"
+        android:hint="@string/tea_rate"
+        android:textSize="22sp"
+        app:layout_constraintStart_toEndOf="@+id/tvCurrency2"
+        app:layout_constraintTop_toTopOf="@+id/textView2" />
+
+    <TextView
+        android:id="@+id/etCoffeRate"
+        android:layout_width="75dp"
+        android:layout_height="31dp"
+        android:layout_marginStart="4dp"
+        android:hint="@string/coffe_rate"
+        android:textSize="22sp"
+        app:layout_constraintStart_toEndOf="@+id/tvCurrency1"
+        app:layout_constraintTop_toTopOf="@+id/textView3" />
+
+    <TextView
+        android:id="@+id/tvCurrency3"
+        android:layout_width="35dp"
+        android:layout_height="34dp"
+        android:layout_marginStart="12dp"
+        android:text="@string/currency"
+        android:textAlignment="textEnd"
+        android:textColor="#FF4081"
+        android:textSize="24sp"
+        app:layout_constraintBottom_toBottomOf="@+id/radioGroupPayment"
+        app:layout_constraintStart_toEndOf="@+id/radioGroupPayment" />
+
+    <TextView
+        android:id="@+id/tvCurrency4"
+        android:layout_width="32dp"
+        android:layout_height="30dp"
+        android:layout_marginStart="32dp"
+        android:text="@string/currency"
+        android:textAlignment="textEnd"
+        android:textColor="#F44336"
+        android:textSize="24sp"
+        app:layout_constraintStart_toEndOf="@+id/etSellDate"
+        app:layout_constraintTop_toTopOf="@+id/etSellDate" />
+
+    <TextView
+        android:id="@+id/etTotalNotPaid"
+        android:layout_width="82dp"
+        android:layout_height="30dp"
+        android:layout_marginStart="8dp"
+        android:hint="@string/total"
+        android:textColor="#F44336"
+        android:textSize="24sp"
+        app:layout_constraintStart_toEndOf="@+id/tvCurrency4"
+        app:layout_constraintTop_toTopOf="@+id/tvCurrency4" />
+
+    <TextView
+        android:id="@+id/etTotal"
+        android:layout_width="78dp"
+        android:layout_height="33dp"
+        android:layout_marginStart="4dp"
+        android:hint="@string/total"
+        android:textColor="#ff4081"
+        android:textSize="24sp"
+        app:layout_constraintBottom_toBottomOf="@+id/tvCurrency3"
+        app:layout_constraintStart_toEndOf="@+id/tvCurrency3" />
+
+    <TextView
+        android:id="@+id/tvCurrency1"
+        android:layout_width="35dp"
+        android:layout_height="31dp"
+        android:layout_marginStart="4dp"
+        android:text="@string/currency"
+        android:textAlignment="textEnd"
+        android:textSize="22sp"
+        app:layout_constraintStart_toEndOf="@+id/textView3"
+        app:layout_constraintTop_toTopOf="@+id/textView3" />
+
+    <TextView
+        android:id="@+id/tvCurrency2"
+        android:layout_width="35dp"
+        android:layout_height="31dp"
+        android:layout_marginStart="4dp"
+        android:text="@string/currency"
+        android:textAlignment="textEnd"
+        android:textSize="22sp"
+        app:layout_constraintStart_toEndOf="@+id/textView2"
+        app:layout_constraintTop_toTopOf="@+id/textView2" />
+
+</android.support.constraint.ConstraintLayout>
