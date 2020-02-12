@@ -1,7 +1,6 @@
 package com.example.dshinde.myapplication_xmlpref;
 
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -11,15 +10,24 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.example.dshinde.myapplication_xmlpref.adapters.ListviewKeyValueObjectAdapter;
+import com.example.dshinde.myapplication_xmlpref.common.Constants;
+import com.example.dshinde.myapplication_xmlpref.helper.Factory;
+import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
+import com.example.dshinde.myapplication_xmlpref.listners.ListviewActions;
+import com.example.dshinde.myapplication_xmlpref.model.CafeSettings;
+import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
+import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
 
-public class CafeSettingsActivity extends AppCompatActivity implements ListviewActions {
+public class CafeSettingsActivity extends BaseActivity implements ListviewActions {
 
     public static final String NO = "No";
     public static final String YES = "Yes";
@@ -28,8 +36,8 @@ public class CafeSettingsActivity extends AppCompatActivity implements ListviewA
     EditText etCoffeRate;
     ListView listView;
     ListviewKeyValueObjectAdapter listAdapter;
-    SharedPrefManager sharedPrefManager;
-    String sharedPreferenceName = null;
+    DataStorage dataStorageManager;
+    String collectionName = null;
     boolean editing = false;
 
     @Override
@@ -42,13 +50,19 @@ public class CafeSettingsActivity extends AppCompatActivity implements ListviewA
         etCoffeRate = (EditText) findViewById(R.id.etCoffeRate);
         listView = (ListView) findViewById(R.id.list);
         Bundle bundle = getIntent().getExtras();
-        sharedPreferenceName = bundle.getString("filename");
-        setTitle(sharedPreferenceName);
-        sharedPrefManager = new SharedPrefManager(this, sharedPreferenceName, false, true);
-        sharedPrefManager.add(new SharedPrefListener() {
+        collectionName = Constants.CAFE_SETTINGS;
+        userId = bundle.getString("userId");
+        setTitle(collectionName);
+        dataStorageManager = Factory.getDataStorageIntsance(this, getDataStorageType(), collectionName, false, true);
+        dataStorageManager.addDataStorageListener(new DataStorageListener() {
             @Override
-            public void sharedPrefChanged(String key, String value) {
-                listAdapter.setData(sharedPrefManager.getValues());
+            public void dataChanged(String key, String value) {
+
+            }
+
+            @Override
+            public void dataLoaded(List<KeyValue> data) {
+                listAdapter.setData(data);
             }
         });
         populateRateDate();
@@ -114,10 +128,9 @@ public class CafeSettingsActivity extends AppCompatActivity implements ListviewA
 
 
     private void populateListView() {
-        listAdapter = new ListviewKeyValueObjectAdapter(sharedPrefManager.getValues(),this, R.layout.list_view_items_flexbox);
+        listAdapter = new ListviewKeyValueObjectAdapter(dataStorageManager.getValues(),this, R.layout.list_view_items_flexbox);
         listView.setAdapter(listAdapter);
         setOnItemClickListenerToListView();
-        setSharedPrefManagerListener();
     }
 
     private void setOnItemClickListenerToListView() {
@@ -131,15 +144,6 @@ public class CafeSettingsActivity extends AppCompatActivity implements ListviewA
         listView.setOnItemClickListener(listener);
     }
 
-    private void setSharedPrefManagerListener() {
-        SharedPrefListener listener = new SharedPrefListener() {
-            public void sharedPrefChanged(String changedKey, String changedValue) {
-                listAdapter.notifyDataSetChanged();
-                setEditView(changedKey, changedValue);
-            }
-        };
-    }
-
     @Override
     public void save(View view) {
         save();
@@ -149,7 +153,7 @@ public class CafeSettingsActivity extends AppCompatActivity implements ListviewA
         CafeSettings details = getCafeSettingsDetails();
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         String json = gson.toJson(details);
-        sharedPrefManager.save(details.rateDate, json);
+        dataStorageManager.save(details.rateDate, json);
         clear();
         editing = false;
     }
@@ -162,7 +166,7 @@ public class CafeSettingsActivity extends AppCompatActivity implements ListviewA
     public void remove() {
         String key = etRateDate.getText().toString();
         clear();
-        sharedPrefManager.remove(key);
+        dataStorageManager.remove(key);
     }
 
     public void clear(View view) {

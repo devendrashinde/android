@@ -1,7 +1,8 @@
 package com.example.dshinde.myapplication_xmlpref;
 
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 public class DialogActivity extends AppCompatActivity {
 

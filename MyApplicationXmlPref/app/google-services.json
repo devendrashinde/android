@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "334043020289-3bumn5nogbks2lj0dc37s04lamdpg4f6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.dshinde.myapplication_xmlpref",
+            "certificate_hash": "d77d4d9b84ad1b6a31b7ed109f89bd9c137eacd6"
+          }
+        },
+        {
           "client_id": "334043020289-9cthjldl2lk8j0uhc6vebh3lt7trqcrk.apps.googleusercontent.com",
           "client_type": 3
         }

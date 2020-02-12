@@ -2,13 +2,7 @@ package com.example.dshinde.myapplication_xmlpref;
 
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.res.ColorStateList;
-import android.graphics.Color;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.text.InputType;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -22,6 +16,20 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+
+import com.example.dshinde.myapplication_xmlpref.adapters.ListviewKeyValueObjectAdapter;
+import com.example.dshinde.myapplication_xmlpref.common.Constants;
+import com.example.dshinde.myapplication_xmlpref.helper.Factory;
+import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
+import com.example.dshinde.myapplication_xmlpref.listners.ListviewActions;
+import com.example.dshinde.myapplication_xmlpref.model.CafeItem;
+import com.example.dshinde.myapplication_xmlpref.model.CafeSellSummary;
+import com.example.dshinde.myapplication_xmlpref.model.CafeSettings;
+import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
+import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
+import com.example.dshinde.myapplication_xmlpref.services.ReadOnceDataStorage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -32,12 +40,10 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
-public class SellTeaActivity extends AppCompatActivity implements ListviewActions {
+public class SellTeaActivity extends BaseActivity implements ListviewActions {
     public static final String NO = "No";
     public static final String YES = "Yes";
-    public static final String CAFE_SETTINGS = "CafeSettings";
     public static final String DD_MMM_YYYY = "dd MMM yyyy";
     TextView tvSellDate;
     TextView tvTeaRate;
@@ -49,9 +55,11 @@ public class SellTeaActivity extends AppCompatActivity implements ListviewAction
     RadioGroup radioPaymentGroup;
     ListView listView;
     ListviewKeyValueObjectAdapter listAdapter;
-    SharedPrefManager sharedPrefManager;
+    DataStorage dataStorageManager;
+    ReadOnceDataStorage settingsDsRef;
     String customer = null;
-    Map<String, String> settings = null;
+
+    List<KeyValue> settings = null;
     CafeSettings cafeSettings = null;
     CafeSellSummary cafeSellSummary = null;
     boolean editing = false;
@@ -71,23 +79,56 @@ public class SellTeaActivity extends AppCompatActivity implements ListviewAction
         radioCoffeGroup = (RadioGroup) findViewById(R.id.radioGroupCoffe);
         radioPaymentGroup = (RadioGroup) findViewById(R.id.radioGroupPayment);
         listView = (ListView) findViewById(R.id.list);
+
         Bundle bundle = getIntent().getExtras();
         customer = bundle.getString("filename");
+        userId = bundle.getString("userId");
         setTitle(customer);
-        sharedPrefManager = new SharedPrefManager(this, customer, false, true);
-        sharedPrefManager.add(new SharedPrefListener() {
+        initialiseDataStorageManager();
+        cafeSellSummary = new CafeSellSummary(customer);
+        populateDefaults();
+        initialiseSettingStorage();
+        populateListView();
+        setRadioGroupChangeListner();
+    }
+
+    private void initialiseDataStorageManager() {
+        dataStorageManager = Factory.getDataStorageIntsance(this, getDataStorageType(), customer, false, false);
+        dataStorageManager.addDataStorageListener(new DataStorageListener() {
             @Override
-            public void sharedPrefChanged(String key, String value) {
-                List<KeyValue> data = sharedPrefManager.getValues();
+            public void dataChanged(String key, String value) {
+                List<KeyValue> data = dataStorageManager.getValues();
+                listAdapter.setData(data);
+                calculateNotPaidTotal(data);
+            }
+
+            @Override
+            public void dataLoaded(List<KeyValue> data) {
                 listAdapter.setData(data);
                 calculateNotPaidTotal(data);
             }
         });
-        cafeSellSummary = new CafeSellSummary(customer);
-        populateDefaults();
-        populateListView();
-        setRadioGroupChangeListner();
     }
+
+    private void initialiseSettingStorage() {
+        settingsDsRef = Factory.getReadOnceDataStorageIntsance(this,
+                getDataStorageType(),
+                Constants.CAFE_SETTINGS,
+                new DataStorageListener() {
+                    @Override
+                    public void dataChanged(String key, String value) {
+                    }
+
+                    @Override
+                    public void dataLoaded(List<KeyValue> data) {
+                        settings = data;
+                        getCafeSettings();
+                        populateRates();
+
+                    }
+        });
+    }
+
 
     private void setRadioGroupChangeListner(){
         radioTeaGroup
@@ -118,11 +159,12 @@ public class SellTeaActivity extends AppCompatActivity implements ListviewAction
     private void changeTotalColor(){
         String status = getPaymentStatus();
         if(status.equals(YES)){
-            tvTotal.setTextColor(ContextCompat.getColor(this, R.color.colorWhite));
+            tvTotal.setTextColor(getColor( R.color.colorWhite));
         } else {
-            tvTotal.setTextColor(ContextCompat.getColor(this, R.color.colorRed));
+            tvTotal.setTextColor(getColor( R.color.colorRed));
         }
     }
+
     private void calculateTotal(){
         BigDecimal teaTotal = new BigDecimal(tvTeaRate.getText().toString()).multiply(new BigDecimal(getTea()));
         BigDecimal coffeTotal = new BigDecimal(tvCoffeRate.getText().toString()).multiply(new BigDecimal(getCoffe()));
@@ -206,7 +248,8 @@ public class SellTeaActivity extends AppCompatActivity implements ListviewAction
         radioTeaGroup.check(getTeaRadioButtonId(item.tea));
         radioCoffeGroup.check(getCoffeRadioButtonId(item.coffe));
         radioPaymentGroup.check(getPaymentRadioButtonId(item.paid));
-        populateRates(getCafeSettings(key.substring(0,11)));
+        getCafeSettings(key.substring(0,11));
+        populateRates();
         calculateTotal();
         editing = true;
     }
@@ -255,11 +298,10 @@ public class SellTeaActivity extends AppCompatActivity implements ListviewAction
     }
 
     private void populateListView() {
-        List<KeyValue> data = sharedPrefManager.getValues();
+        List<KeyValue> data = dataStorageManager.getValues();
         listAdapter = new ListviewKeyValueObjectAdapter(data,this, R.layout.list_view_items_flexbox);
         listView.setAdapter(listAdapter);
         setOnItemClickListenerToListView();
-        setSharedPrefManagerListener();
         calculateNotPaidTotal(data);
     }
 
@@ -272,15 +314,6 @@ public class SellTeaActivity extends AppCompatActivity implements ListviewAction
             }
         };
         listView.setOnItemClickListener(listener);
-    }
-
-    private void setSharedPrefManagerListener() {
-        SharedPrefListener listener = new SharedPrefListener() {
-            public void sharedPrefChanged(String changedKey, String changedValue) {
-                listAdapter.notifyDataSetChanged();
-                setEditView(changedKey, changedValue);
-            }
-        };
     }
 
     @Override
@@ -296,7 +329,7 @@ public class SellTeaActivity extends AppCompatActivity implements ListviewAction
 
     private void save(CafeItem details){
         String json = gson.toJson(details);
-        sharedPrefManager.save(details.sellDateTime, json);
+        dataStorageManager.save(details.sellDateTime, json);
     }
 
     @Override
@@ -306,7 +339,7 @@ public class SellTeaActivity extends AppCompatActivity implements ListviewAction
 
     public void remove() {
         String key = tvSellDate.getText().toString();
-        sharedPrefManager.remove(key);
+        dataStorageManager.remove(key);
         clear();
     }
 
@@ -327,27 +360,32 @@ public class SellTeaActivity extends AppCompatActivity implements ListviewAction
         SimpleDateFormat dateF = new SimpleDateFormat(DD_MMM_YYYY, Locale.getDefault());
         String date = dateF.format(Calendar.getInstance().getTime());
         tvSellDate.setText(date);
-        CafeSettings cafeSettings = getCafeSettings(date);
-        populateRates(cafeSettings);
 
     }
 
-    private void populateRates(CafeSettings cafeSettings){
+    private void populateRates(){
         if(cafeSettings != null) {
             tvTeaRate.setText(cafeSettings.teaRate.toString());
             tvCoffeRate.setText(cafeSettings.coffeRate.toString());
         }
     }
 
-    private CafeSettings getCafeSettings(String date) {
-        if (settings == null || settings.isEmpty()) {
-            settings = SharedPrefManager.getDataMap(this, CAFE_SETTINGS);
+    private void getCafeSettings() {
+        getCafeSettings(tvSellDate.getText().toString());
+    }
+
+    private void getCafeSettings(String date) {
+        if(cafeSettings != null) {
+            if(cafeSettings.rateDate.equals(date)){
+                return;
+            }
         }
+
         cafeSettings = null;
         try {
             Date date1 = new SimpleDateFormat(DD_MMM_YYYY).parse(date);
-            if (!settings.isEmpty()) {
-                for (Map.Entry<String, String> entry : settings.entrySet()) {
+            if (settings != null && !settings.isEmpty()) {
+                for (KeyValue entry : settings) {
                     Date date2 = new SimpleDateFormat(DD_MMM_YYYY).parse(entry.getKey());
                     if (date2.compareTo(date1) <= 0) {
                         cafeSettings = gson.fromJson(entry.getValue(), CafeSettings.class);
@@ -357,7 +395,6 @@ public class SellTeaActivity extends AppCompatActivity implements ListviewAction
         } catch(ParseException ex){
 
         }
-        return cafeSettings;
     }
 
     private void calculateNotPaidTotal(List<KeyValue> data){
@@ -376,10 +413,10 @@ public class SellTeaActivity extends AppCompatActivity implements ListviewAction
         }
         if(total.compareTo(BigDecimal.ZERO) > 0) {
             tvNotPaidTotal.setText(total.toString());
-            tvTotal.setTextColor(ContextCompat.getColor(this, R.color.colorRed));
+            tvTotal.setTextColor(getColor( R.color.colorRed));
         } else{
             tvNotPaidTotal.setText("");
-            tvTotal.setTextColor(ContextCompat.getColor(this, R.color.colorWhite));
+            tvTotal.setTextColor(getColor( R.color.colorWhite));
         }
     }
 
@@ -476,11 +513,11 @@ public class SellTeaActivity extends AppCompatActivity implements ListviewAction
     }
 
     private void payDues(BigDecimal amountPaid) {
-        Map<String, String> data = sharedPrefManager.getDataMap();
+        List<KeyValue> data = dataStorageManager.getValues();
 
         if (!data.isEmpty()) {
             BigDecimal total = BigDecimal.ZERO;
-            for (Map.Entry<String, String> entry : data.entrySet()) {
+            for (KeyValue entry : data) {
                 CafeItem cafeItem = gson.fromJson(entry.getValue(), CafeItem.class);
                 if(cafeItem.paid.equals(NO)){
                     if(amountPaid.compareTo(cafeItem.amountDue) >= 0){

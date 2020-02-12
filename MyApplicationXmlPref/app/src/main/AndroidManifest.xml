@@ -15,27 +15,33 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:windowSoftInputMode="adjustResize">
+        <activity android:name=".DynamicLinearLayoutActivity"></activity>
+        <activity android:name=".ScreenDesignActivity"></activity>
         <activity
             android:name=".ScrollingTextViewActivity"
-            android:label="@string/title_scrolling_textview_activity">
-
-        </activity>
+            android:label="@string/title_scrolling_textview_activity"></activity>
         <activity android:name=".DialogActivity" />
-        <activity android:name=".MainActivity">
+        <activity android:name=".launcher.SignInActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".auth.GoogleSignInActivity"></activity>
+        <activity android:name=".MainActivity"></activity>
         <activity
             android:name=".Main2Activity"
-            android:label="@string/title_activity_main2"></activity>
+            android:label="@string/title_activity_main2" />
         <activity
             android:name=".SellTeaActivity"
-            android:label="@string/sellTea"></activity>
+            android:label="@string/sellTea" />
         <activity
             android:name=".CafeSettingsActivity"
-            android:label="@string/cafeSettings"></activity>
+            android:label="@string/cafeSettings" />
+        <activity
+            android:name=".ShabdaKoshActivity"
+            android:label="@string/shabdaKosh" />
     </application>
 
 </manifest>

@@ -1,0 +1,127 @@
+package com.example.dshinde.myapplication_xmlpref.services;
+
+import com.example.dshinde.myapplication_xmlpref.common.Constants;
+import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
+import com.example.dshinde.myapplication_xmlpref.listners.DataStorageObservable;
+import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+
+public abstract class DataStorageManager implements DataStorage {
+    List<DataStorageListener> listeners = new ArrayList<>();
+    List<KeyValue> data = new ArrayList<>();
+    boolean autoKey=false;
+    boolean descendingOrder=false;
+
+    public void addDataStorageListener(DataStorageListener listener) {
+        listeners.add(listener);
+    }
+
+    public void removeDataStorageListener(DataStorageListener listener) {
+        listeners.remove(listener);
+    }
+
+    public void removeDataStorageListeners() {
+        listeners.clear();
+    }
+
+    public int count() {
+        return data.size();
+    }
+
+    public String[] getKeys() {
+        return new String[]{KEY, VALUE};
+    }
+
+    public KeyValue getValue(int index) {
+        return data.get(index);
+    }
+
+    public List<KeyValue> getValues() {
+        return data;
+    }
+
+    public int getKeyIndex(String key) {
+        for(KeyValue item : data){
+            if(item.getKey().equals(key)){
+                return data.indexOf(item);
+            }
+        }
+        return -1;
+    }
+
+    public String getValue(String key) {
+        int index = getKeyIndex(key);
+        if(index >= 0){
+            return data.get(index).getValue();
+        }
+        return "";
+    }
+
+    public void save(String value) {
+        save(null, value);
+    }
+
+    public void save(List<KeyValue> values) {
+
+    }
+
+    void removeFromDataSource(String key) {
+        int keyIndex = getKeyIndex(key);
+        if (keyIndex >= 0) {
+            data.remove(keyIndex);
+        }
+    }
+
+    void updateDataSource(String key, String value) {
+        int keyIndex = getKeyIndex(key);
+        if (keyIndex >= 0) {
+            data.set(keyIndex, new KeyValue(key, value));
+        } else {
+            data.add(new KeyValue(key, value));
+        }
+    }
+
+    void notifyDataSetChanged(String key, String value) {
+        for (DataStorageListener listener : listeners) {
+            listener.dataChanged(key, value);
+        }
+    }
+
+    void notifyDataLoaded() {
+        for (DataStorageListener listener : listeners) {
+            listener.dataLoaded(data);
+        }
+    }
+
+    Comparator<Map<String, String>> mapComparator = new Comparator<Map<String, String>>() {
+        public int compare(Map<String, String> m1, Map<String, String> m2) {
+            return autoKey ?
+                    (descendingOrder ? m2.get(VALUE).compareTo(m1.get(VALUE)): m1.get(VALUE).compareTo(m2.get(VALUE))) :
+                    (descendingOrder ? m2.get(KEY).compareTo(m1.get(KEY)) : m1.get(KEY).compareTo(m2.get(KEY)));
+        }
+    };
+
+    Comparator<KeyValue> keyValueComparator = new Comparator<KeyValue>() {
+        public int compare(KeyValue m1, KeyValue m2) {
+            return autoKey ?
+                    (descendingOrder ? m2.getValue().compareTo(m1.getValue()): m1.getValue().compareTo(m2.getValue())) :
+                    (descendingOrder ? m2.getKey().compareTo(m1.getKey()) : m1.getKey().compareTo(m2.getKey()));
+        }
+    };
+
+    public String getDataString(){
+        StringBuilder dataString  = new StringBuilder();
+        if (!data.isEmpty()) {
+            for (KeyValue entry : data) {
+                dataString.append(Constants.CR_LF).append(entry.getKey().trim()).append(Constants.CR_LF).append(entry.getValue().trim()).append(Constants.CR_LF);
+            }
+        }
+        return dataString.toString();
+    }
+
+}

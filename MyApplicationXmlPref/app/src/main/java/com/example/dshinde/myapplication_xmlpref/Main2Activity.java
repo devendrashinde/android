@@ -1,55 +1,93 @@
 package com.example.dshinde.myapplication_xmlpref;
 
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.support.v4.provider.DocumentFile;
-import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class Main2Activity extends AppCompatActivity implements ListviewActions {
+import androidx.documentfile.provider.DocumentFile;
+
+import com.example.dshinde.myapplication_xmlpref.adapters.ListviewKeyValueObjectAdapter;
+import com.example.dshinde.myapplication_xmlpref.helper.Factory;
+import com.example.dshinde.myapplication_xmlpref.helper.StorageSelectionResult;
+import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
+import com.example.dshinde.myapplication_xmlpref.listners.ListviewActions;
+import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
+import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
+import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
+
+import java.util.Collections;
+import java.util.List;
+
+public class Main2Activity extends BaseActivity implements ListviewActions {
 
     EditText keyField;
     EditText value1Field;
     ListView listView;
-    //SimpleAdapter listAdapter;
-    //ListviewKeyValueMapAdapter listAdapter;
+    Button divider;
     ListviewKeyValueObjectAdapter listAdapter;
-    SharedPrefManager sharedPrefManager;
-    String sharedPreferenceName = null;
+    DataStorage dataStorageManager;
+    String collectionName = null;
+    LinearLayout editViewLayout;
+    Menu myMenu;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main2);
+        setContentView(R.layout.activity_main2_2);
 
         keyField = (EditText) findViewById(R.id.etKey);
         value1Field = (EditText) findViewById(R.id.etValue);
         listView = (ListView) findViewById(R.id.list);
+        editViewLayout = (LinearLayout) findViewById(R.id.editView);
+
+        // get parameters
         Bundle bundle = getIntent().getExtras();
-        sharedPreferenceName = bundle.getString("filename");
-        setTitle(sharedPreferenceName);
-        sharedPrefManager = new SharedPrefManager(this, sharedPreferenceName, false);
-        sharedPrefManager.add(new SharedPrefListener() {
+        collectionName = bundle.getString("filename");
+        userId = bundle.getString("userId");
+
+        setTitle(collectionName);
+        dataStorageManager = Factory.getDataStorageIntsance(this, getDataStorageType(), collectionName, false, false);
+        dataStorageManager.addDataStorageListener(new DataStorageListener() {
             @Override
-            public void sharedPrefChanged(String key, String value) {
-                listAdapter.setData(sharedPrefManager.getValues());
+            public void dataChanged(String key, String value) {
+                listAdapter.setData(dataStorageManager.getValues());
+            }
+
+            @Override
+            public void dataLoaded(List<KeyValue> data) {
+                listAdapter.setData(data);
             }
         });
-
         populateListView();
+        dataStorageManager.loadData();
+    }
+
+    private void showEditView(boolean show) {
+        editViewLayout.setVisibility(show ? View.VISIBLE : View.GONE);
+        MenuItem menuItem = myMenu.findItem(R.id.menu_edit);
+        Drawable icon = getDrawable(show ? R.drawable.ic_format_line_spacing_black_24dp : R.drawable.ic_edit_black);
+        menuItem.setIcon(icon);
+        if (!show) {
+            hideKeyboard(editViewLayout);
+        }
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.navigation, menu);
+        myMenu = menu;
+        showEditView(false);
         return true;
     }
 
@@ -66,6 +104,7 @@ public class Main2Activity extends AppCompatActivity implements ListviewActions 
             case R.id.menu_copy:
                 return true;
             case R.id.menu_edit:
+                showEditView(editViewLayout.getVisibility() == View.GONE);
                 return true;
             case R.id.menu_remove:
                 remove();
@@ -87,12 +126,9 @@ public class Main2Activity extends AppCompatActivity implements ListviewActions 
     }
 
     private void populateListView() {
-        //listAdapter = new SimpleAdapter(this, sharedPrefManager.getValues(), R.layout.list_view_items, from, to);
-        listAdapter = new ListviewKeyValueObjectAdapter(sharedPrefManager.getValues(),this, R.layout.list_view_items_flexbox);
-        //listAdapter = new ListviewKeyValueMapAdapter(sharedPrefManager.getValues(),this, R.layout.list_view_items_flexbox);
+        listAdapter = new ListviewKeyValueObjectAdapter(Collections.emptyList(),this, R.layout.list_view_items_flexbox);
         listView.setAdapter(listAdapter);
         setOnItemClickListenerToListView();
-        setSharedPrefManagerListener();
     }
 
     private void setOnItemClickListenerToListView() {
@@ -106,15 +142,6 @@ public class Main2Activity extends AppCompatActivity implements ListviewActions 
         listView.setOnItemClickListener(listener);
     }
 
-    private void setSharedPrefManagerListener() {
-        SharedPrefListener listener = new SharedPrefListener() {
-            public void sharedPrefChanged(String changedKey, String changedValue) {
-                listAdapter.notifyDataSetChanged();
-                setEditView(changedKey, changedValue);
-            }
-        };
-    }
-
     @Override
     public void save(View view) {
         save();
@@ -124,7 +151,8 @@ public class Main2Activity extends AppCompatActivity implements ListviewActions 
         String key = keyField.getText().toString();
         String value = value1Field.getText().toString();
         clear();
-        sharedPrefManager.save(key, value);
+        dataStorageManager.save(key, value);
+        showEditView(false);
     }
 
     @Override
@@ -135,7 +163,7 @@ public class Main2Activity extends AppCompatActivity implements ListviewActions 
     public void remove() {
         String key = keyField.getText().toString();
         clear();
-        sharedPrefManager.remove(key);
+        dataStorageManager.remove(key);
     }
 
     public void clear(View view) {
@@ -163,23 +191,12 @@ public class Main2Activity extends AppCompatActivity implements ListviewActions 
         }
     }
 
-    public void get(View view) {
-        get();
-    }
-
-    public void get() {
-        String key = keyField.getText().toString();
-        if (!key.isEmpty()) {
-            value1Field.setText(sharedPrefManager.getValue(key));
-        }
-    }
-
     public void export() {
         startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE), StorageUtil.PICK_DOCUMENT_FOLDER_FOR_EXPORT);
     }
 
     private void export(DocumentFile dir) {
-        String path = StorageUtil.saveAsTextToDocumentFile(this, dir, sharedPreferenceName, sharedPrefManager.getDataString());
+        String path = StorageUtil.saveAsTextToDocumentFile(this, dir, collectionName, dataStorageManager.getDataString());
         if (path != null) {
             Toast.makeText(this, "Saved to " + path,
                     Toast.LENGTH_LONG).show();
@@ -188,10 +205,17 @@ public class Main2Activity extends AppCompatActivity implements ListviewActions 
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
         StorageSelectionResult result = StorageUtil.getStorageSelectionResult(this, requestCode, resultCode, data);
         if (result.getRequestCode() == StorageUtil.PICK_DOCUMENT_FOLDER_FOR_EXPORT) {
             export(result.getDir());
         }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        dataStorageManager.removeDataStorageListeners();
     }
 
 }

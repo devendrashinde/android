@@ -26,7 +26,7 @@
         android:id="@+id/menu_share"
         android:icon="@drawable/ic_share_black_24dp"
         android:title="@string/share"
-        app:showAsAction="always"/>
+        app:showAsAction="ifRoom"/>
 
     <item
         android:id="@+id/menu_remove"
@@ -85,6 +85,16 @@
         android:id="@+id/menu_pay"
         android:icon="@drawable/ic_coffe_black"
         android:title="@string/pay"
+        app:showAsAction="ifRoom"
+        />
+    <item
+        android:id="@+id/menu_dynaform"
+        android:title="@string/dynaform"
+        app:showAsAction="ifRoom"
+        />
+    <item
+        android:id="@+id/menu_add_to_shadba_kosh"
+        android:title="@string/add_to_shadb_kosh"
         app:showAsAction="ifRoom"
         />
 </menu>

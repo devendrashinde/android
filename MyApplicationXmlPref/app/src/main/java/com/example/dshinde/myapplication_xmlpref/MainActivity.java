@@ -4,9 +4,6 @@ import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
-import android.support.v4.provider.DocumentFile;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
@@ -23,40 +20,79 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
+import androidx.documentfile.provider.DocumentFile;
+
+import com.example.dshinde.myapplication_xmlpref.adapters.ListviewKeyValueObjectAdapter;
+import com.example.dshinde.myapplication_xmlpref.common.Constants;
+import com.example.dshinde.myapplication_xmlpref.helper.Factory;
+import com.example.dshinde.myapplication_xmlpref.helper.JsonHelper;
+import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
+import com.example.dshinde.myapplication_xmlpref.listners.ListviewActions;
+import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
+import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
+import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
+import com.example.dshinde.myapplication_xmlpref.services.SharedPrefManager;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.Map;
+import java.util.Collections;
+import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements ListviewActions {
+public class MainActivity extends BaseActivity implements ListviewActions {
     EditText valueField;
     ListView listView;
     //SimpleAdapter listAdapter;
     //ListviewKeyValueMapAdapter listAdapter;
     ListviewKeyValueObjectAdapter listAdapter;
-    SharedPrefManager sharedPrefManager;
+    DataStorage dataStorageManager;
     String key;
-    String sharedPreferenceName = "MyNotes";
+    String sharedPreferenceName = Constants.DATABASE_PATH_NOTES;
     public static final int PICKFILE_RESULT_CODE = 42; // 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        sharedPrefManager = new SharedPrefManager(this, sharedPreferenceName, true);
-        sharedPrefManager.add(new SharedPrefListener() {
-            @Override
-            public void sharedPrefChanged(String key, String value) {
-                listAdapter.setData(sharedPrefManager.getValues());
-            }
-        });
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        Bundle bundle = getIntent().getExtras();
+        userId = bundle.getString("userId");
+        // Check if user is signed in (non-null) and update UI accordingly.
+        updateUI();
+    }
+
+    private void updateUI(){
+
         setContentView(R.layout.activity_main);
         valueField = (EditText) findViewById(R.id.VALUE_1);
         listView = (ListView) findViewById(R.id.list);
         populateListView();
-        listView.setTextFilterEnabled(true);
         setValueFieldWatcher();
         setValueFieldClearButtonAction();
 
+        dataStorageManager = Factory.getDataStorageIntsance(this,
+                getDataStorageType(),
+                sharedPreferenceName,
+                true,
+                false);
+        dataStorageManager.addDataStorageListener(new DataStorageListener() {
+            @Override
+            public void dataChanged(String key, String value) {
+                listAdapter.setData(dataStorageManager.getValues());
+            }
+
+            @Override
+            public void dataLoaded(List<KeyValue> data){
+                listAdapter.setData(data);
+            }
+        });
+        dataStorageManager.loadData();
     }
 
     private void setValueFieldClearButtonAction() {
@@ -159,6 +195,12 @@ public class MainActivity extends AppCompatActivity implements ListviewActions {
             case R.id.menu_settings:
                 doSettings();
                 return true;
+            case R.id.menu_dynaform:
+                doDynamicForm();
+                return true;
+            case R.id.menu_add_to_shadba_kosh:
+                addToShadaKosh();
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -171,7 +213,7 @@ public class MainActivity extends AppCompatActivity implements ListviewActions {
 
     public void remove() {
         if (key != null) {
-            sharedPrefManager.remove(key);
+            dataStorageManager.remove(key);
         }
         clear();
     }
@@ -183,7 +225,7 @@ public class MainActivity extends AppCompatActivity implements ListviewActions {
 
     public void save() {
         String value = valueField.getText().toString();
-        sharedPrefManager.save(key, value);
+        dataStorageManager.save(key, value);
         clear();
     }
 
@@ -208,6 +250,7 @@ public class MainActivity extends AppCompatActivity implements ListviewActions {
         if (!fileName.isEmpty()) {
             Intent intent = new Intent(MainActivity.this, Main2Activity.class);
             intent.putExtra("filename", fileName);
+            intent.putExtra("userId", userId);
             startActivity(intent);
         }
     }
@@ -227,10 +270,9 @@ public class MainActivity extends AppCompatActivity implements ListviewActions {
     }
 
     private void populateListView() {
-        //listAdapter = new SimpleAdapter(this, sharedPrefManager.getValues(), R.layout.list_view_items, from, to);
-        listAdapter = new ListviewKeyValueObjectAdapter(sharedPrefManager.getValues(),this, R.layout.list_view_items);
-        //listAdapter = new ListviewKeyValueMapAdapter(sharedPrefManager.getValues(),this, R.layout.list_view_items);
+        listAdapter = new ListviewKeyValueObjectAdapter(Collections.emptyList(),this, R.layout.list_view_items);
         listView.setAdapter(listAdapter);
+        listView.setTextFilterEnabled(true);
         setOnItemClickListenerToListView();
         setOnItemLongClickListenerToListView();
     }
@@ -275,16 +317,6 @@ public class MainActivity extends AppCompatActivity implements ListviewActions {
         }
     }
 
-    private void setSharedPrefManagerListener() {
-        SharedPrefListener listener = new SharedPrefListener() {
-            public void sharedPrefChanged(String changedKey, String changedValue) {
-                listAdapter.notifyDataSetChanged();
-                key = changedKey;
-                setEditView(changedValue);
-            }
-        };
-    }
-
     private void setEditView(String value) {
         valueField.setText(value);
     }
@@ -301,15 +333,48 @@ public class MainActivity extends AppCompatActivity implements ListviewActions {
         if (!fileName.isEmpty()) {
             Intent intent = new Intent(MainActivity.this, SellTeaActivity.class);
             intent.putExtra("filename", fileName);
+            intent.putExtra("userId", userId);
             startActivity(intent);
         }
     }
 
     public void doSettings() {
-        String fileName = valueField.getText().toString();
-        if (!fileName.isEmpty()) {
-            Intent intent = new Intent(MainActivity.this, CafeSettingsActivity.class);
-            intent.putExtra("filename", fileName);
+        Intent intent = new Intent(MainActivity.this, CafeSettingsActivity.class);
+        intent.putExtra("userId", userId);
+        startActivity(intent);
+    }
+
+    private void doDynamicForm(){
+
+        String screenConfig = valueField.getText().toString();
+        /*
+        screenConfig = "[ {\"controlId\": \"textLabel\", \"controlType\": \"Text\", \"textLabel\": \"Text label:\"}," +
+                "{\"controlId\": \"editBox\", \"controlType\": \"EditText\", \"textLabel\": \"Edit text box:\"}," +
+                "{\"controlId\": \"multiLineEditText\", \"controlType\": \"MultiLineEditText\", \"textLabel\": \"Multiline edit text box:\"}," +
+                "{\"controlId\": \"radioButton\", \"controlType\": \"RadioButton\", \"textLabel\": \"This is dynamic radio button:\", \"options\": \"option1\noption2\"}," +
+                "{\"controlId\": \"checkBox\", \"controlType\": \"CheckBox\", \"textLabel\": \"This is dynamic check box:\", \"options\": \"option1\noption2\"}," +
+                "{\"controlId\": \"dropDownList\", \"controlType\": \"DropDownList\", \"textLabel\": \"This is dynamic drop down list:\", \"options\": \"option1\noption2\"}," +
+                "{\"controlId\": \"datePicker\", \"controlType\": \"DatePicker\", \"textLabel\": \"This is dynamic date picker:\"}," +
+                "{\"controlId\": \"timePicker\", \"controlType\": \"TimePicker\", \"textLabel\": \"This is dynamic time picker:\"}," +
+                "{\"controlId\": \"saveButton\", \"controlType\": \"SaveButton\", \"textLabel\": \"Save\"} ]";
+        */
+        if (!screenConfig.isEmpty()) {
+            Intent intent = new Intent(MainActivity.this, ScreenDesignActivity.class);
+            intent.putExtra("screenName", screenConfig);
+            intent.putExtra("userId", userId);
+            startActivity(intent);
+        }
+    }
+
+    /*
+    this method will extract words from selected note and it will add to Sanskrit ShabdKosh note
+     */
+    private void addToShadaKosh() {
+        String collectionName = valueField.getText().toString();
+        if(collectionName != null && !collectionName.isEmpty()) {
+            Intent intent = new Intent(MainActivity.this, ShabdaKoshActivity.class);
+            intent.putExtra("collectionToAddToShabdaKosh", collectionName);
+            intent.putExtra("userId", userId);
             startActivity(intent);
         }
     }
@@ -348,7 +413,7 @@ public class MainActivity extends AppCompatActivity implements ListviewActions {
 
     private void performCopy(String srcFile, String destFile) {
         if (SharedPrefManager.copy(this, srcFile, destFile)) {
-            sharedPrefManager.save(null, destFile);
+            dataStorageManager.save(null, destFile);
         }
     }
 
@@ -357,7 +422,7 @@ public class MainActivity extends AppCompatActivity implements ListviewActions {
     }
 
     private void export(DocumentFile dir) {
-        String path = StorageUtil.saveAsTextToDocumentFile(this, dir, sharedPreferenceName, sharedPrefManager.getDataString());
+        String path = StorageUtil.saveAsTextToDocumentFile(this, dir, sharedPreferenceName, dataStorageManager.getDataString());
         if (path != null) {
             Toast.makeText(this, "Saved to " + path,
                     Toast.LENGTH_LONG).show();
@@ -369,18 +434,19 @@ public class MainActivity extends AppCompatActivity implements ListviewActions {
     }
 
     private void backup(DocumentFile dir) {
-        Map<String, String> subjects = sharedPrefManager.getDataMap();
-        String path = StorageUtil.saveAsObjectToDocumentFile(this, dir, sharedPreferenceName, new JSONObject(subjects));
+        List<KeyValue> subjects = dataStorageManager.getValues();
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        String path = StorageUtil.saveAsObjectToDocumentFile(this, dir, sharedPreferenceName, gson.toJson(subjects));
 
         if (path != null) {
             Toast.makeText(this, "Saved to " + path,
                     Toast.LENGTH_SHORT).show();
 
-            for (Map.Entry<String, String> entry : subjects.entrySet()) {
+            for (KeyValue entry : subjects) {
                 String fileName = entry.getValue().trim();
 
                 path = StorageUtil.saveAsObjectToDocumentFile(this, dir, fileName,
-                        new JSONObject(SharedPrefManager.getDataMap(this, fileName)));
+                        dataStorageManager.getDataString(fileName));
                 if (path != null) {
                     Toast.makeText(this, "Saved to " + path,
                             Toast.LENGTH_SHORT).show();
@@ -428,6 +494,7 @@ public class MainActivity extends AppCompatActivity implements ListviewActions {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == Activity.RESULT_OK) {
             Uri fileUri = data.getData();
             DocumentFile dir;
@@ -468,5 +535,11 @@ public class MainActivity extends AppCompatActivity implements ListviewActions {
                     break;
             }
         }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        dataStorageManager.removeDataStorageListeners();
     }
 }
