@@ -13,4 +13,7 @@ public class Constants {
     public static final int RESULT_CODE_SCREEN_DESIGN = 501;
     public static final int RESULT_CODE_OK = 502;
     public static final int RESULT_CODE_CANCEL = -1;
+    public static final String SCREEN_DESIGN = "screenDesign:";
+    public static final String REQUEST_MODE_CAPTURE = "CAPTURE";
+    public static final String REQUEST_MODE_DESIGN = "DESIGN";
 }

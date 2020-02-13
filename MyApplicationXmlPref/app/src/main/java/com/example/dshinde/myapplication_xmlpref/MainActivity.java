@@ -25,6 +25,7 @@ import androidx.documentfile.provider.DocumentFile;
 
 import com.example.dshinde.myapplication_xmlpref.adapters.ListviewKeyValueObjectAdapter;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
+import com.example.dshinde.myapplication_xmlpref.helper.Converter;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.helper.JsonHelper;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
@@ -32,6 +33,7 @@ import com.example.dshinde.myapplication_xmlpref.listners.ListviewActions;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
+import com.example.dshinde.myapplication_xmlpref.services.ReadOnceDataStorage;
 import com.example.dshinde.myapplication_xmlpref.services.SharedPrefManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -49,6 +51,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
     //ListviewKeyValueMapAdapter listAdapter;
     ListviewKeyValueObjectAdapter listAdapter;
     DataStorage dataStorageManager;
+    ReadOnceDataStorage readOnceDataStorage;
     String key;
     String sharedPreferenceName = Constants.DATABASE_PATH_NOTES;
     public static final int PICKFILE_RESULT_CODE = 42; // 1;
@@ -196,7 +199,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
                 doSettings();
                 return true;
             case R.id.menu_dynaform:
-                doDynamicForm();
+                doDesignOrCapture();
                 return true;
             case R.id.menu_add_to_shadba_kosh:
                 addToShadaKosh();
@@ -248,11 +251,15 @@ public class MainActivity extends BaseActivity implements ListviewActions {
     public void edit() {
         String fileName = valueField.getText().toString();
         if (!fileName.isEmpty()) {
-            Intent intent = new Intent(MainActivity.this, Main2Activity.class);
-            intent.putExtra("filename", fileName);
-            intent.putExtra("userId", userId);
-            startActivity(intent);
+            startActivityForEdit(fileName);
         }
+    }
+
+    private void startEditActivity(String fileName) {
+        Intent intent = new Intent(MainActivity.this, Main2Activity.class);
+        intent.putExtra("filename", fileName);
+        intent.putExtra("userId", userId);
+        startActivity(intent);
     }
 
     public void edit(View view) {
@@ -344,26 +351,23 @@ public class MainActivity extends BaseActivity implements ListviewActions {
         startActivity(intent);
     }
 
-    private void doDynamicForm(){
+    private void doDesignOrCapture(){
 
-        String screenConfig = valueField.getText().toString();
-        /*
-        screenConfig = "[ {\"controlId\": \"textLabel\", \"controlType\": \"Text\", \"textLabel\": \"Text label:\"}," +
-                "{\"controlId\": \"editBox\", \"controlType\": \"EditText\", \"textLabel\": \"Edit text box:\"}," +
-                "{\"controlId\": \"multiLineEditText\", \"controlType\": \"MultiLineEditText\", \"textLabel\": \"Multiline edit text box:\"}," +
-                "{\"controlId\": \"radioButton\", \"controlType\": \"RadioButton\", \"textLabel\": \"This is dynamic radio button:\", \"options\": \"option1\noption2\"}," +
-                "{\"controlId\": \"checkBox\", \"controlType\": \"CheckBox\", \"textLabel\": \"This is dynamic check box:\", \"options\": \"option1\noption2\"}," +
-                "{\"controlId\": \"dropDownList\", \"controlType\": \"DropDownList\", \"textLabel\": \"This is dynamic drop down list:\", \"options\": \"option1\noption2\"}," +
-                "{\"controlId\": \"datePicker\", \"controlType\": \"DatePicker\", \"textLabel\": \"This is dynamic date picker:\"}," +
-                "{\"controlId\": \"timePicker\", \"controlType\": \"TimePicker\", \"textLabel\": \"This is dynamic time picker:\"}," +
-                "{\"controlId\": \"saveButton\", \"controlType\": \"SaveButton\", \"textLabel\": \"Save\"} ]";
-        */
-        if (!screenConfig.isEmpty()) {
-            Intent intent = new Intent(MainActivity.this, ScreenDesignActivity.class);
-            intent.putExtra("screenName", screenConfig);
-            intent.putExtra("userId", userId);
-            startActivity(intent);
+        String fileName = valueField.getText().toString();
+        if (!fileName.isEmpty()) {
+            startDesignOrEditActivity(fileName, Constants.REQUEST_MODE_DESIGN,null);
         }
+    }
+
+    private void startDesignOrEditActivity(String fileName, String requestMode, String screeConfig) {
+        Intent intent = new Intent(MainActivity.this, ScreenDesignActivity.class);
+        intent.putExtra("screenName", fileName);
+        intent.putExtra("requestMode", requestMode);
+        intent.putExtra("userId", userId);
+        if(requestMode.equals(Constants.REQUEST_MODE_CAPTURE)) {
+            intent.putExtra("screenConfig", screeConfig);
+        }
+        startActivity(intent);
     }
 
     /*
@@ -541,5 +545,28 @@ public class MainActivity extends BaseActivity implements ListviewActions {
     public void onStop() {
         super.onStop();
         dataStorageManager.removeDataStorageListeners();
+    }
+    /*
+    if screen config is found then start ScreenDesignActivity
+    otherwise start normal edit activity
+     */
+    private void startActivityForEdit(String collection){
+        readOnceDataStorage = Factory.getReadOnceDataStorageIntsance(this,
+            getDataStorageType(), Constants.SCREEN_DESIGN + collection,
+            new DataStorageListener() {
+                @Override
+                public void dataChanged(String key, String value) {
+                }
+
+                @Override
+                public void dataLoaded(List<KeyValue> data) {
+                    if(data.size() >0) {
+                        String screenConfig = Converter.getValuesJsonString(data);
+                        startDesignOrEditActivity(collection, Constants.REQUEST_MODE_CAPTURE, screenConfig);
+                    } else {
+                        startEditActivity(collection);
+                    }
+                }
+            });
     }
 }

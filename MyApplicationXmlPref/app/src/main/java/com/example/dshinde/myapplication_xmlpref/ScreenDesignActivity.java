@@ -19,6 +19,7 @@ import androidx.documentfile.provider.DocumentFile;
 
 import com.example.dshinde.myapplication_xmlpref.adapters.ListviewKeyValueObjectAdapter;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
+import com.example.dshinde.myapplication_xmlpref.helper.Converter;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageSelectionResult;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
@@ -46,6 +47,8 @@ public class ScreenDesignActivity extends BaseActivity {
     ListviewKeyValueObjectAdapter listAdapter;
     DataStorage dataStorageManager;
     String collectionName = null;
+    String requestMode = null;
+    String screenConfig = null;
     LinearLayout editViewLayout;
     Gson gson = new GsonBuilder().create();
     Menu myMenu;
@@ -66,9 +69,20 @@ public class ScreenDesignActivity extends BaseActivity {
         Bundle bundle = getIntent().getExtras();
         collectionName = bundle.getString("screenName");
         userId = bundle.getString("userId");
+        requestMode = bundle.getString("requestMode");
+        if(requestMode.equals(Constants.REQUEST_MODE_CAPTURE)) {
+            setTitle(collectionName + ": Edit");
+            screenConfig = bundle.getString("screenConfig");
+        } else {
+            setTitle(collectionName + ": Design");
+            screenConfig = screenDesign();
+        }
 
-        setTitle(collectionName);
-        dataStorageManager = Factory.getDataStorageIntsance(this, getDataStorageType(), collectionName, false, false);
+        dataStorageManager = Factory.getDataStorageIntsance(this,
+                getDataStorageType(),
+                (requestMode.equals(Constants.REQUEST_MODE_DESIGN) ? Constants.SCREEN_DESIGN : "") + collectionName,
+                false,
+                false);
         dataStorageManager.addDataStorageListener(new DataStorageListener() {
             @Override
             public void dataChanged(String key, String value) {
@@ -80,6 +94,7 @@ public class ScreenDesignActivity extends BaseActivity {
                 listAdapter.setData(data);
             }
         });
+
         populateListView();
         setAddControlListener();
         setDeleteControlListener();
@@ -98,7 +113,7 @@ public class ScreenDesignActivity extends BaseActivity {
 
     private void startDyanmicScreenDesignActivity(boolean edit) {
         Intent intent=new Intent(this, DynamicLinearLayoutActivity.class);
-        intent.putExtra("screenConfig", screenDesign());
+        intent.putExtra("screenConfig", screenConfig);
         if(edit) {
             intent.putExtra("screenData", value1Field);
         }
@@ -107,20 +122,8 @@ public class ScreenDesignActivity extends BaseActivity {
 
     private void startDyanmicScreenPreviewActivity() {
         Intent intent=new Intent(this, DynamicLinearLayoutActivity.class);
-        intent.putExtra("screenConfig", getConfigForPreview());
+        intent.putExtra("screenConfig", Converter.getValuesJsonString(dataStorageManager.getValues()));
         startActivityForResult(intent, Constants.RESULT_CODE_SCREEN_DESIGN);
-    }
-
-    private String getConfigForPreview() {
-        StringBuilder screenControls = new StringBuilder("[");
-        boolean firstTime = true;
-        for (KeyValue keyValue: dataStorageManager.getValues()){
-            screenControls.append(firstTime ? "" : ",");
-            screenControls.append(keyValue.getValue());
-            firstTime = false;
-        }
-        screenControls.append("]");
-        return screenControls.toString();
     }
 
     private void setEditControlListener(){
