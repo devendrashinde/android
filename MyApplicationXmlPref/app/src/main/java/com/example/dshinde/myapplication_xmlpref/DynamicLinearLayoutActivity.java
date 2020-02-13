@@ -27,6 +27,7 @@ import android.widget.Toast;
 
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.common.ControlType;
+import com.example.dshinde.myapplication_xmlpref.common.YesNo;
 import com.example.dshinde.myapplication_xmlpref.model.ScreenControl;
 import com.example.dshinde.myapplication_xmlpref.pickers.DatePickerFragment;
 import com.example.dshinde.myapplication_xmlpref.pickers.TimePickerFragment;
@@ -38,6 +39,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,16 +50,17 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     List<ScreenControl> controls;
     Map<String, String> data = new HashMap<>();
     Gson gson = new GsonBuilder().create();
-    int idCounter = 0;
+    Integer requestMode = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dynamic_linear_layout);
         Bundle bundle = getIntent().getExtras();
+        requestMode = bundle.getInt("requestMode", Constants.REQUEST_CODE_SCREEN_DESIGN);
         String screenConfig = bundle.getString("screenConfig");
         String screenData = bundle.getString("screenData");
-        if(screenData != null && screenData.length() > 0) {
+        if (screenData != null && screenData.length() > 0) {
             data = gson.fromJson(screenData, Map.class);
         }
         parseControls(screenConfig);
@@ -67,8 +70,8 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     }
 
     private void addControls() {
-        for(ScreenControl screenControl : controls){
-            switch (screenControl.getControlType()){
+        for (ScreenControl screenControl : controls) {
+            switch (screenControl.getControlType()) {
                 case Text:
                     addText(screenControl);
                     break;
@@ -113,7 +116,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     private void addEditText(ScreenControl screenControl, boolean multiLine) {
         addText(screenControl);
         EditText editText = getEditText();
-        if(multiLine) {
+        if (multiLine) {
             addMultiLineEditText(editText);
         }
         screenControl.setValueControl(editText);
@@ -140,7 +143,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         return editText;
     }
 
-    private void addSaveButton(ScreenControl screenControl){
+    private void addSaveButton(ScreenControl screenControl) {
         Button btn = new Button(this);
         btn.setText(screenControl.getTextLabel());
         btn.setId(View.generateViewId());
@@ -149,7 +152,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         linearLayout.addView(btn);
     }
 
-    private void addCancelButton(ScreenControl screenControl){
+    private void addCancelButton(ScreenControl screenControl) {
         Button btn = new Button(this);
         btn.setText(screenControl.getTextLabel());
         btn.setId(View.generateViewId());
@@ -164,35 +167,46 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         RadioGroup rg = new RadioGroup(getApplicationContext());
         rg.setOrientation(RadioGroup.HORIZONTAL);//or RadioGroup.VERTICAL
         rg.setId(View.generateViewId());
-        String value = data.get(screenControl.getControlId());
+        List<String> values = getOptionValues(screenControl.getControlId());
         int selectedId = -1;
-        for(int i=0; i<options.length; i++){
+        for (String option : options) {
             RadioButton rb = new RadioButton(getApplicationContext());
-            rb.setText(options[i]);
+            rb.setText(option);
             rb.setId(View.generateViewId());
             rg.addView(rb);
-            if(value != null && options[i].equals(value)){
+            if (values.contains(option)) {
                 selectedId = rb.getId();
             }
         }
         linearLayout.addView(rg);
         screenControl.setValueControl(rg);
         setRadioGroupChangeListner(screenControl);
-        if(selectedId != -1) rg.check(selectedId);
+        if (selectedId != -1) rg.check(selectedId);
+    }
+
+    private List<String> getOptionValues(String controlId){
+        String value = data.get(controlId);
+        List<String> values;
+        if(value != null && value.length() >0) {
+            values = Arrays.asList(value.split("\\n"));
+        } else{
+            values = new ArrayList<>();
+        }
+        return values;
     }
 
     private void addCheckbox(ScreenControl screenControl) {
         addText(screenControl);
         String[] options = screenControl.getOptionValues();
         View[] optionControls = new View[options.length];
-        String value = data.get(screenControl.getControlId());
-        for(int i=0; i<options.length; i++){
+        List<String> values = getOptionValues(screenControl.getControlId());
+        for (int i = 0; i < options.length; i++) {
             CheckBox cb = new CheckBox(getApplicationContext());
             cb.setText(options[i]);
             cb.setId(View.generateViewId());
             linearLayout.addView(cb);
             optionControls[i] = cb;
-            if(value != null && options[i].equals(value)){
+            if (values.contains(options[i])) {
                 cb.setChecked(true);
             }
         }
@@ -200,7 +214,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         setCheckBoxChangeListner(screenControl);
     }
 
-    private void addDropDownList(ScreenControl screenControl){
+    private void addDropDownList(ScreenControl screenControl) {
         addText(screenControl);
         Spinner spin = new Spinner(getApplicationContext());
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, screenControl.getOptionValues());
@@ -216,21 +230,21 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         }
     }
 
-    private void addTimePicker(ScreenControl screenControl){
+    private void addTimePicker(ScreenControl screenControl) {
         addEditText(screenControl, false);
         EditText valueControl = (EditText) screenControl.getValueControl();
         valueControl.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_dashboard_black_24dp, 0);
         setTimePicker(valueControl);
     }
 
-    private void addDatePicker(ScreenControl screenControl){
+    private void addDatePicker(ScreenControl screenControl) {
         addEditText(screenControl, false);
         EditText valueControl = (EditText) screenControl.getValueControl();
         valueControl.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_dashboard_black_24dp, 0);
         setDatePicker(valueControl);
     }
 
-    private TextView getTextView(String label){
+    private TextView getTextView(String label) {
         TextView textView = new TextView(getApplicationContext());
         textView.setText(label);
         textView.setId(View.generateViewId());
@@ -269,19 +283,22 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         });
     }
 
-    private void setEditTextListener(ScreenControl screenControl){
-        EditText editText =(EditText) screenControl.getValueControl();
+    private void setEditTextListener(ScreenControl screenControl) {
+        EditText editText = (EditText) screenControl.getValueControl();
         editText.addTextChangedListener(new TextWatcher() {
             public void afterTextChanged(Editable s) {
                 data.put(screenControl.getControlId(), s.toString());
             }
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
         });
     }
 
-    private void setSaveButtonListener(Button btn){
+    private void setSaveButtonListener(Button btn) {
         btn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 closeActivityWithReturnValues();
@@ -289,7 +306,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         });
     }
 
-    private void setCancelButtonListener(Button btn){
+    private void setCancelButtonListener(Button btn) {
         btn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 closeActivityWithoutReturnValues();
@@ -298,12 +315,32 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     }
 
     private void closeActivityWithReturnValues() {
+
         Intent intent = new Intent();
         intent.putExtra("data", gson.toJson(data));
+        if (requestMode == Constants.REQUEST_CODE_SCREEN_CAPTURE) {
+            intent.putExtra("key", getIndexValues());
+        }
         setResult(Constants.RESULT_CODE_OK, intent);
         Toast.makeText(this, "You have entered\n" + data.toString(),
                 Toast.LENGTH_LONG).show();
         finish();
+    }
+
+    private String getIndexValues() {
+        StringBuilder indexValues = new StringBuilder("");
+        for (ScreenControl screenControl : controls) {
+            if (YesNo.YES.getValue().equals(screenControl.getIndexField())) {
+                String value = data.get(screenControl.getControlId());
+                if (value != null) {
+                    indexValues.append((indexValues.length() > 0 ? "\n" : "") + value);
+                }
+            }
+        }
+        if (indexValues.length() == 0) {
+            indexValues.append(data.values().hashCode());
+        }
+        return indexValues.toString();
     }
 
     private void closeActivityWithoutReturnValues() {
@@ -312,8 +349,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         finish();
     }
 
-
-    private void setDropDownListListener(ScreenControl screenControl){
+    private void setDropDownListListener(ScreenControl screenControl) {
         Spinner spinner = (Spinner) screenControl.getValueControl();
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -344,11 +380,11 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         for (View view : screenControl.getOptionControls()) {
             CheckBox checkBox = (CheckBox) view;
             checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                    @Override
-                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                        getCheckBoxValues(screenControl);
-                    }
-                }
+                                                    @Override
+                                                    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                                                        getCheckBoxValues(screenControl);
+                                                    }
+                                                }
             );
         }
     }
@@ -364,15 +400,15 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         data.put(screenControl.getControlId(), checked.toString());
     }
 
-    private void parseControls(String screenConfigJson){
+    private void parseControls(String screenConfigJson) {
         controls = new ArrayList<>();
 
         try {
             JSONArray arr = new JSONArray(screenConfigJson);
-            for(int i=0;i<arr.length();i++){
-                JSONObject obj= arr.getJSONObject(i);
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject obj = arr.getJSONObject(i);
                 ScreenControl item = gson.fromJson(obj.toString(), ScreenControl.class);
-                if(isMultiOptionControl(item.getControlType()) &&
+                if (isMultiOptionControl(item.getControlType()) &&
                         item.getOptions() != null &&
                         item.getOptions().length() > 0) {
                     item.setOptionValues(item.getOptions().split("\\n"));
@@ -388,5 +424,4 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     private boolean isMultiOptionControl(ControlType type) {
         return type == ControlType.CheckBox || type == ControlType.RadioButton || type == ControlType.DropDownList;
     }
-
 }

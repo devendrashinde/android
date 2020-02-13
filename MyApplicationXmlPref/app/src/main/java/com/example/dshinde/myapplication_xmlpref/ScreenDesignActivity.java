@@ -9,7 +9,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -24,14 +23,12 @@ import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageSelectionResult;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
-import com.example.dshinde.myapplication_xmlpref.listners.ListviewActions;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.example.dshinde.myapplication_xmlpref.model.ScreenControl;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -47,7 +44,7 @@ public class ScreenDesignActivity extends BaseActivity {
     ListviewKeyValueObjectAdapter listAdapter;
     DataStorage dataStorageManager;
     String collectionName = null;
-    String requestMode = null;
+    Integer requestMode = null;
     String screenConfig = null;
     LinearLayout editViewLayout;
     Gson gson = new GsonBuilder().create();
@@ -59,28 +56,28 @@ public class ScreenDesignActivity extends BaseActivity {
         setContentView(R.layout.screen_design_activity);
 
         listView = (ListView) findViewById(R.id.list);
-        addControl = (Button)  findViewById(R.id.btnAdd);
-        editControl = (Button)  findViewById(R.id.btnEdit);
-        delControl = (Button)  findViewById(R.id.btnDel);
-        screenPreview = (Button)  findViewById(R.id.btnPreview);
+        addControl = (Button) findViewById(R.id.btnAdd);
+        editControl = (Button) findViewById(R.id.btnEdit);
+        delControl = (Button) findViewById(R.id.btnDel);
+        screenPreview = (Button) findViewById(R.id.btnPreview);
         editViewLayout = (LinearLayout) findViewById(R.id.editView);
 
         // get parameters
         Bundle bundle = getIntent().getExtras();
         collectionName = bundle.getString("screenName");
         userId = bundle.getString("userId");
-        requestMode = bundle.getString("requestMode");
-        if(requestMode.equals(Constants.REQUEST_MODE_CAPTURE)) {
-            setTitle(collectionName + ": Edit");
-            screenConfig = bundle.getString("screenConfig");
-        } else {
+        requestMode = bundle.getInt("requestMode", Constants.REQUEST_CODE_SCREEN_DESIGN);
+        if (isDesignMode()) {
             setTitle(collectionName + ": Design");
             screenConfig = screenDesign();
+        } else {
+            setTitle(collectionName + ": Edit");
+            screenConfig = bundle.getString("screenConfig");
         }
 
         dataStorageManager = Factory.getDataStorageIntsance(this,
                 getDataStorageType(),
-                (requestMode.equals(Constants.REQUEST_MODE_DESIGN) ? Constants.SCREEN_DESIGN : "") + collectionName,
+                (isDesignMode() ? Constants.SCREEN_DESIGN : "") + collectionName,
                 false,
                 false);
         dataStorageManager.addDataStorageListener(new DataStorageListener() {
@@ -103,7 +100,11 @@ public class ScreenDesignActivity extends BaseActivity {
         dataStorageManager.loadData();
     }
 
-    private void setAddControlListener(){
+    private boolean isDesignMode() {
+        return requestMode == Constants.REQUEST_CODE_SCREEN_DESIGN;
+    }
+
+    private void setAddControlListener() {
         addControl.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 startDyanmicScreenDesignActivity(false);
@@ -112,21 +113,22 @@ public class ScreenDesignActivity extends BaseActivity {
     }
 
     private void startDyanmicScreenDesignActivity(boolean edit) {
-        Intent intent=new Intent(this, DynamicLinearLayoutActivity.class);
+        Intent intent = new Intent(this, DynamicLinearLayoutActivity.class);
         intent.putExtra("screenConfig", screenConfig);
-        if(edit) {
+        intent.putExtra("requestMode", requestMode);
+        if (edit) {
             intent.putExtra("screenData", value1Field);
         }
-        startActivityForResult(intent, Constants.RESULT_CODE_SCREEN_DESIGN);
+        startActivityForResult(intent, requestMode);
     }
 
     private void startDyanmicScreenPreviewActivity() {
-        Intent intent=new Intent(this, DynamicLinearLayoutActivity.class);
+        Intent intent = new Intent(this, DynamicLinearLayoutActivity.class);
         intent.putExtra("screenConfig", Converter.getValuesJsonString(dataStorageManager.getValues()));
-        startActivityForResult(intent, Constants.RESULT_CODE_SCREEN_DESIGN);
+        startActivityForResult(intent, Constants.REQUEST_CODE_SCREEN_PREVIEW);
     }
 
-    private void setEditControlListener(){
+    private void setEditControlListener() {
         editControl.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 startDyanmicScreenDesignActivity(true);
@@ -134,7 +136,7 @@ public class ScreenDesignActivity extends BaseActivity {
         });
     }
 
-    private void setDeleteControlListener(){
+    private void setDeleteControlListener() {
         delControl.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 remove();
@@ -142,7 +144,7 @@ public class ScreenDesignActivity extends BaseActivity {
         });
     }
 
-    private void setScreenPreviewListener(){
+    private void setScreenPreviewListener() {
         screenPreview.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 startDyanmicScreenPreviewActivity();
@@ -198,7 +200,7 @@ public class ScreenDesignActivity extends BaseActivity {
     }
 
     private void populateListView() {
-        listAdapter = new ListviewKeyValueObjectAdapter(Collections.emptyList(),this, R.layout.list_view_items_flexbox);
+        listAdapter = new ListviewKeyValueObjectAdapter(Collections.emptyList(), this, R.layout.list_view_items_flexbox);
         listView.setAdapter(listAdapter);
         setOnItemClickListenerToListView();
     }
@@ -223,7 +225,7 @@ public class ScreenDesignActivity extends BaseActivity {
     }
 
     public void remove() {
-        if (keyField != null && keyField.length() > 0){
+        if (keyField != null && keyField.length() > 0) {
             dataStorageManager.remove(keyField);
             clear();
         }
@@ -271,13 +273,21 @@ public class ScreenDesignActivity extends BaseActivity {
             export(result.getDir());
         }
 
-        if (requestCode == Constants.RESULT_CODE_SCREEN_DESIGN && resultCode == Constants.RESULT_CODE_OK) {
-            String value = data.getExtras().getString("data");
-            Toast.makeText(this, "Received\n" + value,
+        if (requestCode == Constants.REQUEST_CODE_SCREEN_DESIGN && resultCode == Constants.RESULT_CODE_OK) {
+            value1Field = data.getExtras().getString("data");
+            Toast.makeText(this, "Received\n" + value1Field,
                     Toast.LENGTH_LONG).show();
-            ScreenControl screenControl = gson.fromJson(value, ScreenControl.class);
+            ScreenControl screenControl = gson.fromJson(value1Field, ScreenControl.class);
             keyField = screenControl.getControlId();
-            value1Field = value;
+            save();
+        }
+
+        if (requestCode == Constants.REQUEST_CODE_SCREEN_CAPTURE && resultCode == Constants.RESULT_CODE_OK) {
+            value1Field = data.getExtras().getString("data");
+            keyField = data.getExtras().getString("key");
+            Toast.makeText(this, "Received\n" + value1Field,
+                    Toast.LENGTH_LONG).show();
+            ScreenControl screenControl = gson.fromJson(value1Field, ScreenControl.class);
             save();
         }
     }
@@ -288,22 +298,28 @@ public class ScreenDesignActivity extends BaseActivity {
         dataStorageManager.removeDataStorageListeners();
     }
 
-    private String jsonData(){
-        return new Gson().toJson(dataStorageManager.getValues() );
+    private String jsonData() {
+        return new Gson().toJson(dataStorageManager.getValues());
     }
 
-    private String screenDesign(){
+    private String screenDesign() {
         return "[\n" +
                 "    {\n" +
                 "        \"controlId\": \"controlType\",\n" +
                 "        \"controlType\": \"DropDownList\",\n" +
-                "        \"textLabel\": \"Control Type:\",\n" +
+                "        \"textLabel\": \"Field Type:\",\n" +
                 "        \"options\": \"Text\\nEditText\\nCheckBox\\nRadioButton\\nDropDownList\\nDatePicker\\nTimePicker\\nSaveButton\"\n" +
                 "    },\n" +
                 "    {\n" +
                 "        \"controlId\": \"controlId\",\n" +
                 "        \"controlType\": \"EditText\",\n" +
-                "        \"textLabel\": \"Control Id:\"\n" +
+                "        \"textLabel\": \"Field Id:\"\n" +
+                "    },\n" +
+                "    {\n" +
+                "        \"controlId\": \"indexField\",\n" +
+                "        \"controlType\": \"RadioButton\",\n" +
+                "        \"textLabel\": \"Is this field part of index?\",\n" +
+                "        \"options\": \"Yes\\nNo\"\n" +
                 "    },\n" +
                 "    {\n" +
                 "        \"controlId\": \"textLabel\",\n" +

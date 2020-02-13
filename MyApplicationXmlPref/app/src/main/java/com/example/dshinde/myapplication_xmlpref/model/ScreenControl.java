@@ -8,6 +8,7 @@ public class ScreenControl {
     private int id;
     private String textLabel;
     private String controlId;
+    private String indexField;
     private ControlType controlType;
     private String options; // \n separated values checkbox, radio buttons and dropdowns
     private transient String[] optionValues; // values parsed into array for checkbox, radio buttons, dropdowns
@@ -16,6 +17,14 @@ public class ScreenControl {
     private transient View[] optionControls;
 
     public ScreenControl(){
+    }
+
+    public String getIndexField() {
+        return indexField;
+    }
+
+    public void setIndexField(String indexField) {
+        this.indexField = indexField;
     }
 
     public String getOptions() {

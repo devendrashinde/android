@@ -355,16 +355,16 @@ public class MainActivity extends BaseActivity implements ListviewActions {
 
         String fileName = valueField.getText().toString();
         if (!fileName.isEmpty()) {
-            startDesignOrEditActivity(fileName, Constants.REQUEST_MODE_DESIGN,null);
+            startDesignOrEditActivity(fileName, Constants.REQUEST_CODE_SCREEN_DESIGN,null);
         }
     }
 
-    private void startDesignOrEditActivity(String fileName, String requestMode, String screeConfig) {
+    private void startDesignOrEditActivity(String fileName, Integer requestMode, String screeConfig) {
         Intent intent = new Intent(MainActivity.this, ScreenDesignActivity.class);
         intent.putExtra("screenName", fileName);
         intent.putExtra("requestMode", requestMode);
         intent.putExtra("userId", userId);
-        if(requestMode.equals(Constants.REQUEST_MODE_CAPTURE)) {
+        if(requestMode == Constants.REQUEST_CODE_SCREEN_CAPTURE) {
             intent.putExtra("screenConfig", screeConfig);
         }
         startActivity(intent);
@@ -562,7 +562,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
                 public void dataLoaded(List<KeyValue> data) {
                     if(data.size() >0) {
                         String screenConfig = Converter.getValuesJsonString(data);
-                        startDesignOrEditActivity(collection, Constants.REQUEST_MODE_CAPTURE, screenConfig);
+                        startDesignOrEditActivity(collection, Constants.REQUEST_CODE_SCREEN_CAPTURE, screenConfig);
                     } else {
                         startEditActivity(collection);
                     }
