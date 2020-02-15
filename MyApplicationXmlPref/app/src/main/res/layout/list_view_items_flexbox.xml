@@ -30,6 +30,7 @@
         android:scrollHorizontally="false"
         android:textColor="#000"
         android:textSize="18sp"
+        android:background="@drawable/listitem_selector"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/listKey"/>
 </com.google.android.flexbox.FlexboxLayout>

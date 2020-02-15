@@ -11,7 +11,6 @@ import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.documentfile.provider.DocumentFile;
@@ -20,6 +19,7 @@ import com.example.dshinde.myapplication_xmlpref.adapters.ListviewKeyValueObject
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.Converter;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
+import com.example.dshinde.myapplication_xmlpref.helper.JsonHelper;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageSelectionResult;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
@@ -35,7 +35,7 @@ import java.util.List;
 public class ScreenDesignActivity extends BaseActivity {
 
     String keyField;
-    String value1Field;
+    String valueField;
     ListView listView;
     Button addButton;
     Button editButton;
@@ -91,11 +91,11 @@ public class ScreenDesignActivity extends BaseActivity {
         });
 
         populateListView();
-        setAddControlListener();
-        setDeleteControlListener();
-        setEditControlListener();
+        setAddActionListener();
+        setDeleteActionListener();
+        setEditActionListener();
         if(isDesignMode()) {
-            setScreenPreviewListener();
+            setPreviewActionListener();
         }
         dataStorageManager.loadData();
     }
@@ -104,7 +104,7 @@ public class ScreenDesignActivity extends BaseActivity {
         return requestMode == Constants.REQUEST_CODE_SCREEN_DESIGN;
     }
 
-    private void setAddControlListener() {
+    private void setAddActionListener() {
         addButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 startDyanmicScreenDesignActivity(false);
@@ -113,23 +113,31 @@ public class ScreenDesignActivity extends BaseActivity {
     }
 
     private void startDyanmicScreenDesignActivity(boolean edit) {
-        Intent intent = new Intent(this, DynamicLinearLayoutActivity.class);
-        intent.putExtra("screenConfig", screenConfig);
-        intent.putExtra("requestMode", requestMode);
-        if (edit) {
-            intent.putExtra("screenData", value1Field);
+        if(edit && valueField != null && valueField.length() > 0) {
+
+            Intent intent = new Intent(this, DynamicLinearLayoutActivity.class);
+            intent.putExtra("screenConfig", screenConfig);
+            intent.putExtra("requestMode", requestMode);
+            if (edit) {
+                intent.putExtra("screenData", valueField);
+            }
+            startActivityForResult(intent, requestMode);
+        } else{
+            Toast.makeText(this, "Please select record to Edit it.",
+                    Toast.LENGTH_SHORT).show();
         }
-        startActivityForResult(intent, requestMode);
     }
 
     private void startDyanmicScreenPreviewActivity() {
-        Intent intent = new Intent(this, DynamicLinearLayoutActivity.class);
-        intent.putExtra("screenConfig", Converter.getValuesJsonString(dataStorageManager.getValues()));
-        intent.putExtra("requestMode", Constants.REQUEST_CODE_SCREEN_PREVIEW);
-        startActivityForResult(intent, Constants.REQUEST_CODE_SCREEN_PREVIEW);
+        if(dataStorageManager.count() > 0) {
+            Intent intent = new Intent(this, DynamicLinearLayoutActivity.class);
+            intent.putExtra("screenConfig", Converter.getValuesJsonString(dataStorageManager.getValues()));
+            intent.putExtra("requestMode", Constants.REQUEST_CODE_SCREEN_PREVIEW);
+            startActivityForResult(intent, Constants.REQUEST_CODE_SCREEN_PREVIEW);
+        }
     }
 
-    private void setEditControlListener() {
+    private void setEditActionListener() {
         editButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 startDyanmicScreenDesignActivity(true);
@@ -137,7 +145,7 @@ public class ScreenDesignActivity extends BaseActivity {
         });
     }
 
-    private void setDeleteControlListener() {
+    private void setDeleteActionListener() {
         delButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 remove();
@@ -145,7 +153,7 @@ public class ScreenDesignActivity extends BaseActivity {
         });
     }
 
-    private void setScreenPreviewListener() {
+    private void setPreviewActionListener() {
         screenPreview = (Button) findViewById(R.id.btnPreview);
         screenPreview.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -174,10 +182,9 @@ public class ScreenDesignActivity extends BaseActivity {
         menu.removeItem(R.id.menu_save);
         menu.removeItem(R.id.menu_clear);
         menu.removeItem(R.id.menu_remove);
-        menu.removeItem(R.id.menu_dynaform);
+        menu.removeItem(R.id.menu_design_screen);
         menu.removeItem(R.id.menu_export);
         menu.removeItem(R.id.menu_pay);
-        menu.removeItem(R.id.menu_share);
         myMenu = menu;
         return true;
     }
@@ -186,10 +193,20 @@ public class ScreenDesignActivity extends BaseActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
         switch (item.getItemId()) {
-            case R.id.menu_view:
+            case R.id.menu_add:
+                startDyanmicScreenDesignActivity(false);
                 return true;
             case R.id.menu_edit:
-                showEditView(editViewLayout.getVisibility() == View.GONE);
+                showEditView(false);
+                startDyanmicScreenDesignActivity(true);
+                return true;
+            case R.id.menu_remove:
+                remove();
+            case R.id.menu_view:
+                startDyanmicScreenPreviewActivity();
+                return true;
+            case R.id.menu_share:
+                share();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -198,7 +215,7 @@ public class ScreenDesignActivity extends BaseActivity {
 
     private void setEditView(String key, String value) {
         keyField = key;
-        value1Field = value;
+        valueField = value;
     }
 
     private void populateListView() {
@@ -212,6 +229,7 @@ public class ScreenDesignActivity extends BaseActivity {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 KeyValue kv = listAdapter.getItem(position);
                 setEditView(kv.getKey(), kv.getValue());
+                view.setSelected(true);
             }
         };
         listView.setOnItemClickListener(listener);
@@ -219,7 +237,7 @@ public class ScreenDesignActivity extends BaseActivity {
 
     public void save() {
         if (keyField != null && keyField.length() > 0) {
-            dataStorageManager.save(keyField, value1Field);
+            dataStorageManager.save(keyField, valueField);
             showEditView(false);
             clear();
         }
@@ -240,15 +258,11 @@ public class ScreenDesignActivity extends BaseActivity {
         setEditView("", "");
     }
 
-    public void share(View view) {
-        share();
-    }
-
     public void share() {
-        if (!value1Field.isEmpty() && !value1Field.isEmpty()) {
+        if (!valueField.isEmpty() && !valueField.isEmpty()) {
             Intent sendIntent = new Intent();
             sendIntent.setAction(Intent.ACTION_SEND);
-            sendIntent.putExtra(Intent.EXTRA_TEXT, keyField + "\n" + value1Field);
+            sendIntent.putExtra(Intent.EXTRA_TEXT, JsonHelper.formatAsString(valueField));
             sendIntent.setType("text/plain");
             startActivity(sendIntent);
         }
@@ -275,20 +289,19 @@ public class ScreenDesignActivity extends BaseActivity {
         }
 
         if (requestCode == Constants.REQUEST_CODE_SCREEN_DESIGN && resultCode == Constants.RESULT_CODE_OK) {
-            value1Field = data.getExtras().getString("data");
-            Toast.makeText(this, "Received\n" + value1Field,
+            valueField = data.getExtras().getString("data");
+            Toast.makeText(this, "Received\n" + valueField,
                     Toast.LENGTH_LONG).show();
-            ScreenControl screenControl = gson.fromJson(value1Field, ScreenControl.class);
+            ScreenControl screenControl = gson.fromJson(valueField, ScreenControl.class);
             keyField = screenControl.getControlId();
             save();
         }
 
         if (requestCode == Constants.REQUEST_CODE_SCREEN_CAPTURE && resultCode == Constants.RESULT_CODE_OK) {
-            value1Field = data.getExtras().getString("data");
+            valueField = data.getExtras().getString("data");
             keyField = data.getExtras().getString("key");
-            Toast.makeText(this, "Received\n" + value1Field,
+            Toast.makeText(this, "Received\n" + valueField,
                     Toast.LENGTH_LONG).show();
-            ScreenControl screenControl = gson.fromJson(value1Field, ScreenControl.class);
             save();
         }
     }

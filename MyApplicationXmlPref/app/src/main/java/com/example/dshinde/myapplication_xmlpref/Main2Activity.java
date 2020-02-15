@@ -12,7 +12,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.documentfile.provider.DocumentFile;
@@ -32,7 +31,7 @@ import java.util.List;
 public class Main2Activity extends BaseActivity implements ListviewActions {
 
     EditText keyField;
-    EditText value1Field;
+    EditText valueField;
     ListView listView;
     Button divider;
     ListviewKeyValueObjectAdapter listAdapter;
@@ -47,7 +46,7 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
         setContentView(R.layout.activity_main2_2);
 
         keyField = (EditText) findViewById(R.id.etKey);
-        value1Field = (EditText) findViewById(R.id.etValue);
+        valueField = (EditText) findViewById(R.id.etValue);
         listView = (ListView) findViewById(R.id.list);
         editViewLayout = (LinearLayout) findViewById(R.id.editView);
 
@@ -122,7 +121,7 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
 
     private void setEditView(String key, String string) {
         keyField.setText(key);
-        value1Field.setText(string);
+        valueField.setText(string);
     }
 
     private void populateListView() {
@@ -136,6 +135,7 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 KeyValue kv = listAdapter.getItem(position);
                 setEditView(kv.getKey(), kv.getValue());
+                view.setSelected(true);
             }
         };
         listView.setOnItemClickListener(listener);
@@ -148,7 +148,7 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
 
     public void save() {
         String key = keyField.getText().toString();
-        String value = value1Field.getText().toString();
+        String value = valueField.getText().toString();
         clear();
         dataStorageManager.save(key, value);
         showEditView(false);
@@ -174,13 +174,9 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
         keyField.requestFocus();
     }
 
-    public void share(View view) {
-        share();
-    }
-
     public void share() {
         String key = keyField.getText().toString();
-        String value = value1Field.getText().toString();
+        String value = valueField.getText().toString();
         if (!value.isEmpty() && !value.isEmpty()) {
             Intent sendIntent = new Intent();
             sendIntent.setAction(Intent.ACTION_SEND);

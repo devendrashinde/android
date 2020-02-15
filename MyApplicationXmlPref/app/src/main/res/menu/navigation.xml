@@ -10,6 +10,13 @@
         app:showAsAction="always"/>
 
     <item
+        android:id="@+id/menu_add"
+        android:icon="@drawable/ic_add_black_24dp"
+        android:visible="true"
+        android:title="@string/edit"
+        app:showAsAction="always"/>
+
+    <item
         android:id="@+id/menu_edit"
         android:icon="@drawable/ic_edit_black"
         android:visible="true"
@@ -23,16 +30,16 @@
         app:showAsAction="always"/>
 
     <item
-        android:id="@+id/menu_share"
-        android:icon="@drawable/ic_share_black_24dp"
-        android:title="@string/share"
-        app:showAsAction="ifRoom"/>
-
-    <item
         android:id="@+id/menu_remove"
         android:icon="@drawable/ic_delete_black_24dp"
         android:title="@string/remove"
         android:visible="true"
+        app:showAsAction="ifRoom"/>
+
+    <item
+        android:id="@+id/menu_share"
+        android:icon="@drawable/ic_share_black_24dp"
+        android:title="@string/share"
         app:showAsAction="ifRoom"/>
 
     <item
@@ -41,7 +48,6 @@
         android:title="@string/view"
         android:visible="true"
         app:showAsAction="ifRoom"/>
-
 
     <item
         android:id="@+id/menu_copy"
@@ -88,7 +94,7 @@
         app:showAsAction="ifRoom"
         />
     <item
-        android:id="@+id/menu_dynaform"
+        android:id="@+id/menu_design_screen"
         android:title="@string/dynaform"
         app:showAsAction="ifRoom"
         />

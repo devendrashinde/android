@@ -17,7 +17,7 @@ public class JsonHelper {
             return json;
         } else if (object instanceof Iterable) {
             JSONArray json = new JSONArray();
-            for (Object value : ((Iterable)object)) {
+            for (Object value : ((Iterable) object)) {
                 json.put(value);
             }
             return json;
@@ -63,4 +63,45 @@ public class JsonHelper {
             return json;
         }
     }
+
+    public static String formatAsString(String value) {
+        return formatAsString(value, false);
+    }
+
+    public static String formatAsString(String value, boolean html) {
+        String formattedValue = value;
+        if (isJSONValid(formattedValue)) {
+            if(html) {
+                formattedValue = formattedValue.replaceAll("\\\\n", "<br>");
+                formattedValue = formattedValue.replaceAll("\\{\"", "<b>");
+                formattedValue = formattedValue.replaceAll("\":\"", "</b>:<br>");
+                formattedValue = formattedValue.replaceAll("\",\"", "<br><b>");
+                formattedValue = formattedValue.replaceAll("\"", "");
+                formattedValue = formattedValue.replaceAll("\\}", "");
+            } else {
+                formattedValue = formattedValue.replaceAll("\\\\n", "\n ");
+                formattedValue = formattedValue.replaceAll("\",\"", "\n");
+                formattedValue = formattedValue.replaceAll("\"", "");
+                formattedValue = formattedValue.replaceAll("\\{", "");
+                formattedValue = formattedValue.replaceAll(":", ":\n ");
+                formattedValue = formattedValue.replaceAll("\\}", "");
+            }
+        }
+        return formattedValue;
+    }
+
+    public static boolean isJSONValid(String value) {
+        if (value == null) return false;
+        try {
+            new JSONObject(value);
+        } catch (JSONException ex) {
+            try {
+                new JSONArray(value);
+            } catch (JSONException ex1) {
+                return false;
+            }
+        }
+        return true;
+    }
+
 }

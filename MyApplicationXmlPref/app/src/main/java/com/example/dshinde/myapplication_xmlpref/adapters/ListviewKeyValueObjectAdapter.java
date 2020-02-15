@@ -1,6 +1,7 @@
 package com.example.dshinde.myapplication_xmlpref.adapters;
 
 import android.content.Context;
+import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,11 +11,8 @@ import android.widget.Filterable;
 import android.widget.TextView;
 
 import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.helper.JsonHelper;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,47 +65,19 @@ public class ListviewKeyValueObjectAdapter extends ArrayAdapter<KeyValue> implem
             TextView key = (TextView) v.findViewById(R.id.listKey);
             TextView value = (TextView) v.findViewById(R.id.listValue);
 
-            holder.keyValueView = key;
+            holder.keyView = key;
             holder.valueView = value;
 
             v.setTag(holder);
         } else {
             holder = (KeyValueHolder) v.getTag();
         }
+
         KeyValue kv = kvList.get(position);
-        holder.keyValueView.setText(kv.getKey());
-        holder.valueView.setText(format(kv.getValue()));
+        holder.keyView.setText(kv.getKey());
+        holder.valueView.setText(Html.fromHtml(JsonHelper.formatAsString(kv.getValue(), true)));
 
         return v;
-    }
-
-    private String format(String value){
-        if(isJSONValid(value)){
-            value = value.replaceAll("\\\\n", "\n ");
-            value = value.replaceAll("\",\"", "\n");
-            value = value.replaceAll("\"", "");
-            value = value.replaceAll("\\{", "");
-            value = value.replaceAll(":", ":\n ");
-            value = value.replaceAll("\\}", "");
-
-        }
-        return value;
-    }
-
-    public boolean isJSONValid(String data) {
-        if(data == null) return false;
-        try {
-            new JSONObject(data);
-        } catch (JSONException ex) {
-            // edited, to include @Arthur's comment
-            // e.g. in case JSONArray is valid as well...
-            try {
-                new JSONArray(data);
-            } catch (JSONException ex1) {
-                return false;
-            }
-        }
-        return true;
     }
 
     public void resetData() {
@@ -120,7 +90,7 @@ public class ListviewKeyValueObjectAdapter extends ArrayAdapter<KeyValue> implem
      * **********************************/
 
     private static class KeyValueHolder {
-        public TextView keyValueView;
+        public TextView keyView;
         public TextView valueView;
     }
 

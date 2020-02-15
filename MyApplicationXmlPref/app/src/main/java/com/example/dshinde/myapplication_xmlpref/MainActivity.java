@@ -17,7 +17,6 @@ import android.widget.AdapterView;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
@@ -155,6 +154,8 @@ public class MainActivity extends BaseActivity implements ListviewActions {
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.navigation, menu);
+        menu.removeItem(R.id.menu_add);
+        menu.removeItem(R.id.menu_clear);
         return true;
     }
 
@@ -198,7 +199,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
             case R.id.menu_settings:
                 doSettings();
                 return true;
-            case R.id.menu_dynaform:
+            case R.id.menu_design_screen:
                 doDesignOrCapture();
                 return true;
             case R.id.menu_add_to_shadba_kosh:
