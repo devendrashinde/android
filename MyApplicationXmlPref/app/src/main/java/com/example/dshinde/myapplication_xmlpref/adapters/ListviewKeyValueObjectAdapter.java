@@ -12,6 +12,10 @@ import android.widget.TextView;
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -72,9 +76,38 @@ public class ListviewKeyValueObjectAdapter extends ArrayAdapter<KeyValue> implem
         }
         KeyValue kv = kvList.get(position);
         holder.keyValueView.setText(kv.getKey());
-        holder.valueView.setText(kv.getValue());
+        holder.valueView.setText(format(kv.getValue()));
 
         return v;
+    }
+
+    private String format(String value){
+        if(isJSONValid(value)){
+            value = value.replaceAll("\\\\n", "\n ");
+            value = value.replaceAll("\",\"", "\n");
+            value = value.replaceAll("\"", "");
+            value = value.replaceAll("\\{", "");
+            value = value.replaceAll(":", ":\n ");
+            value = value.replaceAll("\\}", "");
+
+        }
+        return value;
+    }
+
+    public boolean isJSONValid(String data) {
+        if(data == null) return false;
+        try {
+            new JSONObject(data);
+        } catch (JSONException ex) {
+            // edited, to include @Arthur's comment
+            // e.g. in case JSONArray is valid as well...
+            try {
+                new JSONArray(data);
+            } catch (JSONException ex1) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public void resetData() {

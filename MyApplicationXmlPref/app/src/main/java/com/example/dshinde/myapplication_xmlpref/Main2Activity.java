@@ -134,9 +134,8 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
     private void setOnItemClickListenerToListView() {
         AdapterView.OnItemClickListener listener = new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String key = ((TextView) view.findViewById(R.id.listKey)).getText().toString();
-                String value = ((TextView) view.findViewById(R.id.listValue)).getText().toString();
-                setEditView(key, value);
+                KeyValue kv = listAdapter.getItem(position);
+                setEditView(kv.getKey(), kv.getValue());
             }
         };
         listView.setOnItemClickListener(listener);

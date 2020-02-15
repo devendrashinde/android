@@ -287,10 +287,9 @@ public class MainActivity extends BaseActivity implements ListviewActions {
     private void setOnItemClickListenerToListView() {
         AdapterView.OnItemClickListener listener = new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                // selected item
-                key = ((TextView) view.findViewById(R.id.listKey)).getText().toString();
-                String value = ((TextView) view.findViewById(R.id.listValue)).getText().toString();
-                setEditView(value);
+                KeyValue kv = listAdapter.getItem(position);
+                key = kv.getKey();
+                setEditView(kv.getValue());
             }
         };
         listView.setOnItemClickListener(listener);
@@ -299,8 +298,8 @@ public class MainActivity extends BaseActivity implements ListviewActions {
     private void setOnItemLongClickListenerToListView() {
         AdapterView.OnItemLongClickListener listener = new AdapterView.OnItemLongClickListener() {
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                // selected item
-                String value = ((TextView) view.findViewById(R.id.listValue)).getText().toString();
+                KeyValue kv = listAdapter.getItem(position);
+                String value = kv.getValue();
                 setEditView(value);
                 displayTextviewActivity(value);
                 return true;

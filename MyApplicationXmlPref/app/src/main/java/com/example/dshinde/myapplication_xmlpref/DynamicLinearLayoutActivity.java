@@ -28,6 +28,7 @@ import android.widget.Toast;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.common.ControlType;
 import com.example.dshinde.myapplication_xmlpref.common.YesNo;
+import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.example.dshinde.myapplication_xmlpref.model.ScreenControl;
 import com.example.dshinde.myapplication_xmlpref.pickers.DatePickerFragment;
 import com.example.dshinde.myapplication_xmlpref.pickers.TimePickerFragment;
@@ -40,6 +41,8 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +59,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dynamic_linear_layout);
+
         Bundle bundle = getIntent().getExtras();
         requestMode = bundle.getInt("requestMode", Constants.REQUEST_CODE_SCREEN_DESIGN);
         String screenConfig = bundle.getString("screenConfig");
@@ -66,7 +70,17 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         parseControls(screenConfig);
         linearLayout = findViewById(R.id.linear_layout);
         addControls();
-        setTitle("Add/Edit Screen Control");
+        switch (requestMode){
+            case Constants.REQUEST_CODE_SCREEN_DESIGN:
+                setTitle("Screen Design: Define field");
+                break;
+            case Constants.REQUEST_CODE_SCREEN_CAPTURE:
+                setTitle("Add/Edit Record");
+                break;
+            default:
+                setTitle("Screen Design: Preview");
+                break;
+        }
     }
 
     private void addControls() {
@@ -113,6 +127,11 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         linearLayout.addView(screenControl.getLabelControl());
     }
 
+    private String getValue(ScreenControl screenControl){
+        String value = data.get(screenControl.getControlId());
+        return value != null ? value : screenControl.getDefaultValue();
+    }
+
     private void addEditText(ScreenControl screenControl, boolean multiLine) {
         addText(screenControl);
         EditText editText = getEditText();
@@ -122,7 +141,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         screenControl.setValueControl(editText);
         linearLayout.addView(editText);
         setEditTextListener(screenControl);
-        editText.setText(data.get(screenControl.getControlId()));
+        editText.setText(getValue(screenControl));
     }
 
     private void addMultiLineEditText(EditText editText) {
@@ -167,7 +186,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         RadioGroup rg = new RadioGroup(getApplicationContext());
         rg.setOrientation(RadioGroup.HORIZONTAL);//or RadioGroup.VERTICAL
         rg.setId(View.generateViewId());
-        List<String> values = getOptionValues(screenControl.getControlId());
+        List<String> values = getOptionValues(screenControl);
         int selectedId = -1;
         for (String option : options) {
             RadioButton rb = new RadioButton(getApplicationContext());
@@ -184,13 +203,17 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         if (selectedId != -1) rg.check(selectedId);
     }
 
-    private List<String> getOptionValues(String controlId){
-        String value = data.get(controlId);
+    private List<String> getOptionValues(ScreenControl screenControl){
+        String value = data.get(screenControl.getControlId());
         List<String> values;
         if(value != null && value.length() >0) {
             values = Arrays.asList(value.split("\\n"));
         } else{
             values = new ArrayList<>();
+            value = screenControl.getDefaultValue();
+            if( value != null){
+                values.add(value);
+            }
         }
         return values;
     }
@@ -199,7 +222,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         addText(screenControl);
         String[] options = screenControl.getOptionValues();
         View[] optionControls = new View[options.length];
-        List<String> values = getOptionValues(screenControl.getControlId());
+        List<String> values = getOptionValues(screenControl);
         for (int i = 0; i < options.length; i++) {
             CheckBox cb = new CheckBox(getApplicationContext());
             cb.setText(options[i]);
@@ -408,6 +431,11 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject obj = arr.getJSONObject(i);
                 ScreenControl item = gson.fromJson(obj.toString(), ScreenControl.class);
+                if(item.getPositionId() == null){
+                    item.setPositionId(String.format("%03d", i+1));
+                } else{
+                    item.setPositionId(String.format("%03d", Integer.valueOf(item.getPositionId())));
+                }
                 if (isMultiOptionControl(item.getControlType()) &&
                         item.getOptions() != null &&
                         item.getOptions().length() > 0) {
@@ -415,11 +443,18 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                 }
                 controls.add(item);
             }
+            Collections.sort(controls, positionIdComparator);
 
         } catch (JSONException e) {
             System.out.print(e);
         }
     }
+
+    Comparator<ScreenControl> positionIdComparator = new Comparator<ScreenControl>() {
+        public int compare(ScreenControl m1, ScreenControl m2) {
+            return m1.getPositionId().compareTo(m2.getPositionId());
+        }
+    };
 
     private boolean isMultiOptionControl(ControlType type) {
         return type == ControlType.CheckBox || type == ControlType.RadioButton || type == ControlType.DropDownList;

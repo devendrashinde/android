@@ -37,9 +37,9 @@ public class ScreenDesignActivity extends BaseActivity {
     String keyField;
     String value1Field;
     ListView listView;
-    Button addControl;
-    Button editControl;
-    Button delControl;
+    Button addButton;
+    Button editButton;
+    Button delButton;
     Button screenPreview;
     ListviewKeyValueObjectAdapter listAdapter;
     DataStorage dataStorageManager;
@@ -53,27 +53,25 @@ public class ScreenDesignActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.screen_design_activity);
-
-        listView = (ListView) findViewById(R.id.list);
-        addControl = (Button) findViewById(R.id.btnAdd);
-        editControl = (Button) findViewById(R.id.btnEdit);
-        delControl = (Button) findViewById(R.id.btnDel);
-        screenPreview = (Button) findViewById(R.id.btnPreview);
-        editViewLayout = (LinearLayout) findViewById(R.id.editView);
-
         // get parameters
         Bundle bundle = getIntent().getExtras();
         collectionName = bundle.getString("screenName");
         userId = bundle.getString("userId");
         requestMode = bundle.getInt("requestMode", Constants.REQUEST_CODE_SCREEN_DESIGN);
         if (isDesignMode()) {
+            setContentView(R.layout.screen_design_activity);
             setTitle(collectionName + ": Design");
             screenConfig = screenDesign();
         } else {
+            setContentView(R.layout.screen_capture_activity);
             setTitle(collectionName + ": Edit");
             screenConfig = bundle.getString("screenConfig");
         }
+        listView = (ListView) findViewById(R.id.list);
+        addButton = (Button) findViewById(R.id.btnAdd);
+        editButton = (Button) findViewById(R.id.btnEdit);
+        delButton = (Button) findViewById(R.id.btnDel);
+        editViewLayout = (LinearLayout) findViewById(R.id.editView);
 
         dataStorageManager = Factory.getDataStorageIntsance(this,
                 getDataStorageType(),
@@ -96,7 +94,9 @@ public class ScreenDesignActivity extends BaseActivity {
         setAddControlListener();
         setDeleteControlListener();
         setEditControlListener();
-        setScreenPreviewListener();
+        if(isDesignMode()) {
+            setScreenPreviewListener();
+        }
         dataStorageManager.loadData();
     }
 
@@ -105,7 +105,7 @@ public class ScreenDesignActivity extends BaseActivity {
     }
 
     private void setAddControlListener() {
-        addControl.setOnClickListener(new View.OnClickListener() {
+        addButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 startDyanmicScreenDesignActivity(false);
             }
@@ -125,11 +125,12 @@ public class ScreenDesignActivity extends BaseActivity {
     private void startDyanmicScreenPreviewActivity() {
         Intent intent = new Intent(this, DynamicLinearLayoutActivity.class);
         intent.putExtra("screenConfig", Converter.getValuesJsonString(dataStorageManager.getValues()));
+        intent.putExtra("requestMode", Constants.REQUEST_CODE_SCREEN_PREVIEW);
         startActivityForResult(intent, Constants.REQUEST_CODE_SCREEN_PREVIEW);
     }
 
     private void setEditControlListener() {
-        editControl.setOnClickListener(new View.OnClickListener() {
+        editButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 startDyanmicScreenDesignActivity(true);
             }
@@ -137,7 +138,7 @@ public class ScreenDesignActivity extends BaseActivity {
     }
 
     private void setDeleteControlListener() {
-        delControl.setOnClickListener(new View.OnClickListener() {
+        delButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 remove();
             }
@@ -145,6 +146,7 @@ public class ScreenDesignActivity extends BaseActivity {
     }
 
     private void setScreenPreviewListener() {
+        screenPreview = (Button) findViewById(R.id.btnPreview);
         screenPreview.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 startDyanmicScreenPreviewActivity();
@@ -208,9 +210,8 @@ public class ScreenDesignActivity extends BaseActivity {
     private void setOnItemClickListenerToListView() {
         AdapterView.OnItemClickListener listener = new AdapterView.OnItemClickListener() {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String key = ((TextView) view.findViewById(R.id.listKey)).getText().toString();
-                String value = ((TextView) view.findViewById(R.id.listValue)).getText().toString();
-                setEditView(key, value);
+                KeyValue kv = listAdapter.getItem(position);
+                setEditView(kv.getKey(), kv.getValue());
             }
         };
         listView.setOnItemClickListener(listener);
@@ -298,46 +299,62 @@ public class ScreenDesignActivity extends BaseActivity {
         dataStorageManager.removeDataStorageListeners();
     }
 
-    private String jsonData() {
-        return new Gson().toJson(dataStorageManager.getValues());
-    }
-
     private String screenDesign() {
         return "[\n" +
                 "    {\n" +
                 "        \"controlId\": \"controlType\",\n" +
+                "        \"positionId\": \"1\",\n" +
                 "        \"controlType\": \"DropDownList\",\n" +
                 "        \"textLabel\": \"Field Type:\",\n" +
                 "        \"options\": \"Text\\nEditText\\nCheckBox\\nRadioButton\\nDropDownList\\nDatePicker\\nTimePicker\\nSaveButton\"\n" +
                 "    },\n" +
                 "    {\n" +
+                "        \"controlId\": \"positionId\",\n" +
+                "        \"positionId\": \"2\",\n" +
+                "        \"controlType\": \"EditText\",\n" +
+                "        \"textLabel\": \"Field position on screen:\"\n" +
+                "    },\n" +
+                "    {\n" +
                 "        \"controlId\": \"controlId\",\n" +
+                "        \"positionId\": \"3\",\n" +
                 "        \"controlType\": \"EditText\",\n" +
                 "        \"textLabel\": \"Field Id:\"\n" +
                 "    },\n" +
                 "    {\n" +
+                "        \"controlId\": \"defaultValue\",\n" +
+                "        \"controlType\": \"EditText\",\n" +
+                "        \"positionId\": \"4\",\n" +
+                "        \"textLabel\": \"Default value:\"\n" +
+                "    },\n" +
+                "    {\n" +
                 "        \"controlId\": \"indexField\",\n" +
+                "        \"positionId\": \"5\",\n" +
                 "        \"controlType\": \"RadioButton\",\n" +
                 "        \"textLabel\": \"Is this field part of index?\",\n" +
+                "        \"defaultValue\": \"No\",\n" +
                 "        \"options\": \"Yes\\nNo\"\n" +
                 "    },\n" +
                 "    {\n" +
                 "        \"controlId\": \"textLabel\",\n" +
+                "        \"positionId\": \"6\",\n" +
                 "        \"controlType\": \"EditText\",\n" +
                 "        \"textLabel\": \"Label Text:\"\n" +
                 "    },\n" +
                 "    {\n" +
                 "        \"controlId\": \"options\",\n" +
+                "        \"positionId\": \"7\",\n" +
                 "        \"controlType\": \"MultiLineEditText\",\n" +
                 "        \"textLabel\": \"Enter values for DropdownList/Checkbox/RadioButtons on separate lines:\"\n" +
                 "    },\n" +
                 "    {\n" +
                 "        \"controlId\": \"saveButton\",\n" +
+                "        \"positionId\": \"9\",\n" +
                 "        \"controlType\": \"SaveButton\",\n" +
                 "        \"textLabel\": \"Save\"\n" +
                 "    },\n" +
                 "    {\n" +
                 "        \"controlId\": \"cancelButton\",\n" +
+                "        \"positionId\": \"10\",\n" +
                 "        \"controlType\": \"CancelButton\",\n" +
                 "        \"textLabel\": \"Cancel\"\n" +
                 "    }\n" +

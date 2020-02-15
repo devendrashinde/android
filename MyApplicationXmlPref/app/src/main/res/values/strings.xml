@@ -45,9 +45,12 @@
     <string name="enter_subject">enter name</string>
     <string name="enter_text">enter text</string>
     <string name="shabdaKosh">ShabdaKosh</string>
-    <string name="add_control">Add Control</string>
-    <string name="edit_control">Edit Control</string>
-    <string name="delete_control">Delete Control</string>
+    <string name="add_control">Add Field</string>
+    <string name="add_record">Add Record</string>
+    <string name="edit_control">Edit Field</string>
+    <string name="edit_record">Edit Record</string>
+    <string name="delete_control">Delete Field</string>
+    <string name="delete_record">Delete Record</string>
     <string name="screen_preview">Screen Preview</string>
     <string name="desc_firebase_lockup">Firebase logo and name</string>
     <string name="firebase_status_fmt">Firebase User: %s</string>
