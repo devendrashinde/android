@@ -70,22 +70,21 @@ public class JsonHelper {
 
     public static String formatAsString(String value, boolean html) {
         String formattedValue = value;
-        if (isJSONValid(formattedValue)) {
-            if(html) {
-                formattedValue = formattedValue.replaceAll("\\\\n", "<br>");
-                formattedValue = formattedValue.replaceAll("\\{\"", "<b>");
-                formattedValue = formattedValue.replaceAll("\":\"", "</b>:<br>");
-                formattedValue = formattedValue.replaceAll("\",\"", "<br><b>");
-                formattedValue = formattedValue.replaceAll("\"", "");
-                formattedValue = formattedValue.replaceAll("\\}", "");
-            } else {
-                formattedValue = formattedValue.replaceAll("\\\\n", "\n ");
-                formattedValue = formattedValue.replaceAll("\",\"", "\n");
-                formattedValue = formattedValue.replaceAll("\"", "");
-                formattedValue = formattedValue.replaceAll("\\{", "");
-                formattedValue = formattedValue.replaceAll(":", ":\n ");
-                formattedValue = formattedValue.replaceAll("\\}", "");
-            }
+        if(html) {
+            formattedValue = formattedValue.replaceAll("\\\\n", "<br>");
+            formattedValue = formattedValue.replaceAll("\\{\"", "<b>");
+            formattedValue = formattedValue.replaceAll("\":\"", "</b>:<br>");
+            formattedValue = formattedValue.replaceAll("\",\"", "<br><b>");
+            formattedValue = formattedValue.replaceAll("\"", "");
+            formattedValue = formattedValue.replaceAll("\\}", "");
+            formattedValue = formattedValue.replaceAll("\\\\u0026", "&amp;");
+        } else {
+            formattedValue = formattedValue.replaceAll("\\\\n", "\n ");
+            formattedValue = formattedValue.replaceAll("\",\"", "\n");
+            formattedValue = formattedValue.replaceAll("\"", "");
+            formattedValue = formattedValue.replaceAll("\\{", "");
+            formattedValue = formattedValue.replaceAll(":", ":\n ");
+            formattedValue = formattedValue.replaceAll("\\}", "");
         }
         return formattedValue;
     }

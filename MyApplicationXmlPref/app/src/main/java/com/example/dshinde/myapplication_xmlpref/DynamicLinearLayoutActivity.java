@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -28,7 +29,6 @@ import android.widget.Toast;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.common.ControlType;
 import com.example.dshinde.myapplication_xmlpref.common.YesNo;
-import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.example.dshinde.myapplication_xmlpref.model.ScreenControl;
 import com.example.dshinde.myapplication_xmlpref.pickers.DatePickerFragment;
 import com.example.dshinde.myapplication_xmlpref.pickers.TimePickerFragment;
@@ -61,15 +61,13 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         setContentView(R.layout.activity_dynamic_linear_layout);
 
         Bundle bundle = getIntent().getExtras();
-        requestMode = bundle.getInt("requestMode", Constants.REQUEST_CODE_SCREEN_DESIGN);
         String screenConfig = bundle.getString("screenConfig");
         String screenData = bundle.getString("screenData");
         if (screenData != null && screenData.length() > 0) {
             data = gson.fromJson(screenData, Map.class);
         }
-        parseControls(screenConfig);
+        requestMode = bundle.getInt("requestMode", Constants.REQUEST_CODE_SCREEN_DESIGN);
         linearLayout = findViewById(R.id.linear_layout);
-        addControls();
         switch (requestMode){
             case Constants.REQUEST_CODE_SCREEN_DESIGN:
                 setTitle("Screen Design: Define field");
@@ -81,9 +79,45 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                 setTitle("Screen Design: Preview");
                 break;
         }
+        renderUI(screenConfig);
     }
 
-    private void addControls() {
+    private void renderUI(String screenConfig) {
+        new Thread() {
+            @Override
+            public void run() {
+                parseConfig(screenConfig);
+                createControls();
+                try {
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+                            addControlsToUI();
+                        }
+                    });
+                } catch (final Exception ex) {
+                    Log.i("---","Exception in thread");
+                }
+            }
+        }.start();
+    }
+
+    private void addControlsToUI() {
+        for (ScreenControl screenControl : controls) {
+            if(screenControl.getLabelControl() != null){
+                linearLayout.addView(screenControl.getLabelControl());
+            }
+
+            if(screenControl.getControlType() == ControlType.CheckBox){
+                for(View view : screenControl.getOptionControls()){
+                    linearLayout.addView(view);
+                }
+            } else if(screenControl.getValueControl() != null){
+                linearLayout.addView(screenControl.getValueControl());
+            }
+        }
+    }
+
+    private void createControls() {
         for (ScreenControl screenControl : controls) {
             switch (screenControl.getControlType()) {
                 case Text:
@@ -124,7 +158,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private void addText(ScreenControl screenControl) {
         screenControl.setLabelControl(getTextView(screenControl.getTextLabel()));
-        linearLayout.addView(screenControl.getLabelControl());
+        //linearLayout.addView(screenControl.getLabelControl());
     }
 
     private String getValue(ScreenControl screenControl){
@@ -139,9 +173,9 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
             addMultiLineEditText(editText);
         }
         screenControl.setValueControl(editText);
-        linearLayout.addView(editText);
         setEditTextListener(screenControl);
         editText.setText(getValue(screenControl));
+        //linearLayout.addView(editText);
     }
 
     private void addMultiLineEditText(EditText editText) {
@@ -150,14 +184,14 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         editText.setMinLines(4);
         editText.setMaxLines(8);
         editText.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 100 * editText.getMinLines()));
-        editText.setScroller(new Scroller(getApplicationContext()));
+        editText.setScroller(new Scroller(this));
         editText.setVerticalScrollBarEnabled(true);
         editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         editText.setImeOptions(EditorInfo.IME_FLAG_NO_ENTER_ACTION);
     }
 
     private EditText getEditText() {
-        EditText editText = new EditText(getApplicationContext());
+        EditText editText = new EditText(this);
         editText.setId(View.generateViewId());
         return editText;
     }
@@ -168,7 +202,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         btn.setId(View.generateViewId());
         screenControl.setValueControl(btn);
         setSaveButtonListener(btn);
-        linearLayout.addView(btn);
+        //linearLayout.addView(btn);
     }
 
     private void addCancelButton(ScreenControl screenControl) {
@@ -177,19 +211,19 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         btn.setId(View.generateViewId());
         screenControl.setValueControl(btn);
         setCancelButtonListener(btn);
-        linearLayout.addView(btn);
+        //linearLayout.addView(btn);
     }
 
     private void addRadioButton(ScreenControl screenControl) {
         addText(screenControl);
         String[] options = screenControl.getOptionValues();
-        RadioGroup rg = new RadioGroup(getApplicationContext());
+        RadioGroup rg = new RadioGroup(this);
         rg.setOrientation(RadioGroup.HORIZONTAL);//or RadioGroup.VERTICAL
         rg.setId(View.generateViewId());
         List<String> values = getOptionValues(screenControl);
         int selectedId = -1;
         for (String option : options) {
-            RadioButton rb = new RadioButton(getApplicationContext());
+            RadioButton rb = new RadioButton(this);
             rb.setText(option);
             rb.setId(View.generateViewId());
             rg.addView(rb);
@@ -197,10 +231,10 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                 selectedId = rb.getId();
             }
         }
-        linearLayout.addView(rg);
         screenControl.setValueControl(rg);
         setRadioGroupChangeListner(screenControl);
         if (selectedId != -1) rg.check(selectedId);
+        //linearLayout.addView(rg);
     }
 
     private List<String> getOptionValues(ScreenControl screenControl){
@@ -224,14 +258,14 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         View[] optionControls = new View[options.length];
         List<String> values = getOptionValues(screenControl);
         for (int i = 0; i < options.length; i++) {
-            CheckBox cb = new CheckBox(getApplicationContext());
+            CheckBox cb = new CheckBox(this);
             cb.setText(options[i]);
             cb.setId(View.generateViewId());
-            linearLayout.addView(cb);
             optionControls[i] = cb;
             if (values.contains(options[i])) {
                 cb.setChecked(true);
             }
+            //linearLayout.addView(cb);
         }
         screenControl.setOptionControls(optionControls);
         setCheckBoxChangeListner(screenControl);
@@ -239,11 +273,10 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private void addDropDownList(ScreenControl screenControl) {
         addText(screenControl);
-        Spinner spin = new Spinner(getApplicationContext());
+        Spinner spin = new Spinner(this);
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, screenControl.getOptionValues());
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spin.setAdapter(adapter);
-        linearLayout.addView(spin);
         screenControl.setValueControl(spin);
         setDropDownListListener(screenControl);
         String value = data.get(screenControl.getControlId());
@@ -251,6 +284,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
             int spinnerPosition = adapter.getPosition(value);
             spin.setSelection(spinnerPosition);
         }
+        //linearLayout.addView(spin);
     }
 
     private void addTimePicker(ScreenControl screenControl) {
@@ -268,7 +302,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     }
 
     private TextView getTextView(String label) {
-        TextView textView = new TextView(getApplicationContext());
+        TextView textView = new TextView(this);
         textView.setText(label);
         textView.setId(View.generateViewId());
         return textView;
@@ -394,7 +428,9 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                     @Override
                     public void onCheckedChanged(RadioGroup group, int checkedId) {
                         RadioButton selectedButton = (RadioButton) findViewById(checkedId);
-                        data.put(screenControl.getControlId(), selectedButton.getText().toString());
+                        if(selectedButton != null) {
+                            data.put(screenControl.getControlId(), selectedButton.getText().toString());
+                        }
                     }
                 });
     }
@@ -423,7 +459,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         data.put(screenControl.getControlId(), checked.toString());
     }
 
-    private void parseControls(String screenConfigJson) {
+    private void parseConfig(String screenConfigJson) {
         controls = new ArrayList<>();
 
         try {

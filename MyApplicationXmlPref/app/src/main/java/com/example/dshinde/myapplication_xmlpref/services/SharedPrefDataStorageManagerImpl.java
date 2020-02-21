@@ -34,9 +34,14 @@ public class SharedPrefDataStorageManagerImpl extends DataStorageManager {
     }
 
     public void remove(String key) {
-        removeFromDataSource(key);
-        sharedpreferences.edit().remove(key).apply();
-        notifyDataSetChanged(key, null);
+        new Thread() {
+            @Override
+            public void run() {
+                removeFromDataSource(key);
+                sharedpreferences.edit().remove(key).apply();
+                notifyDataSetChanged(key, null);
+            }
+        }.start();
     }
 
     public void removeAll() {
@@ -57,19 +62,24 @@ public class SharedPrefDataStorageManagerImpl extends DataStorageManager {
     }
 
     private void updateDB(List<KeyValue> values) {
-        String key = null;
-        String value = null;
-        for (KeyValue kv : values) {
-            key = kv.getKey();
-            value = kv.getValue();
-            if (autoKey && (key == null || key.isEmpty())) {
-                key = getNewKey();
+        new Thread() {
+            @Override
+            public void run() {
+                String key = null;
+                String value = null;
+                for (KeyValue kv : values) {
+                    key = kv.getKey();
+                    value = kv.getValue();
+                    if (autoKey && (key == null || key.isEmpty())) {
+                        key = getNewKey();
+                    }
+                    updateDataSource(key, value);
+                    sharedpreferences.edit().putString(key, value).apply();
+                }
+                Collections.sort(data, keyValueComparator);
+                notifyDataSetChanged(key, value);
             }
-            updateDataSource(key, value);
-            sharedpreferences.edit().putString(key, value).apply();
-        }
-        Collections.sort(data, keyValueComparator);
-        notifyDataSetChanged(key, value);
+        }.start();
 
     }
 

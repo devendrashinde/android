@@ -1,6 +1,7 @@
 package com.example.dshinde.myapplication_xmlpref;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
@@ -8,6 +9,7 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -53,48 +55,71 @@ public class MainActivity extends BaseActivity implements ListviewActions {
     ReadOnceDataStorage readOnceDataStorage;
     String key;
     String sharedPreferenceName = Constants.DATABASE_PATH_NOTES;
-    public static final int PICKFILE_RESULT_CODE = 42; // 1;
+    private static final String CLASS_TAG = "MainActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-    }
-
-    @Override
-    public void onStart() {
+        Log.d(CLASS_TAG, "onCreate");
         super.onStart();
         Bundle bundle = getIntent().getExtras();
         userId = bundle.getString("userId");
         // Check if user is signed in (non-null) and update UI accordingly.
-        updateUI();
+        loadUI();
+        initDataStorageAndLoadData(this);
     }
 
-    private void updateUI(){
-
+    private void loadUI(){
+        Log.d(CLASS_TAG, "loadUI");
         setContentView(R.layout.activity_main);
         valueField = (EditText) findViewById(R.id.VALUE_1);
         listView = (ListView) findViewById(R.id.list);
         populateListView();
         setValueFieldWatcher();
         setValueFieldClearButtonAction();
+    }
 
-        dataStorageManager = Factory.getDataStorageIntsance(this,
-                getDataStorageType(),
-                sharedPreferenceName,
-                true,
-                false);
-        dataStorageManager.addDataStorageListener(new DataStorageListener() {
+    private void initDataStorageAndLoadData(Context context) {
+        new Thread() {
             @Override
-            public void dataChanged(String key, String value) {
-                listAdapter.setData(dataStorageManager.getValues());
-            }
+            public void run() {
+                Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
+                dataStorageManager = Factory.getDataStorageIntsance(context,
+                        getDataStorageType(),
+                        sharedPreferenceName,
+                        true,
+                        false);
+                Log.d(CLASS_TAG, "initDataStorageAndLoadData->addDataStorageListener");
+                dataStorageManager.addDataStorageListener(new DataStorageListener() {
+                    @Override
+                    public void dataChanged(String key, String value) {
+                        Log.d(CLASS_TAG, "dataChanged key: " + key + ", value: " + value);
+                        loadDataInListView(dataStorageManager.getValues());
+                    }
 
-            @Override
-            public void dataLoaded(List<KeyValue> data){
-                listAdapter.setData(data);
+                    @Override
+                    public void dataLoaded(List<KeyValue> data) {
+                        Log.d(CLASS_TAG, "dataLoaded");
+                        loadDataInListView(data);
+                    }
+                });
+                Log.d(CLASS_TAG, "initDataStorageAndLoadData->loadData");
+                dataStorageManager.loadData();
             }
-        });
-        dataStorageManager.loadData();
+        }.start();
+    }
+
+    private void loadDataInListView(List<KeyValue> data) {
+        try {
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    Log.d(CLASS_TAG, "loadDataInListView->ui thread run");
+                    listAdapter.setData(data);
+                }
+            });
+        } catch (final Exception ex) {
+            Log.i(CLASS_TAG, "Exception in thread");
+        }
     }
 
     private void setValueFieldClearButtonAction() {

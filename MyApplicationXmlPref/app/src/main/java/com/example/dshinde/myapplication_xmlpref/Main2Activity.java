@@ -1,8 +1,10 @@
 package com.example.dshinde.myapplication_xmlpref;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -39,37 +41,69 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
     String collectionName = null;
     LinearLayout editViewLayout;
     Menu myMenu;
+    private static final String CLASS_TAG = "Main2Activity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main2_2);
-
-        keyField = (EditText) findViewById(R.id.etKey);
-        valueField = (EditText) findViewById(R.id.etValue);
-        listView = (ListView) findViewById(R.id.list);
-        editViewLayout = (LinearLayout) findViewById(R.id.editView);
 
         // get parameters
         Bundle bundle = getIntent().getExtras();
         collectionName = bundle.getString("filename");
         userId = bundle.getString("userId");
 
-        setTitle(collectionName);
-        dataStorageManager = Factory.getDataStorageIntsance(this, getDataStorageType(), collectionName, false, false);
-        dataStorageManager.addDataStorageListener(new DataStorageListener() {
-            @Override
-            public void dataChanged(String key, String value) {
-                listAdapter.setData(dataStorageManager.getValues());
-            }
+        loadUI();
+        initDataStorageAndLoadData(this);
+    }
 
+    private void initDataStorageAndLoadData(Context context) {
+        new Thread() {
             @Override
-            public void dataLoaded(List<KeyValue> data) {
-                listAdapter.setData(data);
+            public void run() {
+                Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
+                dataStorageManager = Factory.getDataStorageIntsance(context, getDataStorageType(), collectionName, false, false);
+                Log.d(CLASS_TAG, "initDataStorageAndLoadData->addDataStorageListener");
+                dataStorageManager.addDataStorageListener(new DataStorageListener() {
+                    @Override
+                    public void dataChanged(String key, String value) {
+                        Log.d(CLASS_TAG, "dataChanged key: " + key + ", value: " + value);
+                        loadDataInListView(dataStorageManager.getValues());
+                    }
+
+                    @Override
+                    public void dataLoaded(List<KeyValue> data) {
+                        Log.d(CLASS_TAG, "dataLoaded");
+                        loadDataInListView(data);
+                    }
+                });
+                Log.d(CLASS_TAG, "initDataStorageAndLoadData->loadData");
+                dataStorageManager.loadData();
             }
-        });
+        }.start();
+    }
+
+    private void loadDataInListView(List<KeyValue> data) {
+        try {
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    Log.d(CLASS_TAG, "loadDataInListView->ui thread run");
+                    listAdapter.setData(data);
+                }
+            });
+        } catch (final Exception ex) {
+            Log.i(CLASS_TAG, "Exception in thread");
+        }
+    }
+
+    private void loadUI() {
+        setContentView(R.layout.activity_main2_2);
+
+        keyField = (EditText) findViewById(R.id.etKey);
+        valueField = (EditText) findViewById(R.id.etValue);
+        listView = (ListView) findViewById(R.id.list);
+        editViewLayout = (LinearLayout) findViewById(R.id.editView);
+        setTitle(collectionName);
         populateListView();
-        dataStorageManager.loadData();
     }
 
     private void showEditView(boolean show) {
@@ -94,6 +128,10 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
         switch (item.getItemId()) {
+            case R.id.menu_add:
+                clear();
+                showEditView(true);
+                return true;
             case R.id.menu_save:
                 save();
                 return true;

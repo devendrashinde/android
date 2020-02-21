@@ -75,7 +75,12 @@ public class ListviewKeyValueObjectAdapter extends ArrayAdapter<KeyValue> implem
 
         KeyValue kv = kvList.get(position);
         holder.keyView.setText(kv.getKey());
-        holder.valueView.setText(Html.fromHtml(JsonHelper.formatAsString(kv.getValue(), true)));
+
+        if(JsonHelper.isJSONValid(kv.getValue())) {
+            holder.valueView.setText(Html.fromHtml(JsonHelper.formatAsString(kv.getValue(), true)));
+        } else {
+            holder.valueView.setText(kv.getValue());
+        }
 
         return v;
     }

@@ -102,16 +102,19 @@ public class FireStoreDataStorageManagerImpl extends DataStorageManager {
     }
 
     private void updateDB(List<KeyValue> values){
-        Map<String, Object> data = new HashMap<>();
-        String key;
-
-        for (KeyValue kv : values) {
-            if(!autoKey) {
-                data.put("value", kv.getValue());
+        new Thread() {
+            @Override
+            public void run() {
+                Map<String, Object> data = new HashMap<>();
+                String key;
+                for (KeyValue kv : values) {
+                    if (!autoKey) {
+                        data.put("value", kv.getValue());
+                    }
+                    mDatabase.document(autoKey ? kv.getValue() : kv.getKey()).set(data);
+                }
             }
-           mDatabase.document(autoKey ? kv.getValue() : kv.getKey()).set(data);
-        }
-
+        }.start();
     }
 
     public KeyValue getValue(int index) {

@@ -1,8 +1,10 @@
 package com.example.dshinde.myapplication_xmlpref;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -49,6 +51,7 @@ public class ScreenDesignActivity extends BaseActivity {
     LinearLayout editViewLayout;
     Gson gson = new GsonBuilder().create();
     Menu myMenu;
+    private static final String CLASS_TAG = "Main2Activity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +61,11 @@ public class ScreenDesignActivity extends BaseActivity {
         collectionName = bundle.getString("screenName");
         userId = bundle.getString("userId");
         requestMode = bundle.getInt("requestMode", Constants.REQUEST_CODE_SCREEN_DESIGN);
+        loadUI(bundle);
+        initDataStorageAndLoadData(this);
+    }
+
+    private void loadUI(Bundle bundle) {
         if (isDesignMode()) {
             setContentView(R.layout.screen_design_activity);
             setTitle(collectionName + ": Design");
@@ -73,31 +81,54 @@ public class ScreenDesignActivity extends BaseActivity {
         delButton = (Button) findViewById(R.id.btnDel);
         editViewLayout = (LinearLayout) findViewById(R.id.editView);
 
-        dataStorageManager = Factory.getDataStorageIntsance(this,
-                getDataStorageType(),
-                (isDesignMode() ? Constants.SCREEN_DESIGN : "") + collectionName,
-                false,
-                false);
-        dataStorageManager.addDataStorageListener(new DataStorageListener() {
-            @Override
-            public void dataChanged(String key, String value) {
-                listAdapter.setData(dataStorageManager.getValues());
-            }
-
-            @Override
-            public void dataLoaded(List<KeyValue> data) {
-                listAdapter.setData(data);
-            }
-        });
-
         populateListView();
-        setAddActionListener();
-        setDeleteActionListener();
-        setEditActionListener();
         if(isDesignMode()) {
+            setAddActionListener();
+            setDeleteActionListener();
+            setEditActionListener();
             setPreviewActionListener();
         }
-        dataStorageManager.loadData();
+    }
+
+    private void initDataStorageAndLoadData(Context context) {
+        new Thread() {
+            @Override
+            public void run() {
+                Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
+                dataStorageManager = Factory.getDataStorageIntsance(context, getDataStorageType(),
+                        (isDesignMode() ? Constants.SCREEN_DESIGN : "") + collectionName,
+                        false, false);
+                Log.d(CLASS_TAG, "initDataStorageAndLoadData->addDataStorageListener");
+                dataStorageManager.addDataStorageListener(new DataStorageListener() {
+                    @Override
+                    public void dataChanged(String key, String value) {
+                        Log.d(CLASS_TAG, "dataChanged key: " + key + ", value: " + value);
+                        loadDataInListView(dataStorageManager.getValues());
+                    }
+
+                    @Override
+                    public void dataLoaded(List<KeyValue> data) {
+                        Log.d(CLASS_TAG, "dataLoaded");
+                        loadDataInListView(data);
+                    }
+                });
+                Log.d(CLASS_TAG, "initDataStorageAndLoadData->loadData");
+                dataStorageManager.loadData();
+            }
+        }.start();
+    }
+
+    private void loadDataInListView(List<KeyValue> data) {
+        try {
+            runOnUiThread(new Runnable() {
+                public void run() {
+                    Log.d(CLASS_TAG, "loadDataInListView->ui thread run");
+                    listAdapter.setData(data);
+                }
+            });
+        } catch (final Exception ex) {
+            Log.i(CLASS_TAG, "Exception in thread");
+        }
     }
 
     private boolean isDesignMode() {
@@ -113,7 +144,10 @@ public class ScreenDesignActivity extends BaseActivity {
     }
 
     private void startDyanmicScreenDesignActivity(boolean edit) {
-        if(edit && valueField != null && valueField.length() > 0) {
+        if(edit && (valueField == null || valueField.length() == 0)) {
+            Toast.makeText(this, "Please select record to Edit it.",
+                    Toast.LENGTH_SHORT).show();
+        } else {
 
             Intent intent = new Intent(this, DynamicLinearLayoutActivity.class);
             intent.putExtra("screenConfig", screenConfig);
@@ -122,9 +156,6 @@ public class ScreenDesignActivity extends BaseActivity {
                 intent.putExtra("screenData", valueField);
             }
             startActivityForResult(intent, requestMode);
-        } else{
-            Toast.makeText(this, "Please select record to Edit it.",
-                    Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -181,11 +212,16 @@ public class ScreenDesignActivity extends BaseActivity {
         menu.removeItem(R.id.menu_settings);
         menu.removeItem(R.id.menu_save);
         menu.removeItem(R.id.menu_clear);
-        menu.removeItem(R.id.menu_remove);
         menu.removeItem(R.id.menu_design_screen);
         menu.removeItem(R.id.menu_export);
         menu.removeItem(R.id.menu_pay);
+        if(isDesignMode()){
+            menu.removeItem(R.id.menu_add);
+            menu.removeItem(R.id.menu_remove);
+            menu.removeItem(R.id.menu_view);
+        }
         myMenu = menu;
+        showEditView(isDesignMode());
         return true;
     }
 
@@ -197,8 +233,11 @@ public class ScreenDesignActivity extends BaseActivity {
                 startDyanmicScreenDesignActivity(false);
                 return true;
             case R.id.menu_edit:
-                showEditView(false);
-                startDyanmicScreenDesignActivity(true);
+                if( isDesignMode()) {
+                    showEditView(!(editViewLayout.getVisibility() == View.VISIBLE));
+                } else {
+                    startDyanmicScreenDesignActivity(true);
+                }
                 return true;
             case R.id.menu_remove:
                 remove();
@@ -364,12 +403,6 @@ public class ScreenDesignActivity extends BaseActivity {
                 "        \"positionId\": \"9\",\n" +
                 "        \"controlType\": \"SaveButton\",\n" +
                 "        \"textLabel\": \"Save\"\n" +
-                "    },\n" +
-                "    {\n" +
-                "        \"controlId\": \"cancelButton\",\n" +
-                "        \"positionId\": \"10\",\n" +
-                "        \"controlType\": \"CancelButton\",\n" +
-                "        \"textLabel\": \"Cancel\"\n" +
                 "    }\n" +
                 "]";
     }

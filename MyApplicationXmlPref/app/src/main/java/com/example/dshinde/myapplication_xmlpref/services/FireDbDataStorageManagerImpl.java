@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 public class FireDbDataStorageManagerImpl extends DataStorageManager {
-    String collectionName=null;
+    String collectionName = null;
     private DatabaseReference mDatabase;
     private ValueEventListener valueEventListener;
     private FirebaseAuth mAuth;
@@ -33,7 +33,7 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
         initialiseDBSupport();
     }
 
-    private void initialiseDBSupport(){
+    private void initialiseDBSupport() {
         mAuth = FirebaseAuth.getInstance();
         mDatabase = FirebaseDatabase.getInstance()
                 .getReference((autoKey ? "" : Constants.DATABASE_PATH_NOTE_DETAILS + "/") + collectionName + "/" + mAuth.getUid());
@@ -71,26 +71,31 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
     }
 
     public void remove(String key) {
-        Query query;
-        if(autoKey) {
-            query = mDatabase.orderByValue().equalTo(key);
-        } else {
-            query = mDatabase.orderByKey().equalTo(key);
-        }
-        query.addListenerForSingleValueEvent(new ValueEventListener() {
+        new Thread() {
             @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                for (DataSnapshot snapshotRef: dataSnapshot.getChildren()) {
-                    snapshotRef.getRef().removeValue();
-                    notifyDataSetChanged(key, null);
+            public void run() {
+                Query query;
+                if (autoKey) {
+                    query = mDatabase.orderByValue().equalTo(key);
+                } else {
+                    query = mDatabase.orderByKey().equalTo(key);
                 }
-            }
+                query.addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        for (DataSnapshot snapshotRef : dataSnapshot.getChildren()) {
+                            snapshotRef.getRef().removeValue();
+                            notifyDataSetChanged(key, null);
+                        }
+                    }
 
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
 
+                    }
+                });
             }
-        });
+        }.start();
     }
 
     public void removeAll() {
@@ -112,21 +117,26 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
     }
 
     public void save(List<KeyValue> values) {
-        updateDB( values);
+        updateDB(values);
     }
 
-    private void updateDB(List<KeyValue> values){
-        Map<String, Object> childUpdates = new HashMap<>();
-        String key;
-        for(KeyValue kv : values) {
-            if (autoKey) {
-                key = kv.getKey();
-                childUpdates.put(kv.getValue(), (key == null || key.isEmpty() ? getNewKey() : key));
-            } else {
-                childUpdates.put(kv.getKey(), kv.getValue());
+    private void updateDB(List<KeyValue> values) {
+        new Thread() {
+            @Override
+            public void run() {
+                Map<String, Object> childUpdates = new HashMap<>();
+                String key;
+                for (KeyValue kv : values) {
+                    if (autoKey) {
+                        key = kv.getKey();
+                        childUpdates.put(kv.getValue(), (key == null || key.isEmpty() ? getNewKey() : key));
+                    } else {
+                        childUpdates.put(kv.getKey(), kv.getValue());
+                    }
+                }
+                mDatabase.updateChildren(childUpdates);
             }
-        }
-        mDatabase.updateChildren(childUpdates);
+        }.start();
     }
 
     public KeyValue getValue(int index) {
@@ -137,25 +147,25 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
         return data;
     }
 
-    public String getDataString(){
+    public String getDataString() {
 
         return "";
     }
 
-    public String getDataString(String collectionName){
+    public String getDataString(String collectionName) {
         return getDataMap(collectionName).toString();
     }
 
-    public Map<String,String> getDataMap(String collectionName){
+    public Map<String, String> getDataMap(String collectionName) {
         final Map<String, String> dataMap = new HashMap<>();
-        for (KeyValue keyValue: data) {
+        for (KeyValue keyValue : data) {
             dataMap.put(keyValue.getKey(), keyValue.getValue().toString());
         }
         return dataMap;
     }
 
-    public void loadData(Map<String,String> data, boolean removeExistingData){
-        if(removeExistingData) {
+    public void loadData(Map<String, String> data, boolean removeExistingData) {
+        if (removeExistingData) {
             removeAll();
         }
         List<KeyValue> values = new ArrayList<>();
@@ -167,7 +177,7 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
 
     public void removeDataStorageListeners() {
         super.removeDataStorageListeners();
-        if(valueEventListener != null) {
+        if (valueEventListener != null) {
             mDatabase.removeEventListener(valueEventListener);
         }
     }
