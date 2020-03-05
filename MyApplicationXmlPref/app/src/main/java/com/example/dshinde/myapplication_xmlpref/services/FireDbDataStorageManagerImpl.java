@@ -1,8 +1,17 @@
 package com.example.dshinde.myapplication_xmlpref.services;
 
+import android.content.Context;
+import android.util.Log;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
+import com.example.dshinde.myapplication_xmlpref.common.DataChangeType;
+import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -18,9 +27,11 @@ import java.util.Map;
 
 public class FireDbDataStorageManagerImpl extends DataStorageManager {
     String collectionName = null;
+    private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
     private ValueEventListener valueEventListener;
-    private FirebaseAuth mAuth;
+    private ChildEventListener childEventListener;
+    private static final String CLASS_TAG = "FireDataStorageManager";
 
     public FireDbDataStorageManagerImpl(String collectionName, boolean autoKey) {
         this(collectionName, autoKey, false);
@@ -30,70 +41,166 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
         this.collectionName = collectionName;
         this.autoKey = autoKey;
         this.descendingOrder = descendingOrder;
-        initialiseDBSupport();
+    }
+    public FireDbDataStorageManagerImpl(String collectionName, boolean autoKey, boolean descendingOrder, DataStorageListener dataStorageListener) {
+        this.collectionName = collectionName;
+        this.autoKey = autoKey;
+        this.descendingOrder = descendingOrder;
+        this.addDataStorageListener(dataStorageListener);
     }
 
-    private void initialiseDBSupport() {
-        mAuth = FirebaseAuth.getInstance();
-        mDatabase = FirebaseDatabase.getInstance()
-                .getReference((autoKey ? "" : Constants.DATABASE_PATH_NOTE_DETAILS + "/") + collectionName + "/" + mAuth.getUid());
+    private void getDatabaseCollectionReference() {
+        Log.d(CLASS_TAG, "getDatabaseCollectionReference");
+        if(mDatabase == null || mAuth == null) {
+            mAuth = FirebaseAuth.getInstance();
+            mDatabase = FirebaseDatabase.getInstance()
+                    .getReference((autoKey ? "" : Constants.DATABASE_PATH_NOTE_DETAILS + "/") + collectionName + "/" + mAuth.getUid());
+        }
     }
 
     @Override
     public void loadData() {
+        Log.d(CLASS_TAG, "loadData");
+        new Thread() {
+            @Override
+            public void run() {
+                android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+                getDatabaseCollectionReference();
+                addReadDataOnce();
+                //addChangedDataListener();
+                //addAllDataListener();
+            }
+        }.start();
+    }
+
+    private void addReadDataOnce(){
         valueEventListener = new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
-                loadData(snapshot);
+                Log.d(CLASS_TAG, "addReadDataOnce->onDataChange");
+                loadAllData(snapshot);
+            }
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.d(CLASS_TAG, "addReadDataOnce->error occured " + databaseError);
+            }
+        };
+        mDatabase.addListenerForSingleValueEvent(valueEventListener);
+    }
+
+    private void addChangedDataListener() {
+        childEventListener = new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String prevChildKey) {
+                Log.d(CLASS_TAG, "data added");
+                loadItem(dataSnapshot, DataChangeType.ADDED, true);
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String prevChildKey) {
+                Log.d(CLASS_TAG, "data modified");
+                loadItem(dataSnapshot, DataChangeType.MODIFIED, true);
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+                Log.d(CLASS_TAG, "data removed");
+                loadItem(dataSnapshot, DataChangeType.DELETED, true);
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String prevChildKey) {}
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.d(CLASS_TAG, "addChangedDataListener->error occured " + databaseError);
+            }
+        };
+        //adding an event listener to fetch values
+        mDatabase.addChildEventListener(childEventListener);
+    }
+
+    private void addAllDataListener() {
+        Log.d(CLASS_TAG, "addAllDataListener");
+        valueEventListener = new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                Log.d(CLASS_TAG, "addAllDataListener->onDataChange");
+                loadAllData(snapshot);
             }
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
-
+                Log.d(CLASS_TAG, "addAllDataListener->error occured " + databaseError);
             }
         };
         //adding an event listener to fetch values
         mDatabase.addValueEventListener(valueEventListener);
     }
 
-    private void loadData(DataSnapshot snapshot) {
+    private void loadAllData(DataSnapshot collection) {
+        Log.d(CLASS_TAG, "loadAllData received " + collection.getChildrenCount() + " records");
         data.clear();
-        //iterating through all the values in database
-        for (DataSnapshot postSnapshot : snapshot.getChildren()) {
-            String key = autoKey ? (String) postSnapshot.getValue() : postSnapshot.getKey();
-            String value = autoKey ? postSnapshot.getKey() : (String) postSnapshot.getValue();
-
-            KeyValue upload = new KeyValue(key, value);
-            data.add(upload);
+        for (DataSnapshot dataSnapshot : collection.getChildren()) {
+            loadItem(dataSnapshot,DataChangeType.ALL_DATA,false);
         }
+        notifyDataChanged();
+    }
+
+    private void loadItem(DataSnapshot item, DataChangeType dataChangeType, boolean notify) {
+        String key = autoKey ? (String) item.getValue() : item.getKey();
+        String value = autoKey ? item.getKey() : (String) item.getValue();
+        KeyValue keyValue = new KeyValue(key, value);
+        switch (dataChangeType) {
+            case ADDED:
+            case ALL_DATA:
+                data.add(keyValue);
+                break;
+            case DELETED:
+                data.remove(getKeyIndex(key));
+                break;
+            case MODIFIED:
+                data.set(getKeyIndex(key), keyValue);
+                break;
+            default:
+                break;
+        }
+        if (notify) notifyDataChanged();
+    }
+
+    private void notifyDataChanged(){
+        Log.d(CLASS_TAG, "notifyDataChanged");
         Collections.sort(data, keyValueComparator);
         notifyDataLoaded();
     }
 
     public void remove(String key) {
+        Log.d(CLASS_TAG, "remove record");
         new Thread() {
             @Override
             public void run() {
-                Query query;
-                if (autoKey) {
-                    query = mDatabase.orderByValue().equalTo(key);
-                } else {
-                    query = mDatabase.orderByKey().equalTo(key);
+            Query query;
+            removeFromDataSource(key);
+            notifyDataChanged();
+            if (autoKey) {
+                query = mDatabase.orderByValue().equalTo(key);
+            } else {
+                query = mDatabase.orderByKey().equalTo(key);
+            }
+            query.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    for (DataSnapshot snapshotRef : dataSnapshot.getChildren()) {
+                        Log.d(CLASS_TAG, "removing record " + snapshotRef.getRef());
+                        snapshotRef.getRef().removeValue();
+                    }
                 }
-                query.addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        for (DataSnapshot snapshotRef : dataSnapshot.getChildren()) {
-                            snapshotRef.getRef().removeValue();
-                            notifyDataSetChanged(key, null);
-                        }
-                    }
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    Log.d(CLASS_TAG, "remove->error occured " + databaseError);
 
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {
-
-                    }
-                });
+                }
+            });
             }
         }.start();
     }
@@ -101,7 +208,7 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
     public void removeAll() {
         data.clear();
         //TODO remove all records from collection i.e. drop collection
-        mDatabase.removeValue();
+        mDatabase.setValue(null);
     }
 
     private String getNewKey() {
@@ -121,20 +228,33 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
     }
 
     private void updateDB(List<KeyValue> values) {
+        Log.d(CLASS_TAG, "updating DB");
         new Thread() {
             @Override
             public void run() {
                 Map<String, Object> childUpdates = new HashMap<>();
-                String key;
                 for (KeyValue kv : values) {
                     if (autoKey) {
-                        key = kv.getKey();
-                        childUpdates.put(kv.getValue(), (key == null || key.isEmpty() ? getNewKey() : key));
+                        if(kv.getKey() == null || kv.getKey().isEmpty()) {
+                            kv.setKey(getNewKey());
+                        }
+                        childUpdates.put(kv.getValue(), kv.getKey());
                     } else {
                         childUpdates.put(kv.getKey(), kv.getValue());
                     }
+                    updateDataSource(kv.getKey(),kv.getValue());
                 }
-                mDatabase.updateChildren(childUpdates);
+                notifyDataChanged();
+                mDatabase.updateChildren(childUpdates, new DatabaseReference.CompletionListener() {
+                    @Override
+                    public void onComplete(@Nullable DatabaseError databaseError, @NonNull DatabaseReference databaseReference) {
+                        if(databaseError == null) {
+                            Log.d(CLASS_TAG, "DB updated successfully");
+                        } else {
+                            Log.d(CLASS_TAG, "DB updated failed, error " + databaseError);
+                        }
+                    }
+                });
             }
         }.start();
     }
@@ -159,7 +279,7 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
     public Map<String, String> getDataMap(String collectionName) {
         final Map<String, String> dataMap = new HashMap<>();
         for (KeyValue keyValue : data) {
-            dataMap.put(keyValue.getKey(), keyValue.getValue().toString());
+            dataMap.put(keyValue.getKey(), keyValue.getValue());
         }
         return dataMap;
     }
@@ -179,6 +299,9 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
         super.removeDataStorageListeners();
         if (valueEventListener != null) {
             mDatabase.removeEventListener(valueEventListener);
+        }
+        if (childEventListener != null) {
+            mDatabase.removeEventListener(childEventListener);
         }
     }
 }

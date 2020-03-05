@@ -29,8 +29,13 @@ public class SharedPrefReadOnceDataStorageImpl extends ReadOnceDataStorageManage
     }
 
     private void initialiseDBSupport(){
-        sharedpreferences = context.getSharedPreferences(collectionName, MODE_PRIVATE);
-        loadData();
+        new Thread() {
+            @Override
+            public void run() {
+                sharedpreferences = context.getSharedPreferences(collectionName, MODE_PRIVATE);
+                loadData();
+            }
+        }.start();
     }
 
     private void loadData() {

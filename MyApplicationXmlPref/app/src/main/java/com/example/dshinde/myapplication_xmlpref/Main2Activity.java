@@ -57,42 +57,28 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
     }
 
     private void initDataStorageAndLoadData(Context context) {
-        new Thread() {
-            @Override
-            public void run() {
-                Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
-                dataStorageManager = Factory.getDataStorageIntsance(context, getDataStorageType(), collectionName, false, false);
-                Log.d(CLASS_TAG, "initDataStorageAndLoadData->addDataStorageListener");
-                dataStorageManager.addDataStorageListener(new DataStorageListener() {
-                    @Override
-                    public void dataChanged(String key, String value) {
-                        Log.d(CLASS_TAG, "dataChanged key: " + key + ", value: " + value);
-                        loadDataInListView(dataStorageManager.getValues());
-                    }
 
-                    @Override
-                    public void dataLoaded(List<KeyValue> data) {
-                        Log.d(CLASS_TAG, "dataLoaded");
-                        loadDataInListView(data);
-                    }
-                });
-                Log.d(CLASS_TAG, "initDataStorageAndLoadData->loadData");
-                dataStorageManager.loadData();
+        Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
+        dataStorageManager = Factory.getDataStorageIntsance(context, getDataStorageType(), collectionName, false, false, new DataStorageListener() {
+            @Override
+            public void dataChanged(String key, String value) {
+                Log.d(CLASS_TAG, "dataChanged key: " + key + ", value: " + value);
+                loadDataInListView(dataStorageManager.getValues());
             }
-        }.start();
+
+            @Override
+            public void dataLoaded(List<KeyValue> data) {
+                Log.d(CLASS_TAG, "dataLoaded");
+                loadDataInListView(data);
+            }
+        });
+        Log.d(CLASS_TAG, "initDataStorageAndLoadData->loadData");
+        dataStorageManager.loadData();
     }
 
     private void loadDataInListView(List<KeyValue> data) {
-        try {
-            runOnUiThread(new Runnable() {
-                public void run() {
-                    Log.d(CLASS_TAG, "loadDataInListView->ui thread run");
-                    listAdapter.setData(data);
-                }
-            });
-        } catch (final Exception ex) {
-            Log.i(CLASS_TAG, "Exception in thread");
-        }
+        Log.d(CLASS_TAG, "loadDataInListView");
+        runOnUiThread(() -> listAdapter.setData(data));
     }
 
     private void loadUI() {
@@ -157,13 +143,13 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
         }
     }
 
-    private void setEditView(String key, String string) {
+    private void setEditView(String key, String value) {
         keyField.setText(key);
-        valueField.setText(string);
+        valueField.setText(value);
     }
 
     private void populateListView() {
-        listAdapter = new ListviewKeyValueObjectAdapter(Collections.emptyList(),this, R.layout.list_view_items_flexbox);
+        listAdapter = new ListviewKeyValueObjectAdapter(Collections.emptyList(), this, R.layout.list_view_items_flexbox);
         listView.setAdapter(listAdapter);
         setOnItemClickListenerToListView();
     }
@@ -187,9 +173,9 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
     public void save() {
         String key = keyField.getText().toString();
         String value = valueField.getText().toString();
-        clear();
         dataStorageManager.save(key, value);
         showEditView(false);
+        clear();
     }
 
     @Override

@@ -26,6 +26,18 @@ public class Factory {
         return dataStorageManager;
     }
 
+    public static DataStorage getDataStorageIntsance(Context context, DataStorageType dataStorageType, String name, boolean autoKey, boolean descendingOrder, DataStorageListener dataStorageListener){
+        DataStorage dataStorageManager=null;
+        if (dataStorageType == DataStorageType.SHARED_PREFERENCES) {
+            dataStorageManager = new SharedPrefDataStorageManagerImpl(context, name, autoKey, descendingOrder, dataStorageListener);
+        } else if (dataStorageType == DataStorageType.FIREBASE_DB) {
+            dataStorageManager = new FireDbDataStorageManagerImpl(name, autoKey, descendingOrder, dataStorageListener);
+        } else if (dataStorageType == DataStorageType.FIREBASE_STORE) {
+            dataStorageManager = new FireStoreDataStorageManagerImpl(name, autoKey, descendingOrder);
+        }
+        return dataStorageManager;
+    }
+
     public static ReadOnceDataStorage getReadOnceDataStorageIntsance(Context context, DataStorageType dataStorageType, String name, DataStorageListener dataStorageListener){
         ReadOnceDataStorage dataStorageManager=null;
         if (dataStorageType == DataStorageType.SHARED_PREFERENCES) {

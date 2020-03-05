@@ -4,13 +4,17 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -43,15 +47,17 @@ public class ScreenDesignActivity extends BaseActivity {
     Button editButton;
     Button delButton;
     Button screenPreview;
+    EditText searchText;
     ListviewKeyValueObjectAdapter listAdapter;
     DataStorage dataStorageManager;
+    DataStorageListener dataStorageListener;
     String collectionName = null;
     Integer requestMode = null;
     String screenConfig = null;
     LinearLayout editViewLayout;
     Gson gson = new GsonBuilder().create();
     Menu myMenu;
-    private static final String CLASS_TAG = "Main2Activity";
+    private static final String CLASS_TAG = "ScreenDesignActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,55 +86,88 @@ public class ScreenDesignActivity extends BaseActivity {
         editButton = (Button) findViewById(R.id.btnEdit);
         delButton = (Button) findViewById(R.id.btnDel);
         editViewLayout = (LinearLayout) findViewById(R.id.editView);
+        searchText = (EditText) findViewById(R.id.searchText);
 
         populateListView();
-        if(isDesignMode()) {
+        if (isDesignMode()) {
             setAddActionListener();
             setDeleteActionListener();
             setEditActionListener();
             setPreviewActionListener();
         }
+        setSearchFieldWatcher();
+        setValueFieldClearButtonAction();
+    }
+
+    private void setValueFieldClearButtonAction() {
+        searchText.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    if (event.getRawX() >= (searchText.getRight() - searchText.getCompoundDrawables()[Constants.DRAWABLE_RIGHT].getBounds().width())) {
+                        searchText.setText("");
+                        return true;
+                    }
+                }
+                return false;
+            }
+        });
+    }
+
+    private void setSearchFieldWatcher() {
+        searchText.addTextChangedListener(new TextWatcher() {
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (count < before) {
+                    // We're deleting char so we need to reset the adapter data
+                    listAdapter.resetData();
+                }
+                listAdapter.getFilter().filter(s.toString());
+            }
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count,
+                                          int after) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
+
     }
 
     private void initDataStorageAndLoadData(Context context) {
-        new Thread() {
-            @Override
-            public void run() {
-                Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
-                dataStorageManager = Factory.getDataStorageIntsance(context, getDataStorageType(),
-                        (isDesignMode() ? Constants.SCREEN_DESIGN : "") + collectionName,
-                        false, false);
-                Log.d(CLASS_TAG, "initDataStorageAndLoadData->addDataStorageListener");
-                dataStorageManager.addDataStorageListener(new DataStorageListener() {
-                    @Override
-                    public void dataChanged(String key, String value) {
-                        Log.d(CLASS_TAG, "dataChanged key: " + key + ", value: " + value);
-                        loadDataInListView(dataStorageManager.getValues());
-                    }
+        Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
+        dataStorageManager = Factory.getDataStorageIntsance(context, getDataStorageType(),
+                (isDesignMode() ? Constants.SCREEN_DESIGN : "") + collectionName,
+                false, false, getDataStorageListener());
+        Log.d(CLASS_TAG, "initDataStorageAndLoadData->loadData");
+        dataStorageManager.loadData();
+    }
 
-                    @Override
-                    public void dataLoaded(List<KeyValue> data) {
-                        Log.d(CLASS_TAG, "dataLoaded");
-                        loadDataInListView(data);
-                    }
-                });
-                Log.d(CLASS_TAG, "initDataStorageAndLoadData->loadData");
-                dataStorageManager.loadData();
+    private DataStorageListener getDataStorageListener(){
+        dataStorageListener = new DataStorageListener() {
+            @Override
+            public void dataChanged(String key, String value) {
+                Log.d(CLASS_TAG, "dataChanged->loadDataInListView key: " + key + ", value: " + value);
+                loadDataInListView(dataStorageManager.getValues());
             }
-        }.start();
+
+            @Override
+            public void dataLoaded(List<KeyValue> data) {
+                Log.d(CLASS_TAG, "dataLoaded->loadDataInListView");
+                loadDataInListView(data);
+            }
+        };
+        return dataStorageListener;
     }
 
     private void loadDataInListView(List<KeyValue> data) {
-        try {
-            runOnUiThread(new Runnable() {
-                public void run() {
-                    Log.d(CLASS_TAG, "loadDataInListView->ui thread run");
-                    listAdapter.setData(data);
-                }
-            });
-        } catch (final Exception ex) {
-            Log.i(CLASS_TAG, "Exception in thread");
-        }
+        Log.d(CLASS_TAG, "loadDataInListView");
+        runOnUiThread(() -> listAdapter.setData(data));
     }
 
     private boolean isDesignMode() {
@@ -144,7 +183,7 @@ public class ScreenDesignActivity extends BaseActivity {
     }
 
     private void startDyanmicScreenDesignActivity(boolean edit) {
-        if(edit && (valueField == null || valueField.length() == 0)) {
+        if (edit && (valueField == null || valueField.length() == 0)) {
             Toast.makeText(this, "Please select record to Edit it.",
                     Toast.LENGTH_SHORT).show();
         } else {
@@ -160,7 +199,7 @@ public class ScreenDesignActivity extends BaseActivity {
     }
 
     private void startDyanmicScreenPreviewActivity() {
-        if(dataStorageManager.count() > 0) {
+        if (dataStorageManager.count() > 0) {
             Intent intent = new Intent(this, DynamicLinearLayoutActivity.class);
             intent.putExtra("screenConfig", Converter.getValuesJsonString(dataStorageManager.getValues()));
             intent.putExtra("requestMode", Constants.REQUEST_CODE_SCREEN_PREVIEW);
@@ -215,7 +254,7 @@ public class ScreenDesignActivity extends BaseActivity {
         menu.removeItem(R.id.menu_design_screen);
         menu.removeItem(R.id.menu_export);
         menu.removeItem(R.id.menu_pay);
-        if(isDesignMode()){
+        if (isDesignMode()) {
             menu.removeItem(R.id.menu_add);
             menu.removeItem(R.id.menu_remove);
             menu.removeItem(R.id.menu_view);
@@ -233,7 +272,7 @@ public class ScreenDesignActivity extends BaseActivity {
                 startDyanmicScreenDesignActivity(false);
                 return true;
             case R.id.menu_edit:
-                if( isDesignMode()) {
+                if (isDesignMode()) {
                     showEditView(!(editViewLayout.getVisibility() == View.VISIBLE));
                 } else {
                     startDyanmicScreenDesignActivity(true);
@@ -241,6 +280,7 @@ public class ScreenDesignActivity extends BaseActivity {
                 return true;
             case R.id.menu_remove:
                 remove();
+                return true;
             case R.id.menu_view:
                 startDyanmicScreenPreviewActivity();
                 return true;
@@ -275,6 +315,7 @@ public class ScreenDesignActivity extends BaseActivity {
     }
 
     public void save() {
+        dataStorageManager.addDataStorageListener(dataStorageListener);
         if (keyField != null && keyField.length() > 0) {
             dataStorageManager.save(keyField, valueField);
             showEditView(false);
@@ -287,10 +328,6 @@ public class ScreenDesignActivity extends BaseActivity {
             dataStorageManager.remove(keyField);
             clear();
         }
-    }
-
-    public void clear(View view) {
-        clear();
     }
 
     public void clear() {
@@ -328,25 +365,28 @@ public class ScreenDesignActivity extends BaseActivity {
         }
 
         if (requestCode == Constants.REQUEST_CODE_SCREEN_DESIGN && resultCode == Constants.RESULT_CODE_OK) {
+            Log.d(CLASS_TAG, "onActivityResult design");
             valueField = data.getExtras().getString("data");
-            Toast.makeText(this, "Received\n" + valueField,
-                    Toast.LENGTH_LONG).show();
+//            Toast.makeText(this, "Received\n" + valueField,
+//                    Toast.LENGTH_LONG).show();
             ScreenControl screenControl = gson.fromJson(valueField, ScreenControl.class);
             keyField = screenControl.getControlId();
             save();
         }
 
         if (requestCode == Constants.REQUEST_CODE_SCREEN_CAPTURE && resultCode == Constants.RESULT_CODE_OK) {
+            Log.d(CLASS_TAG, "onActivityResult capture");
             valueField = data.getExtras().getString("data");
             keyField = data.getExtras().getString("key");
-            Toast.makeText(this, "Received\n" + valueField,
-                    Toast.LENGTH_LONG).show();
+//            Toast.makeText(this, "Received\n" + valueField,
+//                    Toast.LENGTH_LONG).show();
             save();
         }
     }
 
     @Override
     public void onStop() {
+        Log.d(CLASS_TAG, "onStop");
         super.onStop();
         dataStorageManager.removeDataStorageListeners();
     }
@@ -406,4 +446,5 @@ public class ScreenDesignActivity extends BaseActivity {
                 "    }\n" +
                 "]";
     }
+
 }

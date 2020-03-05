@@ -48,8 +48,6 @@ import java.util.List;
 public class MainActivity extends BaseActivity implements ListviewActions {
     EditText valueField;
     ListView listView;
-    //SimpleAdapter listAdapter;
-    //ListviewKeyValueMapAdapter listAdapter;
     ListviewKeyValueObjectAdapter listAdapter;
     DataStorage dataStorageManager;
     ReadOnceDataStorage readOnceDataStorage;
@@ -69,7 +67,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
         initDataStorageAndLoadData(this);
     }
 
-    private void loadUI(){
+    private void loadUI() {
         Log.d(CLASS_TAG, "loadUI");
         setContentView(R.layout.activity_main);
         valueField = (EditText) findViewById(R.id.VALUE_1);
@@ -80,17 +78,12 @@ public class MainActivity extends BaseActivity implements ListviewActions {
     }
 
     private void initDataStorageAndLoadData(Context context) {
-        new Thread() {
-            @Override
-            public void run() {
-                Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
-                dataStorageManager = Factory.getDataStorageIntsance(context,
-                        getDataStorageType(),
-                        sharedPreferenceName,
-                        true,
-                        false);
-                Log.d(CLASS_TAG, "initDataStorageAndLoadData->addDataStorageListener");
-                dataStorageManager.addDataStorageListener(new DataStorageListener() {
+        Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
+        dataStorageManager = Factory.getDataStorageIntsance(context,
+                getDataStorageType(),
+                sharedPreferenceName,
+                true,
+                false, new DataStorageListener() {
                     @Override
                     public void dataChanged(String key, String value) {
                         Log.d(CLASS_TAG, "dataChanged key: " + key + ", value: " + value);
@@ -103,23 +96,13 @@ public class MainActivity extends BaseActivity implements ListviewActions {
                         loadDataInListView(data);
                     }
                 });
-                Log.d(CLASS_TAG, "initDataStorageAndLoadData->loadData");
-                dataStorageManager.loadData();
-            }
-        }.start();
+        Log.d(CLASS_TAG, "initDataStorageAndLoadData->loadData");
+        dataStorageManager.loadData();
     }
 
     private void loadDataInListView(List<KeyValue> data) {
-        try {
-            runOnUiThread(new Runnable() {
-                public void run() {
-                    Log.d(CLASS_TAG, "loadDataInListView->ui thread run");
-                    listAdapter.setData(data);
-                }
-            });
-        } catch (final Exception ex) {
-            Log.i(CLASS_TAG, "Exception in thread");
-        }
+        Log.d(CLASS_TAG, "loadDataInListView");
+        runOnUiThread(() -> listAdapter.setData(data));
     }
 
     private void setValueFieldClearButtonAction() {
@@ -133,7 +116,8 @@ public class MainActivity extends BaseActivity implements ListviewActions {
 
                 if (event.getAction() == MotionEvent.ACTION_UP) {
                     if (event.getRawX() >= (valueField.getRight() - valueField.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width())) {
-                        valueField.setText("");
+
+                        clear();
                         return true;
                     }
                 }
@@ -147,6 +131,8 @@ public class MainActivity extends BaseActivity implements ListviewActions {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // as user is typing test, need to clear earlier key if any and user need to select the record from list
+                key = null;
                 if (count < before) {
                     // We're deleting char so we need to reset the adapter data
                     listAdapter.resetData();
@@ -165,15 +151,6 @@ public class MainActivity extends BaseActivity implements ListviewActions {
             }
         });
 
-    }
-
-    public void onFindCheckboxClicked(View view) {
-        boolean checked = ((CheckBox) view).isChecked();
-        if(checked){
-            valueField.setHint(R.string.searchText);
-        } else{
-            valueField.setHint(R.string.subject);
-        }
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -288,22 +265,14 @@ public class MainActivity extends BaseActivity implements ListviewActions {
         startActivity(intent);
     }
 
-    public void edit(View view) {
-        edit();
-    }
-
     public void clear() {
         key = null;
         setEditView("");
         valueField.requestFocus();
     }
 
-    public void clear(View view) {
-        clear();
-    }
-
     private void populateListView() {
-        listAdapter = new ListviewKeyValueObjectAdapter(Collections.emptyList(),this, R.layout.list_view_items);
+        listAdapter = new ListviewKeyValueObjectAdapter(Collections.emptyList(), this, R.layout.list_view_items);
         listView.setAdapter(listAdapter);
         listView.setTextFilterEnabled(true);
         setOnItemClickListenerToListView();
@@ -334,14 +303,14 @@ public class MainActivity extends BaseActivity implements ListviewActions {
         listView.setOnItemLongClickListener(listener);
     }
 
-    private void displayTextviewActivity(String sharedPreferenceName) {
-        if(sharedPreferenceName != null && !sharedPreferenceName.isEmpty()) {
-            displayTextviewActivity(sharedPreferenceName, SharedPrefManager.getDataString(this, sharedPreferenceName));
+    private void displayTextviewActivity(String fileName) {
+        if (fileName != null && !fileName.isEmpty()) {
+            displayTextviewActivity(fileName, dataStorageManager.getDataString(fileName));
         }
     }
 
     private void displayTextviewActivity(String title, String text) {
-        if(text != null && !text.isEmpty()) {
+        if (text != null && !text.isEmpty()) {
             Intent intent = new Intent(MainActivity.this, ScrollingTextViewActivity.class);
             intent.putExtra("subject", title);
             intent.putExtra("text", text);
@@ -376,11 +345,11 @@ public class MainActivity extends BaseActivity implements ListviewActions {
         startActivity(intent);
     }
 
-    private void doDesignOrCapture(){
+    private void doDesignOrCapture() {
 
         String fileName = valueField.getText().toString();
         if (!fileName.isEmpty()) {
-            startDesignOrEditActivity(fileName, Constants.REQUEST_CODE_SCREEN_DESIGN,null);
+            startDesignOrEditActivity(fileName, Constants.REQUEST_CODE_SCREEN_DESIGN, null);
         }
     }
 
@@ -389,7 +358,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
         intent.putExtra("screenName", fileName);
         intent.putExtra("requestMode", requestMode);
         intent.putExtra("userId", userId);
-        if(requestMode == Constants.REQUEST_CODE_SCREEN_CAPTURE) {
+        if (requestMode == Constants.REQUEST_CODE_SCREEN_CAPTURE) {
             intent.putExtra("screenConfig", screeConfig);
         }
         startActivity(intent);
@@ -400,7 +369,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
      */
     private void addToShadaKosh() {
         String collectionName = valueField.getText().toString();
-        if(collectionName != null && !collectionName.isEmpty()) {
+        if (collectionName != null && !collectionName.isEmpty()) {
             Intent intent = new Intent(MainActivity.this, ShabdaKoshActivity.class);
             intent.putExtra("collectionToAddToShabdaKosh", collectionName);
             intent.putExtra("userId", userId);
@@ -506,12 +475,12 @@ public class MainActivity extends BaseActivity implements ListviewActions {
     }
 
     public void importFile() {
-        selectFile(StorageUtil.PICK_FILE_FOR_IMPORT,false);
+        selectFile(StorageUtil.PICK_FILE_FOR_IMPORT, false);
     }
 
     private void importFile(String sharedPreferenceName, JSONObject data) {
         try {
-            if(SharedPrefManager.loadData(this, sharedPreferenceName, JsonHelper.toMap(data), true)){
+            if (SharedPrefManager.loadData(this, sharedPreferenceName, JsonHelper.toMap(data), true)) {
                 valueField.setText(sharedPreferenceName);
                 save();
             }
@@ -539,7 +508,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
                 case StorageUtil.PICK_FILE_FOR_IMPORT:
                 case StorageUtil.PICK_FILE_FOR_VIEW:
                     String fileName = StorageUtil.getFileName(this, fileUri);
-                    if(requestCode == StorageUtil.PICK_FILE_FOR_IMPORT) {
+                    if (requestCode == StorageUtil.PICK_FILE_FOR_IMPORT) {
                         if (fileName.substring(fileName.lastIndexOf(".")).equalsIgnoreCase(".json")) {
                             JSONObject fileData = StorageUtil.getObjectFromDocumentFile(this, fileUri);
                             Toast.makeText(this, "Importing from file " + fileName,
@@ -549,15 +518,14 @@ public class MainActivity extends BaseActivity implements ListviewActions {
                             Toast.makeText(this, "Only JSON files are supported",
                                     Toast.LENGTH_LONG).show();
                         }
-                    } else{
-                        String text = null;
-                        if(fileName.substring(fileName.lastIndexOf(".")).equalsIgnoreCase(".json")){
-                            JSONObject fileData = StorageUtil.getObjectFromDocumentFile(this, fileUri);
-                            text = fileData.toString();
+                    } else {
+                        String text = StorageUtil.getTextFromDocumentFile(this, fileUri);
+                        if (text != null) {
+                            displayTextviewActivity(fileName, text);
                         } else {
-                            text = StorageUtil.getTextFromDocumentFile(this, fileUri);
+                            Toast.makeText(this, "Unable to read data from file : " + fileName,
+                                    Toast.LENGTH_LONG).show();
                         }
-                        displayTextviewActivity(fileName, text);
                     }
                     break;
                 default:
@@ -571,27 +539,28 @@ public class MainActivity extends BaseActivity implements ListviewActions {
         super.onStop();
         dataStorageManager.removeDataStorageListeners();
     }
+
     /*
     if screen config is found then start ScreenDesignActivity
     otherwise start normal edit activity
      */
-    private void startActivityForEdit(String collection){
+    private void startActivityForEdit(String collection) {
         readOnceDataStorage = Factory.getReadOnceDataStorageIntsance(this,
-            getDataStorageType(), Constants.SCREEN_DESIGN + collection,
-            new DataStorageListener() {
-                @Override
-                public void dataChanged(String key, String value) {
-                }
-
-                @Override
-                public void dataLoaded(List<KeyValue> data) {
-                    if(data.size() >0) {
-                        String screenConfig = Converter.getValuesJsonString(data);
-                        startDesignOrEditActivity(collection, Constants.REQUEST_CODE_SCREEN_CAPTURE, screenConfig);
-                    } else {
-                        startEditActivity(collection);
+                getDataStorageType(), Constants.SCREEN_DESIGN + collection,
+                new DataStorageListener() {
+                    @Override
+                    public void dataChanged(String key, String value) {
                     }
-                }
-            });
+
+                    @Override
+                    public void dataLoaded(List<KeyValue> data) {
+                        if (data.size() > 0) {
+                            String screenConfig = Converter.getValuesJsonString(data);
+                            startDesignOrEditActivity(collection, Constants.REQUEST_CODE_SCREEN_CAPTURE, screenConfig);
+                        } else {
+                            startEditActivity(collection);
+                        }
+                    }
+                });
     }
 }

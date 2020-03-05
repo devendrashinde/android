@@ -21,10 +21,15 @@ public class FireDbReadOnceDataStorageImpl extends ReadOnceDataStorageManager {
     }
 
     private void initialiseDBSupport(){
-        mAuth = FirebaseAuth.getInstance();
-        mDatabase = FirebaseDatabase.getInstance()
-                .getReference(Constants.DATABASE_PATH_NOTE_DETAILS + "/" + collectionName + "/" + mAuth.getUid());
-        readDataOnce();
+        new Thread() {
+            @Override
+            public void run() {
+                mAuth = FirebaseAuth.getInstance();
+                mDatabase = FirebaseDatabase.getInstance()
+                        .getReference(Constants.DATABASE_PATH_NOTE_DETAILS + "/" + collectionName + "/" + mAuth.getUid());
+                readDataOnce();
+            }
+        }.start();
     }
 
     private void readDataOnce(){
@@ -58,5 +63,4 @@ public class FireDbReadOnceDataStorageImpl extends ReadOnceDataStorageManager {
         removeDataStorageListeners();
         mDatabase.removeEventListener(valueEventListener);
     }
-
 }

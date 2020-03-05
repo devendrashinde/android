@@ -5,6 +5,8 @@ import androidx.fragment.app.DialogFragment;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
@@ -54,10 +56,12 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     Map<String, String> data = new HashMap<>();
     Gson gson = new GsonBuilder().create();
     Integer requestMode = null;
+    private static final String CLASS_TAG = "DynamicActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(CLASS_TAG, "onCreate");
         setContentView(R.layout.activity_dynamic_linear_layout);
 
         Bundle bundle = getIntent().getExtras();
@@ -83,41 +87,41 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     }
 
     private void renderUI(String screenConfig) {
+        Log.d(CLASS_TAG, "enter(renderUI)");
         new Thread() {
             @Override
             public void run() {
                 parseConfig(screenConfig);
                 createControls();
                 try {
-                    runOnUiThread(new Runnable() {
-                        public void run() {
-                            addControlsToUI();
-                        }
-                    });
+                    for (ScreenControl screenControl : controls) {
+                        new Handler(Looper.getMainLooper()).post(() -> addControlsToUI(screenControl));
+                    }
                 } catch (final Exception ex) {
                     Log.i("---","Exception in thread");
                 }
             }
         }.start();
+        Log.d(CLASS_TAG, "exit(renderUI)");
     }
 
-    private void addControlsToUI() {
-        for (ScreenControl screenControl : controls) {
-            if(screenControl.getLabelControl() != null){
-                linearLayout.addView(screenControl.getLabelControl());
-            }
-
-            if(screenControl.getControlType() == ControlType.CheckBox){
-                for(View view : screenControl.getOptionControls()){
-                    linearLayout.addView(view);
-                }
-            } else if(screenControl.getValueControl() != null){
-                linearLayout.addView(screenControl.getValueControl());
-            }
+    private void addControlsToUI(ScreenControl screenControl) {
+        Log.d(CLASS_TAG, "enter(addControlsToUI: " + screenControl.getControlId());
+        if(screenControl.getLabelControl() != null){
+            linearLayout.addView(screenControl.getLabelControl());
         }
+        if(screenControl.getControlType() == ControlType.CheckBox){
+            for(View view : screenControl.getOptionControls()){
+                linearLayout.addView(view);
+            }
+        } else if(screenControl.getValueControl() != null){
+            linearLayout.addView(screenControl.getValueControl());
+        }
+        Log.d(CLASS_TAG, "exit(addControlsToUI)");
     }
 
     private void createControls() {
+        Log.d(CLASS_TAG, "enter(createControls)");
         for (ScreenControl screenControl : controls) {
             switch (screenControl.getControlType()) {
                 case Text:
@@ -154,6 +158,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                     break;
             }
         }
+        Log.d(CLASS_TAG, "exit(createControls)");
     }
 
     private void addText(ScreenControl screenControl) {
@@ -218,7 +223,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         addText(screenControl);
         String[] options = screenControl.getOptionValues();
         RadioGroup rg = new RadioGroup(this);
-        rg.setOrientation(RadioGroup.HORIZONTAL);//or RadioGroup.VERTICAL
+        rg.setOrientation(options.length <= 2 ? RadioGroup.HORIZONTAL : RadioGroup.VERTICAL);
         rg.setId(View.generateViewId());
         List<String> values = getOptionValues(screenControl);
         int selectedId = -1;
@@ -379,8 +384,8 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
             intent.putExtra("key", getIndexValues());
         }
         setResult(Constants.RESULT_CODE_OK, intent);
-        Toast.makeText(this, "You have entered\n" + data.toString(),
-                Toast.LENGTH_LONG).show();
+//        Toast.makeText(this, "You have entered\n" + data.toString(),
+//                Toast.LENGTH_LONG).show();
         finish();
     }
 
@@ -460,6 +465,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     }
 
     private void parseConfig(String screenConfigJson) {
+        Log.d(CLASS_TAG, "parseConfig");
         controls = new ArrayList<>();
 
         try {
@@ -494,5 +500,12 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private boolean isMultiOptionControl(ControlType type) {
         return type == ControlType.CheckBox || type == ControlType.RadioButton || type == ControlType.DropDownList;
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        controls = null;
+        data = null;
     }
 }

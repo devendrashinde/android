@@ -108,6 +108,7 @@ public class SellTeaActivity extends BaseActivity implements ListviewActions {
                 calculateNotPaidTotal(data);
             }
         });
+        dataStorageManager.loadData();
     }
 
     private void initialiseSettingStorage() {

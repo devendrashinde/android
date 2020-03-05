@@ -53,6 +53,7 @@ public class CafeSettingsActivity extends BaseActivity implements ListviewAction
         collectionName = Constants.CAFE_SETTINGS;
         userId = bundle.getString("userId");
         setTitle(collectionName);
+
         dataStorageManager = Factory.getDataStorageIntsance(this, getDataStorageType(), collectionName, false, true);
         dataStorageManager.addDataStorageListener(new DataStorageListener() {
             @Override
@@ -65,6 +66,8 @@ public class CafeSettingsActivity extends BaseActivity implements ListviewAction
                 listAdapter.setData(data);
             }
         });
+        dataStorageManager.loadData();
+
         populateRateDate();
         populateListView();
 

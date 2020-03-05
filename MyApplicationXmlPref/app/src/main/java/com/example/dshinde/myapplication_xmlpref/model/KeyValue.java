@@ -1,5 +1,7 @@
 package com.example.dshinde.myapplication_xmlpref.model;
 
+import androidx.annotation.Nullable;
+
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.services.SharedPrefManager;
 import com.google.firebase.database.Exclude;
@@ -48,7 +50,6 @@ public class KeyValue {
             }
         }
         return new KeyValue(key, value);
-
     }
 
     @Exclude
@@ -57,5 +58,14 @@ public class KeyValue {
         result.put(Constants.KEY, key);
         result.put(Constants.VALUE, value);
         return result;
+    }
+
+    @Override
+    public boolean equals(@Nullable Object obj) {
+        if(obj == null) return false;
+        if(this.key == null) return false;
+        KeyValue kv = (KeyValue) obj;
+        if(kv.getKey() == null) return false;
+        return this.key.equals(kv.getKey());
     }
 }

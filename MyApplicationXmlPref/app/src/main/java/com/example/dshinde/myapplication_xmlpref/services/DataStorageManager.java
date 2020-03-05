@@ -1,5 +1,8 @@
 package com.example.dshinde.myapplication_xmlpref.services;
 
+import android.os.Handler;
+import android.os.Looper;
+
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageObservable;
@@ -18,11 +21,11 @@ public abstract class DataStorageManager implements DataStorage {
     boolean descendingOrder=false;
 
     public void addDataStorageListener(DataStorageListener listener) {
-        listeners.add(listener);
+        if(listener != null) listeners.add(listener);
     }
 
     public void removeDataStorageListener(DataStorageListener listener) {
-        listeners.remove(listener);
+        if(listener != null) listeners.remove(listener);
     }
 
     public void removeDataStorageListeners() {
@@ -46,12 +49,7 @@ public abstract class DataStorageManager implements DataStorage {
     }
 
     public int getKeyIndex(String key) {
-        for(KeyValue item : data){
-            if(item.getKey().equals(key)){
-                return data.indexOf(item);
-            }
-        }
-        return -1;
+        return data.indexOf(new KeyValue(key, null));
     }
 
     public String getValue(String key) {
@@ -88,7 +86,7 @@ public abstract class DataStorageManager implements DataStorage {
 
     void notifyDataSetChanged(String key, String value) {
         for (DataStorageListener listener : listeners) {
-            listener.dataChanged(key, value);
+            new Handler(Looper.getMainLooper()).post(() -> listener.dataChanged(key, value));
         }
     }
 

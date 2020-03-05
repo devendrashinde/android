@@ -229,11 +229,13 @@ public class StorageUtil {
         try {
             InputStream input = context.getContentResolver().openInputStream(fileUri);
             BufferedReader streamReader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
+
+
             StringBuilder responseStrBuilder = new StringBuilder();
             String inputStr;
             try {
                 while ((inputStr = streamReader.readLine()) != null)
-                    responseStrBuilder.append(inputStr);
+                    responseStrBuilder.append(inputStr).append("\n");
             } finally {
                 streamReader.close();
                 input.close();

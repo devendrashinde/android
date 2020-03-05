@@ -2,6 +2,7 @@ package com.example.dshinde.myapplication_xmlpref;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Html;
 import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.View;
@@ -10,6 +11,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.dshinde.myapplication_xmlpref.helper.JsonHelper;
 
 public class ScrollingTextViewActivity extends AppCompatActivity {
 
@@ -23,7 +26,8 @@ public class ScrollingTextViewActivity extends AppCompatActivity {
         textView = (TextView) findViewById(R.id.textView);
         Bundle bundle = getIntent().getExtras();
         setTitle(bundle.getString("subject"));
-        textView.setText(bundle.getString("text"));
+        String data = JsonHelper.formatAsString(bundle.getString("text"),true);
+        textView.setText(Html.fromHtml(data));
         defaultTextSize = textView.getTextSize();
     }
 

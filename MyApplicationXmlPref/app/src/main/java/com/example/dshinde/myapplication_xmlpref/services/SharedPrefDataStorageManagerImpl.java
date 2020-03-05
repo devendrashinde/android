@@ -2,12 +2,12 @@ package com.example.dshinde.myapplication_xmlpref.services;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -19,27 +19,33 @@ public class SharedPrefDataStorageManagerImpl extends DataStorageManager {
     SharedPreferences sharedpreferences;
     String sharedPreferenceName;
     int lastKeyValue =-1;
+    private static final String CLASS_TAG = "SharedPrefStorageMgr";
 
     public SharedPrefDataStorageManagerImpl(Context context, String sharedPreferenceName, boolean autoKey) {
         this(context, sharedPreferenceName, autoKey, false);
     }
 
     public SharedPrefDataStorageManagerImpl(Context context, String sharedPreferenceName, boolean autoKey, boolean descendingOrder) {
+        this(context, sharedPreferenceName, autoKey, descendingOrder, null);
+    }
+
+    public SharedPrefDataStorageManagerImpl(Context context, String sharedPreferenceName, boolean autoKey, boolean descendingOrder, DataStorageListener dataStorageListener) {
         this.sharedPreferenceName = sharedPreferenceName;
         this.autoKey = autoKey;
         this.descendingOrder = descendingOrder;
         this.context = context;
-        this.sharedpreferences = context.getSharedPreferences(sharedPreferenceName, MODE_PRIVATE);
-        loadData();
+        this.addDataStorageListener(dataStorageListener);
+        getDatabaseCollectionReference();
     }
 
     public void remove(String key) {
+        Log.d(CLASS_TAG, "remove");
         new Thread() {
             @Override
             public void run() {
                 removeFromDataSource(key);
+                notifyDataChanged();
                 sharedpreferences.edit().remove(key).apply();
-                notifyDataSetChanged(key, null);
             }
         }.start();
     }
@@ -62,6 +68,7 @@ public class SharedPrefDataStorageManagerImpl extends DataStorageManager {
     }
 
     private void updateDB(List<KeyValue> values) {
+        Log.d(CLASS_TAG, "update DB");
         new Thread() {
             @Override
             public void run() {
@@ -76,33 +83,50 @@ public class SharedPrefDataStorageManagerImpl extends DataStorageManager {
                     updateDataSource(key, value);
                     sharedpreferences.edit().putString(key, value).apply();
                 }
-                Collections.sort(data, keyValueComparator);
-                notifyDataSetChanged(key, value);
+                Log.d(CLASS_TAG, "DB updated");
+                notifyDataChanged();
             }
         }.start();
-
     }
 
+    private void notifyDataChanged(){
+        Log.d(CLASS_TAG, "notifyDataChanged");
+        Collections.sort(data, keyValueComparator);
+        notifyDataLoaded();
+    }
+
+    private void getDatabaseCollectionReference() {
+        Log.d(CLASS_TAG, "getDatabaseCollectionReference");
+        if(sharedpreferences == null) {
+            sharedpreferences = context.getSharedPreferences(sharedPreferenceName, MODE_PRIVATE);
+        }
+    }
     public List<KeyValue> getValues() {
         return data;
     }
 
     public void loadData() {
-        data.clear();
-        Map<String, ?> allEntries = sharedpreferences.getAll();
-        for (Map.Entry<String, ?> entry : allEntries.entrySet()) {
-            if (autoKey && entry.getKey().compareToIgnoreCase("LastKey") != 0) {
-                if (lastKeyValue < Integer.valueOf(entry.getKey()))
-                    lastKeyValue = Integer.valueOf(entry.getKey());
+        Log.d(CLASS_TAG, "loadData");
+        new Thread() {
+            @Override
+            public void run() {
+                android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+                data.clear();
+                Map<String, ?> allEntries = sharedpreferences.getAll();
+                for (Map.Entry<String, ?> entry : allEntries.entrySet()) {
+                    if (autoKey && entry.getKey().compareToIgnoreCase("LastKey") != 0) {
+                        if (lastKeyValue < Integer.valueOf(entry.getKey()))
+                            lastKeyValue = Integer.valueOf(entry.getKey());
+                    }
+                    data.add(new KeyValue(entry.getKey(), entry.getValue().toString()));
+                }
+                notifyDataChanged();
             }
-            data.add(new KeyValue(entry.getKey(), entry.getValue().toString()));
-        }
-        Collections.sort(data, keyValueComparator);
-        notifyDataLoaded();
+        }.start();
     }
 
-    public String getDataString(String fileName){
-        return getDataMap(fileName).toString();
+    public String getDataString(String collectionName){
+        return getDataMap(collectionName).toString();
     }
 
     public Map<String,String> getDataMap(){

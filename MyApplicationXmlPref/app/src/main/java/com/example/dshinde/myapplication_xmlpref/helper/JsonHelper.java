@@ -73,11 +73,15 @@ public class JsonHelper {
         if(html) {
             formattedValue = formattedValue.replaceAll("\\\\n", "<br>");
             formattedValue = formattedValue.replaceAll("\\{\"", "<b>");
+            formattedValue = formattedValue.replaceAll("\\{", "<b>");
+            formattedValue = formattedValue.replaceAll("=\\{", "</b>{");
             formattedValue = formattedValue.replaceAll("\":\"", "</b>:<br>");
             formattedValue = formattedValue.replaceAll("\",\"", "<br><b>");
+            formattedValue = formattedValue.replaceAll("\"\\},", "<br><br><b>");
             formattedValue = formattedValue.replaceAll("\"", "");
             formattedValue = formattedValue.replaceAll("\\}", "");
             formattedValue = formattedValue.replaceAll("\\\\u0026", "&amp;");
+            formattedValue = formattedValue.replaceAll("=", "</b><br>");
         } else {
             formattedValue = formattedValue.replaceAll("\\\\n", "\n ");
             formattedValue = formattedValue.replaceAll("\",\"", "\n");

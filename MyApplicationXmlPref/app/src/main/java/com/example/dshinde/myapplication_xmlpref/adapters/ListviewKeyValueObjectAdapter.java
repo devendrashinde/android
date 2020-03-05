@@ -19,21 +19,25 @@ import java.util.List;
 
 public class ListviewKeyValueObjectAdapter extends ArrayAdapter<KeyValue> implements Filterable {
 
-    private List<KeyValue> kvList;
+    private List<KeyValue> kvList = new ArrayList<>();
+    private List<KeyValue> origList = new ArrayList<>();
     private Context context;
     private Filter kvFilter;
-    private List<KeyValue> origList;
     private int layoutResource;
 
     public ListviewKeyValueObjectAdapter(List<KeyValue> kvList, Context ctx, int layoutResource) {
         super(ctx, layoutResource, kvList);
-        this.kvList = kvList;
         this.context = ctx;
-        this.origList = kvList;
+        //this.kvList = kvList;
+        //this.origList = kvList;
         this.layoutResource = layoutResource;
     }
 
     public void setData(List<KeyValue> kvList){
+//        this.kvList.clear();
+//        for(KeyValue kv : kvList){
+//            this.kvList.add(kv);
+//        }
         this.kvList = kvList;
         this.origList = kvList;
         notifyDataSetChanged();
