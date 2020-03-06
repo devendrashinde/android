@@ -46,17 +46,21 @@ public class ShabdaKoshActivity extends BaseActivity {
     }
 
     private void initDataStorage() {
-        dataStorageManager = Factory.getDataStorageIntsance(this, getDataStorageType(), collectionName, false, false);
-        dataStorageManager.addDataStorageListener(new DataStorageListener() {
-            @Override
-            public void dataChanged(String key, String value) {
-            }
+        dataStorageManager = Factory.getDataStorageIntsance(this,
+                getDataStorageType(),
+                collectionName, false,
+                false, new DataStorageListener() {
+                    @Override
+                    public void dataChanged(String key, String value) {
+                    }
 
-            @Override
-            public void dataLoaded(List<KeyValue> data) {
-                addToShadaKosh();
-            }
-        });
+                    @Override
+                    public void dataLoaded(List<KeyValue> data) {
+                        dataStorageManager.disableSort();
+                        dataStorageManager.disableNotifyDataChange();
+                        addToShadaKosh();
+                    }
+                });
         dataStorageManager.loadData();
     }
 
@@ -75,52 +79,52 @@ public class ShabdaKoshActivity extends BaseActivity {
     }
 
     private void addToShadaKosh() {
-        if(collectionToAdd != null && !collectionToAdd.isEmpty()) {
+        if (collectionToAdd != null && !collectionToAdd.isEmpty()) {
             firebaseReadOnceImpl = Factory.getReadOnceDataStorageIntsance(this,
-                    getDataStorageType(), collectionToAdd,
-                    new DataStorageListener() {
-                        @Override
-                        public void dataChanged(String key, String value) {
-                        }
+                getDataStorageType(), collectionToAdd,
+                new DataStorageListener() {
+                    @Override
+                    public void dataChanged(String key, String value) {
+                    }
 
-                        @Override
-                        public void dataLoaded(List<KeyValue> dataOfCollectionToBeAdded) {
-                            if (! addingToShabdKosh ) {
-                                addingToShabdKosh = true;
-                                Gson gson = new GsonBuilder().setPrettyPrinting().create();
-                                for (KeyValue kv : dataOfCollectionToBeAdded) {
-                                    setEditView (kv.getKey(), kv.getValue());
-                                    String[] shabds = kv.getValue().split("\\W+");
+                    @Override
+                    public void dataLoaded(List<KeyValue> dataOfCollectionToBeAdded) {
+                        if (!addingToShabdKosh) {
+                            addingToShabdKosh = true;
+                            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                            for (KeyValue kv : dataOfCollectionToBeAdded) {
+                                setEditView(kv.getKey(), kv.getValue());
+                                String[] shabds = kv.getValue().split("\\W+");
 
-                                    for (String shabd : shabds) {
-                                        ShabdaUsage shabdaUsage = null;
-                                        ShabdaDetails shabdaDetails = new ShabdaDetails();
-                                        int existingValueIndex = dataStorageManager.getKeyIndex(shabd);
-                                        if (existingValueIndex != -1) {
-                                            KeyValue keyValue = dataStorageManager.getValue(existingValueIndex);
-                                            if(keyValue.getValue() != null && keyValue.getValue().length() > 0) {
-                                                shabdaDetails = gson.fromJson(keyValue.getValue(), ShabdaDetails.class);
-                                            }
+                                for (String shabd : shabds) {
+                                    ShabdaUsage shabdaUsage = null;
+                                    ShabdaDetails shabdaDetails = new ShabdaDetails();
+                                    int existingValueIndex = dataStorageManager.getKeyIndex(shabd);
+                                    if (existingValueIndex != -1) {
+                                        KeyValue keyValue = dataStorageManager.getValue(existingValueIndex);
+                                        if (keyValue.getValue() != null && keyValue.getValue().length() > 0) {
+                                            shabdaDetails = gson.fromJson(keyValue.getValue(), ShabdaDetails.class);
                                         }
-                                        shabdaUsage = shabdaDetails.getUsage(collectionToAdd);
-                                        shabdaUsage.setNote(collectionToAdd);
-                                        shabdaUsage.addReference(kv.getKey());
-                                        shabdaDetails.addUsage(shabdaUsage);
-                                        dataStorageManager.save(shabd, gson.toJson(shabdaDetails));
                                     }
+                                    shabdaUsage = shabdaDetails.getUsage(collectionToAdd);
+                                    shabdaUsage.setNote(collectionToAdd);
+                                    shabdaUsage.addReference(kv.getKey());
+                                    shabdaDetails.addUsage(shabdaUsage);
+                                    dataStorageManager.save(shabd, gson.toJson(shabdaDetails));
                                 }
-                                clear();
-                                value1Field.setText("Successfully added  " + collectionToAdd + " to " + collectionName);
                             }
+                            clear();
+                            value1Field.setText("Successfully added  " + collectionToAdd + " to " + collectionName);
                         }
-                    });
+                    }
+                });
         }
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        if(dataStorageManager != null ) dataStorageManager.removeDataStorageListeners();
-        if(firebaseReadOnceImpl != null ) firebaseReadOnceImpl.removeDataStorageListeners();
+        if (dataStorageManager != null) dataStorageManager.removeDataStorageListeners();
+        if (firebaseReadOnceImpl != null) firebaseReadOnceImpl.removeDataStorageListeners();
     }
 }

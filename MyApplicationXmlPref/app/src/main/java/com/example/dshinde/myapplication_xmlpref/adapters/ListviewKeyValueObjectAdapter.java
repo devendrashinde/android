@@ -28,16 +28,10 @@ public class ListviewKeyValueObjectAdapter extends ArrayAdapter<KeyValue> implem
     public ListviewKeyValueObjectAdapter(List<KeyValue> kvList, Context ctx, int layoutResource) {
         super(ctx, layoutResource, kvList);
         this.context = ctx;
-        //this.kvList = kvList;
-        //this.origList = kvList;
         this.layoutResource = layoutResource;
     }
 
     public void setData(List<KeyValue> kvList){
-//        this.kvList.clear();
-//        for(KeyValue kv : kvList){
-//            this.kvList.add(kv);
-//        }
         this.kvList = kvList;
         this.origList = kvList;
         notifyDataSetChanged();

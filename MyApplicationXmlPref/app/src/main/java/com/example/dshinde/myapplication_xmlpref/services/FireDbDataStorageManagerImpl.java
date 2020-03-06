@@ -170,7 +170,6 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
 
     private void notifyDataChanged(){
         Log.d(CLASS_TAG, "notifyDataChanged");
-        Collections.sort(data, keyValueComparator);
         notifyDataLoaded();
     }
 

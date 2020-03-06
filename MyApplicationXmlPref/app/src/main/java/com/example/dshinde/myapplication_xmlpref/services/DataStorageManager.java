@@ -5,7 +5,6 @@ import android.os.Looper;
 
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
-import com.example.dshinde.myapplication_xmlpref.listners.DataStorageObservable;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 
 import java.util.ArrayList;
@@ -19,6 +18,8 @@ public abstract class DataStorageManager implements DataStorage {
     List<KeyValue> data = new ArrayList<>();
     boolean autoKey=false;
     boolean descendingOrder=false;
+    boolean sortData =true;
+    boolean notifyDataChange=true;
 
     public void addDataStorageListener(DataStorageListener listener) {
         if(listener != null) listeners.add(listener);
@@ -84,15 +85,41 @@ public abstract class DataStorageManager implements DataStorage {
         }
     }
 
+    @Override
+    public void disableSort(){
+        sortData = false;
+    }
+
+    @Override
+    public void enableSort(){
+        sortData = true;
+    }
+
+    @Override
+    public void disableNotifyDataChange(){
+        notifyDataChange = false;
+    }
+
+    @Override
+    public void enableNotifyDataChange(){
+        notifyDataChange = true;
+    }
+
     void notifyDataSetChanged(String key, String value) {
-        for (DataStorageListener listener : listeners) {
-            new Handler(Looper.getMainLooper()).post(() -> listener.dataChanged(key, value));
+        if(notifyDataChange) {
+            if (sortData) Collections.sort(data, keyValueComparator);
+            for (DataStorageListener listener : listeners) {
+                listener.dataChanged(key, value);
+            }
         }
     }
 
     void notifyDataLoaded() {
-        for (DataStorageListener listener : listeners) {
-            listener.dataLoaded(data);
+        if(notifyDataChange) {
+            if (sortData) Collections.sort(data, keyValueComparator);
+            for (DataStorageListener listener : listeners) {
+                listener.dataLoaded(data);
+            }
         }
     }
 

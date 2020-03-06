@@ -26,6 +26,7 @@ import androidx.annotation.NonNull;
 
 import com.example.dshinde.myapplication_xmlpref.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.MainActivity;
+import com.example.dshinde.myapplication_xmlpref.MainActivityRecyclerView;
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -210,7 +211,7 @@ public class GoogleSignInActivity extends BaseActivity implements
     }
 
     private void startMainActivity(String userId){
-        Intent intent = new Intent(this, MainActivity.class);
+        Intent intent = new Intent(this, MainActivityRecyclerView.class);
         intent.putExtra("userId", userId);
         startActivity(intent);
     }

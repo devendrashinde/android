@@ -11,17 +11,33 @@ import android.widget.TextView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.listners.RecyclerViewKeyValueItemListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class RecyclerViewKeyValueAdapter extends RecyclerView.Adapter<RecyclerViewKeyValueAdapter.RecyclerViewKeyValueViewHolder> implements Filterable {
-    private List<KeyValue> kvList;
+    private List<KeyValue> kvList = new ArrayList<>();
+    private List<KeyValue> origList = new ArrayList<>();
+    RecyclerViewKeyValueItemListener recyclerViewKeyValueItemListener;
     private Context context;
     private int layoutResource;
     private Filter kvFilter;
-    private List<KeyValue> origList;
+
+    public RecyclerViewKeyValueAdapter(List<KeyValue> kvList, Context ctx, int layoutResource) {
+        this(kvList, ctx, layoutResource, null);
+    }
+
+    public RecyclerViewKeyValueAdapter(List<KeyValue> kvList, Context ctx, int layoutResource, RecyclerViewKeyValueItemListener recyclerViewKeyValueItemListener) {
+        super();
+        this.kvList = kvList;
+        this.context = ctx;
+        this.layoutResource = layoutResource;
+        this.origList = kvList;
+        this.recyclerViewKeyValueItemListener = recyclerViewKeyValueItemListener;
+    }
+
 
     @Override
     public Filter getFilter() {
@@ -78,7 +94,7 @@ public class RecyclerViewKeyValueAdapter extends RecyclerView.Adapter<RecyclerVi
     // Provide a reference to the views for each data item
     // Complex data items may need more than one view per item, and
     // you provide access to all the views for a data item in a view holder
-    public static class RecyclerViewKeyValueViewHolder extends RecyclerView.ViewHolder {
+    public  class RecyclerViewKeyValueViewHolder extends RecyclerView.ViewHolder {
         // each data item is just a string in this case
         public TextView keyView;
         public TextView valueView;
@@ -87,14 +103,24 @@ public class RecyclerViewKeyValueAdapter extends RecyclerView.Adapter<RecyclerVi
             super(itemView);
             keyView = itemView.findViewById(R.id.listKey);
             valueView = itemView.findViewById(R.id.listValue);
-        }
-    }
 
-    public RecyclerViewKeyValueAdapter(List<KeyValue> kvList, Context ctx, int layoutResource) {
-        this.kvList = kvList;
-        this.context = ctx;
-        this.layoutResource = layoutResource;
-        this.origList = kvList;
+            if(recyclerViewKeyValueItemListener != null) {
+                itemView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        // send selected contact in callback
+                        recyclerViewKeyValueItemListener.onItemClick(kvList.get(getAdapterPosition()));
+                    }
+                });
+
+                itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                    @Override
+                    public boolean onLongClick(View view) {
+                        return recyclerViewKeyValueItemListener.onItemLongClick(kvList.get(getAdapterPosition()));
+                    }
+                });
+            }
+        }
     }
 
     // Create new views (invoked by the layout manager)
@@ -144,5 +170,9 @@ public class RecyclerViewKeyValueAdapter extends RecyclerView.Adapter<RecyclerVi
 
     public long getItemId(int position) {
         return kvList.get(position).hashCode();
+    }
+
+    public void resetData() {
+        kvList = origList;
     }
 }
