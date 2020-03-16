@@ -13,9 +13,12 @@
     <string name="importFile">Import</string>
     <string name="new_subject">New Subject</string>
     <string name="subject">Subject Name</string>
+    <string name="select_file">Select File</string>
     <string name="title_scrolling_textview_activity">View</string>
     <string name="searchText">Enter Text to Find</string>
     <string name="tea">Tea</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
     <string name="coffe">Coffe</string>
     <string name="paid">Paid</string>
     <string name="notPaid">Not Paid</string>

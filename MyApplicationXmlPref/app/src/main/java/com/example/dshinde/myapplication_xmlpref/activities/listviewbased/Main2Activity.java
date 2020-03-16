@@ -1,4 +1,4 @@
-package com.example.dshinde.myapplication_xmlpref;
+package com.example.dshinde.myapplication_xmlpref.activities.listviewbased;
 
 import android.content.Context;
 import android.content.Intent;
@@ -18,6 +18,8 @@ import android.widget.Toast;
 
 import androidx.documentfile.provider.DocumentFile;
 
+import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.adapters.ListviewKeyValueObjectAdapter;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageSelectionResult;
@@ -202,11 +204,7 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
         String key = keyField.getText().toString();
         String value = valueField.getText().toString();
         if (!value.isEmpty() && !value.isEmpty()) {
-            Intent sendIntent = new Intent();
-            sendIntent.setAction(Intent.ACTION_SEND);
-            sendIntent.putExtra(Intent.EXTRA_TEXT, key + "\n" + value);
-            sendIntent.setType("text/plain");
-            startActivity(sendIntent);
+            share(key + "\n" + value);
         }
     }
 

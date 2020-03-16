@@ -24,9 +24,8 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
-import com.example.dshinde.myapplication_xmlpref.BaseActivity;
-import com.example.dshinde.myapplication_xmlpref.MainActivity;
-import com.example.dshinde.myapplication_xmlpref.MainActivityRecyclerView;
+import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.recyclerviewbased.MainActivityRecyclerView;
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;

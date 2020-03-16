@@ -20,6 +20,7 @@ public abstract class DataStorageManager implements DataStorage {
     boolean descendingOrder=false;
     boolean sortData =true;
     boolean notifyDataChange=true;
+    private int lastModifiedIndex=-1;
 
     public void addDataStorageListener(DataStorageListener listener) {
         if(listener != null) listeners.add(listener);
@@ -61,6 +62,10 @@ public abstract class DataStorageManager implements DataStorage {
         return "";
     }
 
+    public int getLastModifiedIndex(){
+        return lastModifiedIndex;
+    }
+
     public void save(String value) {
         save(null, value);
     }
@@ -73,6 +78,7 @@ public abstract class DataStorageManager implements DataStorage {
         int keyIndex = getKeyIndex(key);
         if (keyIndex >= 0) {
             data.remove(keyIndex);
+            lastModifiedIndex = keyIndex - 1;
         }
     }
 
@@ -80,8 +86,10 @@ public abstract class DataStorageManager implements DataStorage {
         int keyIndex = getKeyIndex(key);
         if (keyIndex >= 0) {
             data.set(keyIndex, new KeyValue(key, value));
+            lastModifiedIndex = keyIndex;
         } else {
             data.add(new KeyValue(key, value));
+            lastModifiedIndex = data.size()-1;
         }
     }
 

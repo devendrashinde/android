@@ -20,9 +20,10 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 
-import com.example.dshinde.myapplication_xmlpref.MainActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.MainActivity;
 import com.example.dshinde.myapplication_xmlpref.R;
-import com.example.dshinde.myapplication_xmlpref.BaseActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.recyclerviewbased.MainActivityRecyclerView;
 import com.example.dshinde.myapplication_xmlpref.auth.GoogleSignInActivity;
 
 public class SignInActivity extends BaseActivity implements
@@ -48,7 +49,7 @@ public class SignInActivity extends BaseActivity implements
     }
 
     private void startMainActivity(){
-        Intent intent = new Intent(this, MainActivity.class);
+        Intent intent = new Intent(this, MainActivityRecyclerView.class);
         String userId = null;
         intent.putExtra("userId", userId);
         startActivity(intent);

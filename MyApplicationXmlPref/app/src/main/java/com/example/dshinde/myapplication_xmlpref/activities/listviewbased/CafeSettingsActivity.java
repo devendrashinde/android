@@ -1,4 +1,4 @@
-package com.example.dshinde.myapplication_xmlpref;
+package com.example.dshinde.myapplication_xmlpref.activities.listviewbased;
 
 import android.os.Bundle;
 import android.view.Menu;
@@ -8,8 +8,9 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TextView;
 
+import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.adapters.ListviewKeyValueObjectAdapter;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;

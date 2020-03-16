@@ -1,4 +1,4 @@
-package com.example.dshinde.myapplication_xmlpref;
+package com.example.dshinde.myapplication_xmlpref.activities.listviewbased;
 
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -19,6 +19,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 
+import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.adapters.ListviewKeyValueObjectAdapter;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
@@ -225,15 +227,8 @@ public class SellTeaActivity extends BaseActivity implements ListviewActions {
     }
 
     public void share() {
-
         if (cafeSellSummary != null) {
-            Intent sendIntent = new Intent();
-            sendIntent.setAction(Intent.ACTION_SEND);
-
-            String json = gson.toJson(cafeSellSummary);
-            sendIntent.putExtra(Intent.EXTRA_TEXT, json);
-            sendIntent.setType("text/plain");
-            startActivity(sendIntent);
+            share(gson.toJson(cafeSellSummary));
         }
     }
 

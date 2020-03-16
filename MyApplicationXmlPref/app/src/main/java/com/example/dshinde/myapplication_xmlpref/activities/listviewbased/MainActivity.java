@@ -1,4 +1,4 @@
-package com.example.dshinde.myapplication_xmlpref;
+package com.example.dshinde.myapplication_xmlpref.activities.listviewbased;
 
 import android.app.Activity;
 import android.content.Context;
@@ -16,7 +16,6 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -24,6 +23,9 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.documentfile.provider.DocumentFile;
 
+import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.activities.ScrollingTextViewActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.adapters.ListviewKeyValueObjectAdapter;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.Converter;
@@ -44,6 +46,8 @@ import org.json.JSONObject;
 
 import java.util.Collections;
 import java.util.List;
+
+import static com.example.dshinde.myapplication_xmlpref.common.Constants.DRAWABLE_RIGHT;
 
 public class MainActivity extends BaseActivity implements ListviewActions {
     EditText valueField;
@@ -109,11 +113,6 @@ public class MainActivity extends BaseActivity implements ListviewActions {
         valueField.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                final int DRAWABLE_LEFT = 0;
-                final int DRAWABLE_TOP = 1;
-                final int DRAWABLE_RIGHT = 2;
-                final int DRAWABLE_BOTTOM = 3;
-
                 if (event.getAction() == MotionEvent.ACTION_UP) {
                     if (event.getRawX() >= (valueField.getRight() - valueField.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width())) {
 
@@ -241,14 +240,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
 
     public void share() {
         String fileName = valueField.getText().toString();
-        if (!fileName.isEmpty()) {
-            Intent sendIntent = new Intent();
-            sendIntent.setAction(Intent.ACTION_SEND);
-            String textToShare = fileName + "\n" + SharedPrefManager.getDataString(this, fileName);
-            sendIntent.putExtra(Intent.EXTRA_TEXT, textToShare);
-            sendIntent.setType("text/plain");
-            startActivity(sendIntent);
-        }
+        share(fileName);
     }
 
     public void edit() {
@@ -379,7 +371,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
 
     private void copy(String initialValue) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("New Subject");
+        builder.setTitle(R.string.new_subject);
 
         // Set up the input
         final EditText input = new EditText(this);
@@ -388,7 +380,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
         builder.setView(input);
 
         // Set up the buttons
-        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+        builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 String newFileName = input.getText().toString();
@@ -400,7 +392,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
 
             }
         });
-        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+        builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.cancel();
@@ -463,15 +455,6 @@ public class MainActivity extends BaseActivity implements ListviewActions {
 
     public void viewFile() {
         selectFile(StorageUtil.PICK_FILE_FOR_VIEW, false);
-    }
-
-    private void selectFile(int actionCode, boolean selectMultiple) {
-        Intent selectFile = new Intent(Intent.ACTION_GET_CONTENT);
-        selectFile.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
-        selectFile.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, selectMultiple);
-        selectFile.setType("*/*");
-        selectFile = Intent.createChooser(selectFile, "Select File");
-        startActivityForResult(selectFile, actionCode);
     }
 
     public void importFile() {

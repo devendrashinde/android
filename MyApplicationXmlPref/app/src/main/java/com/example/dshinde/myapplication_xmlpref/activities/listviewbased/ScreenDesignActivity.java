@@ -1,4 +1,4 @@
-package com.example.dshinde.myapplication_xmlpref;
+package com.example.dshinde.myapplication_xmlpref.activities.listviewbased;
 
 import android.content.Context;
 import android.content.Intent;
@@ -21,6 +21,9 @@ import android.widget.Toast;
 
 import androidx.documentfile.provider.DocumentFile;
 
+import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.DynamicLinearLayoutActivity;
 import com.example.dshinde.myapplication_xmlpref.adapters.ListviewKeyValueObjectAdapter;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.Converter;
@@ -152,7 +155,7 @@ public class ScreenDesignActivity extends BaseActivity {
         dataStorageListener = new DataStorageListener() {
             @Override
             public void dataChanged(String key, String value) {
-                Log.d(CLASS_TAG, "dataChanged->loadDataInListView key: " + key + ", value: " + value);
+                Log.d(CLASS_TAG, "dataChanged->loadDataInListView");
                 loadDataInListView(dataStorageManager.getValues());
             }
 
@@ -315,7 +318,6 @@ public class ScreenDesignActivity extends BaseActivity {
     }
 
     public void save() {
-        dataStorageManager.addDataStorageListener(dataStorageListener);
         if (keyField != null && keyField.length() > 0) {
             dataStorageManager.save(keyField, valueField);
             showEditView(false);
@@ -335,20 +337,11 @@ public class ScreenDesignActivity extends BaseActivity {
     }
 
     public void share() {
-        if (!valueField.isEmpty() && !valueField.isEmpty()) {
-            Intent sendIntent = new Intent();
-            sendIntent.setAction(Intent.ACTION_SEND);
-            sendIntent.putExtra(Intent.EXTRA_TEXT, JsonHelper.formatAsString(valueField));
-            sendIntent.setType("text/plain");
-            startActivity(sendIntent);
-        }
+        share(JsonHelper.formatAsString(valueField));
     }
 
-    public void export() {
-        startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE), StorageUtil.PICK_DOCUMENT_FOLDER_FOR_EXPORT);
-    }
-
-    private void export(DocumentFile dir) {
+    @Override
+    protected  void doExport(DocumentFile dir) {
         String path = StorageUtil.saveAsTextToDocumentFile(this, dir, collectionName, dataStorageManager.getDataString());
         if (path != null) {
             Toast.makeText(this, "Saved to " + path,
@@ -359,16 +352,10 @@ public class ScreenDesignActivity extends BaseActivity {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        StorageSelectionResult result = StorageUtil.getStorageSelectionResult(this, requestCode, resultCode, data);
-        if (requestCode == StorageUtil.PICK_DOCUMENT_FOLDER_FOR_EXPORT) {
-            export(result.getDir());
-        }
 
         if (requestCode == Constants.REQUEST_CODE_SCREEN_DESIGN && resultCode == Constants.RESULT_CODE_OK) {
             Log.d(CLASS_TAG, "onActivityResult design");
             valueField = data.getExtras().getString("data");
-//            Toast.makeText(this, "Received\n" + valueField,
-//                    Toast.LENGTH_LONG).show();
             ScreenControl screenControl = gson.fromJson(valueField, ScreenControl.class);
             keyField = screenControl.getControlId();
             save();
@@ -378,8 +365,6 @@ public class ScreenDesignActivity extends BaseActivity {
             Log.d(CLASS_TAG, "onActivityResult capture");
             valueField = data.getExtras().getString("data");
             keyField = data.getExtras().getString("key");
-//            Toast.makeText(this, "Received\n" + valueField,
-//                    Toast.LENGTH_LONG).show();
             save();
         }
     }

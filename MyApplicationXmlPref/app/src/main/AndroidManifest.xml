@@ -15,12 +15,12 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:windowSoftInputMode="adjustResize">
-        <activity android:name=".DynamicLinearLayoutActivity"></activity>
-        <activity android:name=".ScreenDesignActivity"></activity>
+        <activity android:name=".activities.DynamicLinearLayoutActivity"></activity>
+        <activity android:name=".activities.listviewbased.ScreenDesignActivity"></activity>
         <activity
-            android:name=".ScrollingTextViewActivity"
+            android:name=".activities.ScrollingTextViewActivity"
             android:label="@string/title_scrolling_textview_activity"></activity>
-        <activity android:name=".DialogActivity" />
+        <activity android:name=".activities.DialogActivity" />
         <activity android:name=".launcher.SignInActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -29,19 +29,19 @@
             </intent-filter>
         </activity>
         <activity android:name=".auth.GoogleSignInActivity"></activity>
-        <activity android:name=".MainActivity"></activity>
-        <activity android:name=".MainActivityRecyclerView"></activity>
+        <activity android:name=".activities.listviewbased.MainActivity"></activity>
+        <activity android:name=".activities.recyclerviewbased.MainActivityRecyclerView"></activity>
         <activity
-            android:name=".Main2Activity"
+            android:name=".activities.listviewbased.Main2Activity"
             android:label="@string/title_activity_main2" />
         <activity
-            android:name=".SellTeaActivity"
+            android:name=".activities.listviewbased.SellTeaActivity"
             android:label="@string/sellTea" />
         <activity
-            android:name=".CafeSettingsActivity"
+            android:name=".activities.listviewbased.CafeSettingsActivity"
             android:label="@string/cafeSettings" />
         <activity
-            android:name=".ShabdaKoshActivity"
+            android:name=".activities.listviewbased.ShabdaKoshActivity"
             android:label="@string/shabdaKosh" />
     </application>
 

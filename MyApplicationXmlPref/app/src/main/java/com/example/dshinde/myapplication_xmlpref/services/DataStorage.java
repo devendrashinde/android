@@ -36,6 +36,8 @@ public interface DataStorage extends DataStorageObservable {
 
     int getKeyIndex(String key);
 
+    int getLastModifiedIndex();
+
     KeyValue getValue(int index);
 
     String getValue(String key);

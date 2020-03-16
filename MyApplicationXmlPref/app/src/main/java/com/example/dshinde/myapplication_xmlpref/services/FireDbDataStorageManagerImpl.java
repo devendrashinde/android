@@ -38,15 +38,15 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
     }
 
     public FireDbDataStorageManagerImpl(String collectionName, boolean autoKey, boolean descendingOrder) {
-        this.collectionName = collectionName;
-        this.autoKey = autoKey;
-        this.descendingOrder = descendingOrder;
+        this(collectionName, autoKey, descendingOrder, null);
     }
+
     public FireDbDataStorageManagerImpl(String collectionName, boolean autoKey, boolean descendingOrder, DataStorageListener dataStorageListener) {
         this.collectionName = collectionName;
         this.autoKey = autoKey;
         this.descendingOrder = descendingOrder;
         this.addDataStorageListener(dataStorageListener);
+        getDatabaseCollectionReference();
     }
 
     private void getDatabaseCollectionReference() {
@@ -65,7 +65,6 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
             @Override
             public void run() {
                 android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
-                getDatabaseCollectionReference();
                 addReadDataOnce();
                 //addChangedDataListener();
                 //addAllDataListener();
@@ -267,7 +266,6 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
     }
 
     public String getDataString() {
-
         return "";
     }
 

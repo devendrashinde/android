@@ -1,4 +1,4 @@
-package com.example.dshinde.myapplication_xmlpref;
+package com.example.dshinde.myapplication_xmlpref.activities;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.DialogFragment;
@@ -28,6 +28,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.common.ControlType;
 import com.example.dshinde.myapplication_xmlpref.common.YesNo;
@@ -41,6 +42,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -395,7 +397,10 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
             if (YesNo.YES.getValue().equals(screenControl.getIndexField())) {
                 String value = data.get(screenControl.getControlId());
                 if (value != null) {
-                    indexValues.append((indexValues.length() > 0 ? "\n" : "") + value);
+                    if(screenControl.getControlType() == ControlType.DatePicker) {
+                        value = value.replaceAll("/", "-");
+                    }
+                    indexValues.append((indexValues.length() > 0 ? "," : "") + value);
                 }
             }
         }

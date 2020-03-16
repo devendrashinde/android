@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_margin="4dp"
-    tools:context="com.example.dshinde.myapplication_xmlpref.MainActivity">
+    tools:context="com.example.dshinde.myapplication_xmlpref.activities.listviewbased.MainActivity">
 
     <EditText
         android:id="@+id/VALUE_1"

@@ -289,4 +289,10 @@ public class StorageUtil {
         return new StorageSelectionResult();
     }
 
+    public static String getFileNameWithOutExtension(String filename) {
+        return filename.replaceFirst("[.][^.]+$", "");
+    }
+
+
+
 }

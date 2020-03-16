@@ -72,16 +72,21 @@ public class JsonHelper {
         String formattedValue = value;
         if(html) {
             formattedValue = formattedValue.replaceAll("\\\\n", "<br>");
+            formattedValue = formattedValue.replaceAll("\\\\", "");
             formattedValue = formattedValue.replaceAll("\\{\"", "<b>");
             formattedValue = formattedValue.replaceAll("\\{", "<b>");
             formattedValue = formattedValue.replaceAll("=\\{", "</b>{");
             formattedValue = formattedValue.replaceAll("\":\"", "</b>:<br>");
             formattedValue = formattedValue.replaceAll("\",\"", "<br><b>");
-            formattedValue = formattedValue.replaceAll("\"\\},", "<br><br><b>");
+            formattedValue = formattedValue.replaceAll("\"\\},", "<br><br>");
             formattedValue = formattedValue.replaceAll("\"", "");
             formattedValue = formattedValue.replaceAll("\\}", "");
             formattedValue = formattedValue.replaceAll("\\\\u0026", "&amp;");
             formattedValue = formattedValue.replaceAll("=", "</b><br>");
+            formattedValue = formattedValue.replaceAll("\\[", "");
+            formattedValue = formattedValue.replaceAll("\\]", "");
+            formattedValue = formattedValue.replaceAll("\\*\\*\\* ", "<h3>");
+            formattedValue = formattedValue.replaceAll(" \\*\\*\\*", "</h3>");
         } else {
             formattedValue = formattedValue.replaceAll("\\\\n", "\n ");
             formattedValue = formattedValue.replaceAll("\",\"", "\n");

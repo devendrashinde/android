@@ -1,4 +1,4 @@
-package com.example.dshinde.myapplication_xmlpref;
+package com.example.dshinde.myapplication_xmlpref.activities.fragmentbased;
 
 import android.app.Activity;
 import android.content.Context;
@@ -15,9 +15,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.EditText;
-import android.widget.ListView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
@@ -25,7 +23,14 @@ import androidx.documentfile.provider.DocumentFile;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.dshinde.myapplication_xmlpref.adapters.ListviewKeyValueObjectAdapter;
+import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.ScrollingTextViewActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.CafeSettingsActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.Main2Activity;
+import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.ScreenDesignActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.SellTeaActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.ShabdaKoshActivity;
 import com.example.dshinde.myapplication_xmlpref.adapters.MarginItemDecoration;
 import com.example.dshinde.myapplication_xmlpref.adapters.RecyclerViewKeyValueAdapter;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
@@ -49,15 +54,18 @@ import org.json.JSONObject;
 import java.util.Collections;
 import java.util.List;
 
-public class MainActivityRecyclerView extends BaseActivity implements ListviewActions {
+import static com.example.dshinde.myapplication_xmlpref.common.Constants.DRAWABLE_RIGHT;
+
+public class MainFragmentsActivity extends BaseActivity {
     EditText valueField;
     RecyclerView listView;
     RecyclerViewKeyValueAdapter listAdapter;
     DataStorage dataStorageManager;
+    DocumentFile selectedDir;
     ReadOnceDataStorage readOnceDataStorage;
     String key;
     String sharedPreferenceName = Constants.DATABASE_PATH_NOTES;
-    private static final String CLASS_TAG = "MainActivity";
+    private static final String CLASS_TAG = "MainActivityRV";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -112,11 +120,6 @@ public class MainActivityRecyclerView extends BaseActivity implements ListviewAc
         valueField.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                final int DRAWABLE_LEFT = 0;
-                final int DRAWABLE_TOP = 1;
-                final int DRAWABLE_RIGHT = 2;
-                final int DRAWABLE_BOTTOM = 3;
-
                 if (event.getAction() == MotionEvent.ACTION_UP) {
                     if (event.getRawX() >= (valueField.getRight() - valueField.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width())) {
 
@@ -215,21 +218,12 @@ public class MainActivityRecyclerView extends BaseActivity implements ListviewAc
         }
     }
 
-    @Override
-    public void remove(View view) {
-        remove();
-    }
-
     public void remove() {
+        Log.d(CLASS_TAG, "remove");
         if (key != null) {
             dataStorageManager.remove(key);
         }
         clear();
-    }
-
-    @Override
-    public void save(View view) {
-        save();
     }
 
     public void save() {
@@ -257,12 +251,12 @@ public class MainActivityRecyclerView extends BaseActivity implements ListviewAc
     public void edit() {
         String fileName = valueField.getText().toString();
         if (!fileName.isEmpty()) {
-            startActivityForEdit(fileName);
+            startActivityForAction(fileName, "EDIT");
         }
     }
 
     private void startEditActivity(String fileName) {
-        Intent intent = new Intent(MainActivityRecyclerView.this, Main2Activity.class);
+        Intent intent = new Intent(MainFragmentsActivity.this, Main2Activity.class);
         intent.putExtra("filename", fileName);
         intent.putExtra("userId", userId);
         startActivity(intent);
@@ -280,6 +274,26 @@ public class MainActivityRecyclerView extends BaseActivity implements ListviewAc
         listView.setLayoutManager(mLayoutManager);
         listView.addItemDecoration(new MarginItemDecoration(8));
         listView.setAdapter(listAdapter);
+
+        listAdapter.registerAdapterDataObserver( new RecyclerView.AdapterDataObserver() {
+            @Override
+            public void onChanged() {
+                super.onChanged();
+                listView.scrollToPosition(dataStorageManager.getLastModifiedIndex());
+            }
+
+            @Override
+            public void onItemRangeInserted(int positionStart, int itemCount) {
+                super.onItemRangeInserted(positionStart, itemCount);
+                listView.scrollToPosition(dataStorageManager.getLastModifiedIndex());
+            }
+
+            @Override
+            public void onItemRangeRemoved(int positionStart, int itemCount) {
+                super.onItemRangeRemoved(positionStart, itemCount);
+                listView.scrollToPosition(dataStorageManager.getLastModifiedIndex());
+            }
+        });
     }
 
     private RecyclerViewKeyValueItemListener getOnItemClickListenerToListView() {
@@ -293,22 +307,22 @@ public class MainActivityRecyclerView extends BaseActivity implements ListviewAc
             public boolean onItemLongClick(KeyValue kv) {
                 String value = kv.getValue();
                 setEditView(value);
-                displayTextviewActivity(value);
+                viewNote(value);
                 return true;
             }
         };
         return listener;
     }
 
-    private void displayTextviewActivity(String fileName) {
+    private void viewNote(String fileName) {
         if (fileName != null && !fileName.isEmpty()) {
-            displayTextviewActivity(fileName, dataStorageManager.getDataString(fileName));
+            startActivityForAction(fileName, "VIEW");
         }
     }
 
-    private void displayTextviewActivity(String title, String text) {
+    private void startViewNoteActivity(String title, String text) {
         if (text != null && !text.isEmpty()) {
-            Intent intent = new Intent(MainActivityRecyclerView.this, ScrollingTextViewActivity.class);
+            Intent intent = new Intent(MainFragmentsActivity.this, ScrollingTextViewActivity.class);
             intent.putExtra("subject", title);
             intent.putExtra("text", text);
             startActivity(intent);
@@ -329,7 +343,7 @@ public class MainActivityRecyclerView extends BaseActivity implements ListviewAc
     public void doSell() {
         String fileName = valueField.getText().toString();
         if (!fileName.isEmpty()) {
-            Intent intent = new Intent(MainActivityRecyclerView.this, SellTeaActivity.class);
+            Intent intent = new Intent(MainFragmentsActivity.this, SellTeaActivity.class);
             intent.putExtra("filename", fileName);
             intent.putExtra("userId", userId);
             startActivity(intent);
@@ -337,7 +351,7 @@ public class MainActivityRecyclerView extends BaseActivity implements ListviewAc
     }
 
     public void doSettings() {
-        Intent intent = new Intent(MainActivityRecyclerView.this, CafeSettingsActivity.class);
+        Intent intent = new Intent(MainFragmentsActivity.this, CafeSettingsActivity.class);
         intent.putExtra("userId", userId);
         startActivity(intent);
     }
@@ -351,7 +365,7 @@ public class MainActivityRecyclerView extends BaseActivity implements ListviewAc
     }
 
     private void startDesignOrEditActivity(String fileName, Integer requestMode, String screeConfig) {
-        Intent intent = new Intent(MainActivityRecyclerView.this, ScreenDesignActivity.class);
+        Intent intent = new Intent(MainFragmentsActivity.this, ScreenDesignActivity.class);
         intent.putExtra("screenName", fileName);
         intent.putExtra("requestMode", requestMode);
         intent.putExtra("userId", userId);
@@ -367,7 +381,7 @@ public class MainActivityRecyclerView extends BaseActivity implements ListviewAc
     private void addToShadaKosh() {
         String collectionName = valueField.getText().toString();
         if (collectionName != null && !collectionName.isEmpty()) {
-            Intent intent = new Intent(MainActivityRecyclerView.this, ShabdaKoshActivity.class);
+            Intent intent = new Intent(MainFragmentsActivity.this, ShabdaKoshActivity.class);
             intent.putExtra("collectionToAddToShabdaKosh", collectionName);
             intent.putExtra("userId", userId);
             startActivity(intent);
@@ -376,7 +390,7 @@ public class MainActivityRecyclerView extends BaseActivity implements ListviewAc
 
     private void copy(String initialValue) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("New Subject");
+        builder.setTitle(R.string.new_subject);
 
         // Set up the input
         final EditText input = new EditText(this);
@@ -385,7 +399,7 @@ public class MainActivityRecyclerView extends BaseActivity implements ListviewAc
         builder.setView(input);
 
         // Set up the buttons
-        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+        builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 String newFileName = input.getText().toString();
@@ -397,7 +411,7 @@ public class MainActivityRecyclerView extends BaseActivity implements ListviewAc
 
             }
         });
-        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+        builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.cancel();
@@ -407,6 +421,7 @@ public class MainActivityRecyclerView extends BaseActivity implements ListviewAc
     }
 
     private void performCopy(String srcFile, String destFile) {
+        // TODO implement copy
         if (SharedPrefManager.copy(this, srcFile, destFile)) {
             dataStorageManager.save(null, destFile);
         }
@@ -417,6 +432,8 @@ public class MainActivityRecyclerView extends BaseActivity implements ListviewAc
     }
 
     private void export(DocumentFile dir) {
+        // TODO getDataString in dataStorageManager
+        selectedDir = dir;
         String path = StorageUtil.saveAsTextToDocumentFile(this, dir, sharedPreferenceName, dataStorageManager.getDataString());
         if (path != null) {
             Toast.makeText(this, "Saved to " + path,
@@ -429,6 +446,7 @@ public class MainActivityRecyclerView extends BaseActivity implements ListviewAc
     }
 
     private void backup(DocumentFile dir) {
+        selectedDir = dir;
         List<KeyValue> subjects = dataStorageManager.getValues();
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         String path = StorageUtil.saveAsObjectToDocumentFile(this, dir, sharedPreferenceName, gson.toJson(subjects));
@@ -439,13 +457,7 @@ public class MainActivityRecyclerView extends BaseActivity implements ListviewAc
 
             for (KeyValue entry : subjects) {
                 String fileName = entry.getValue().trim();
-
-                path = StorageUtil.saveAsObjectToDocumentFile(this, dir, fileName,
-                        dataStorageManager.getDataString(fileName));
-                if (path != null) {
-                    Toast.makeText(this, "Saved to " + path,
-                            Toast.LENGTH_SHORT).show();
-                }
+                startActivityForAction(fileName, "BACKUP");
             }
         }
     }
@@ -460,15 +472,6 @@ public class MainActivityRecyclerView extends BaseActivity implements ListviewAc
 
     public void viewFile() {
         selectFile(StorageUtil.PICK_FILE_FOR_VIEW, false);
-    }
-
-    private void selectFile(int actionCode, boolean selectMultiple) {
-        Intent selectFile = new Intent(Intent.ACTION_GET_CONTENT);
-        selectFile.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
-        selectFile.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, selectMultiple);
-        selectFile.setType("*/*");
-        selectFile = Intent.createChooser(selectFile, "Select File");
-        startActivityForResult(selectFile, actionCode);
     }
 
     public void importFile() {
@@ -518,7 +521,7 @@ public class MainActivityRecyclerView extends BaseActivity implements ListviewAc
                     } else {
                         String text = StorageUtil.getTextFromDocumentFile(this, fileUri);
                         if (text != null) {
-                            displayTextviewActivity(fileName, text);
+                            startViewNoteActivity(fileName, text);
                         } else {
                             Toast.makeText(this, "Unable to read data from file : " + fileName,
                                     Toast.LENGTH_LONG).show();
@@ -537,27 +540,45 @@ public class MainActivityRecyclerView extends BaseActivity implements ListviewAc
         dataStorageManager.removeDataStorageListeners();
     }
 
-    /*
-    if screen config is found then start ScreenDesignActivity
-    otherwise start normal edit activity
-     */
-    private void startActivityForEdit(String collection) {
+    private void startActivityForAction(String collection, String action) {
         readOnceDataStorage = Factory.getReadOnceDataStorageIntsance(this,
-                getDataStorageType(), Constants.SCREEN_DESIGN + collection,
-                new DataStorageListener() {
-                    @Override
-                    public void dataChanged(String key, String value) {
-                    }
+            getDataStorageType(),
+            (action.equals("EDIT") ? Constants.SCREEN_DESIGN : "") + collection,
+            new DataStorageListener() {
+                @Override
+                public void dataChanged(String key, String value) {
+                }
 
-                    @Override
-                    public void dataLoaded(List<KeyValue> data) {
-                        if (data.size() > 0) {
-                            String screenConfig = Converter.getValuesJsonString(data);
-                            startDesignOrEditActivity(collection, Constants.REQUEST_CODE_SCREEN_CAPTURE, screenConfig);
-                        } else {
-                            startEditActivity(collection);
-                        }
+                @Override
+                public void dataLoaded(List<KeyValue> data) {
+                    switch (action) {
+                        case "EDIT":
+                            /*
+                            if screen config is found then start ScreenDesignActivity
+                            otherwise start normal edit activity
+                             */
+                            if (data.size() > 0) {
+                                String screenConfig = Converter.getValuesJsonString(data);
+                                startDesignOrEditActivity(collection, Constants.REQUEST_CODE_SCREEN_CAPTURE, screenConfig);
+                            } else {
+                                startEditActivity(collection);
+                            }
+                            break;
+                        case "VIEW":
+                            startViewNoteActivity(collection, Converter.getKeyValuesJsonString(data));
+                            break;
+                        case "BACKUP":
+                            String path = StorageUtil.saveAsObjectToDocumentFile(getApplicationContext(), selectedDir, collection,
+                                    dataStorageManager.getDataString(collection));
+                            if (path != null) {
+                                Toast.makeText(getApplicationContext(), "Saved to " + path,
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                            break;
+                        default: break;
                     }
-                });
+                    readOnceDataStorage.removeDataStorageListeners();
+                }
+            });
     }
 }

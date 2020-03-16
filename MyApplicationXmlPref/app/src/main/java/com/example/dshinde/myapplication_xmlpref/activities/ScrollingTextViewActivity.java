@@ -1,4 +1,4 @@
-package com.example.dshinde.myapplication_xmlpref;
+package com.example.dshinde.myapplication_xmlpref.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -12,9 +12,10 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.helper.JsonHelper;
 
-public class ScrollingTextViewActivity extends AppCompatActivity {
+public class ScrollingTextViewActivity extends BaseActivity {
 
     TextView textView;
     float defaultTextSize;
@@ -53,12 +54,6 @@ public class ScrollingTextViewActivity extends AppCompatActivity {
     }
 
     public void share() {
-        Intent sendIntent = new Intent();
-        sendIntent.setAction(Intent.ACTION_SEND);
-        String textToShare = this.getTitle() + System.getProperty(System.lineSeparator()) + textView.getText().toString();
-        sendIntent.putExtra(Intent.EXTRA_TEXT, textToShare);
-        sendIntent.setType("text/plain");
-        startActivity(sendIntent);
+        share(textView.getText().toString());
     }
-
 }

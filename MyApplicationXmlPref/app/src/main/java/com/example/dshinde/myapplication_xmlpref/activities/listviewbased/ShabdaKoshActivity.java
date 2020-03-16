@@ -1,13 +1,14 @@
-package com.example.dshinde.myapplication_xmlpref;
+package com.example.dshinde.myapplication_xmlpref.activities.listviewbased;
 
 import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
 
+import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
-import com.example.dshinde.myapplication_xmlpref.model.CafeItem;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.example.dshinde.myapplication_xmlpref.model.ShabdaDetails;
 import com.example.dshinde.myapplication_xmlpref.model.ShabdaUsage;
