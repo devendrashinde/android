@@ -28,6 +28,9 @@ import com.example.dshinde.myapplication_xmlpref.listners.ListviewActions;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 
 import java.util.Collections;
 import java.util.List;
@@ -53,7 +56,6 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
         Bundle bundle = getIntent().getExtras();
         collectionName = bundle.getString("filename");
         userId = bundle.getString("userId");
-
         loadUI();
         initDataStorageAndLoadData(this);
     }
@@ -75,6 +77,12 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
             }
         });
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->loadData");
+        String dataToImport = getIntent().getExtras().getString("dataToImport");
+        if(dataToImport != null && !dataToImport.isEmpty()){
+            dataStorageManager.disableNotifyDataChange();
+            importData(dataToImport);
+            dataStorageManager.enableNotifyDataChange();
+        }
         dataStorageManager.loadData();
     }
 
@@ -85,7 +93,6 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
 
     private void loadUI() {
         setContentView(R.layout.activity_main2_2);
-
         keyField = (EditText) findViewById(R.id.etKey);
         valueField = (EditText) findViewById(R.id.etValue);
         listView = (ListView) findViewById(R.id.list);
@@ -233,6 +240,12 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
     public void onStop() {
         super.onStop();
         dataStorageManager.removeDataStorageListeners();
+    }
+
+    private void importData(String data){
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        List<KeyValue> values = gson.fromJson(data, new TypeToken<List<KeyValue>>(){}.getType());
+        dataStorageManager.save(values);
     }
 
 }

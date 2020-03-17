@@ -475,12 +475,14 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     private void importFile(String collectionName, String data) {
-        List<KeyValue> logs = gson.fromJson(data, new TypeToken<List<KeyValue>>(){}.getType());
-            //TODO implement import using datastorage manager
-            //if (SharedPrefManager.loadData(this, collectionName, JsonHelper.toMap(data), true)) {
-                valueField.setText(collectionName);
-                save();
-            //}
+        valueField.setText(collectionName);
+        save();
+        Intent intent = new Intent(MainActivityRecyclerView.this, Main2Activity.class);
+        intent.putExtra("filename", collectionName);
+        intent.putExtra("userId", userId);
+        intent.putExtra("dataToImport", data);
+        startActivity(intent);
+
     }
 
     @Override
