@@ -248,8 +248,19 @@ public class MainActivityRecyclerView extends BaseActivity  {
     public void edit() {
         String fileName = valueField.getText().toString();
         if (!fileName.isEmpty()) {
-            startActivityForAction(fileName, "EDIT");
+            if(fileName.equals(Constants.SHABDA_KOSH)){
+                startShabdsKoshActivity(fileName);
+            } else {
+                startActivityForAction(fileName, "EDIT");
+            }
         }
+    }
+
+    private void startShabdsKoshActivity(String fileName) {
+        Intent intent = new Intent(MainActivityRecyclerView.this, ShabdaKoshActivity.class);
+        intent.putExtra("filename", fileName);
+        intent.putExtra("userId", userId);
+        startActivity(intent);
     }
 
     private void startEditActivity(String fileName) {
@@ -267,7 +278,8 @@ public class MainActivityRecyclerView extends BaseActivity  {
 
     private void populateListView() {
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(this);
-        listAdapter = new RecyclerViewKeyValueAdapter(Collections.emptyList(), this, R.layout.list_view_items_recyclerview, getOnItemClickListenerToListView());
+        listAdapter = new RecyclerViewKeyValueAdapter(Collections.emptyList(), this,
+                R.layout.list_view_items_recyclerview, getOnItemClickListenerToListView());
         listView.setLayoutManager(mLayoutManager);
         listView.addItemDecoration(new MarginItemDecoration(8));
         listView.setAdapter(listAdapter);
@@ -319,7 +331,8 @@ public class MainActivityRecyclerView extends BaseActivity  {
 
     private void startViewNoteActivity(String title, String text) {
         if (text != null && !text.isEmpty()) {
-            Intent intent = new Intent(MainActivityRecyclerView.this, ScrollingTextViewActivity.class);
+            Intent intent = new Intent(MainActivityRecyclerView.this,
+                    ScrollingTextViewActivity.class);
             intent.putExtra("subject", title);
             intent.putExtra("text", text);
             startActivity(intent);
@@ -340,7 +353,8 @@ public class MainActivityRecyclerView extends BaseActivity  {
     public void doSell() {
         String fileName = valueField.getText().toString();
         if (!fileName.isEmpty()) {
-            Intent intent = new Intent(MainActivityRecyclerView.this, SellTeaActivity.class);
+            Intent intent = new Intent(MainActivityRecyclerView.this,
+                    SellTeaActivity.class);
             intent.putExtra("filename", fileName);
             intent.putExtra("userId", userId);
             startActivity(intent);
@@ -348,7 +362,8 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     public void doSettings() {
-        Intent intent = new Intent(MainActivityRecyclerView.this, CafeSettingsActivity.class);
+        Intent intent = new Intent(MainActivityRecyclerView.this,
+                CafeSettingsActivity.class);
         intent.putExtra("userId", userId);
         startActivity(intent);
     }

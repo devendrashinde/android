@@ -72,6 +72,7 @@ public class JsonHelper {
         String formattedValue = value;
         if(html) {
             formattedValue = formattedValue.replaceAll("\\\\n", "<br>");
+            formattedValue = formattedValue.replaceAll("\\\\r", "");
             formattedValue = formattedValue.replaceAll("\\\\", "");
             formattedValue = formattedValue.replaceAll("\\{\"", "<b>");
             formattedValue = formattedValue.replaceAll("\\{", "<b>");

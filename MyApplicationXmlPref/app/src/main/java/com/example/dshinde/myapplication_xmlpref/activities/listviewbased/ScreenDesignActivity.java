@@ -1,8 +1,12 @@
 package com.example.dshinde.myapplication_xmlpref.activities.listviewbased;
 
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -12,15 +16,21 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.documentfile.provider.DocumentFile;
 
+import com.bumptech.glide.Glide;
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.DynamicLinearLayoutActivity;
@@ -32,14 +42,22 @@ import com.example.dshinde.myapplication_xmlpref.helper.JsonHelper;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageSelectionResult;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
+import com.example.dshinde.myapplication_xmlpref.listners.OnSwipeTouchListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
+import com.example.dshinde.myapplication_xmlpref.model.MediaFields;
 import com.example.dshinde.myapplication_xmlpref.model.ScreenControl;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ScreenDesignActivity extends BaseActivity {
 
@@ -54,6 +72,8 @@ public class ScreenDesignActivity extends BaseActivity {
     ListviewKeyValueObjectAdapter listAdapter;
     DataStorage dataStorageManager;
     DataStorageListener dataStorageListener;
+    StorageReference storageReference;
+    StorageReference storageFileRef;
     String collectionName = null;
     Integer requestMode = null;
     String screenConfig = null;
@@ -190,8 +210,9 @@ public class ScreenDesignActivity extends BaseActivity {
             Toast.makeText(this, "Please select record to Edit it.",
                     Toast.LENGTH_SHORT).show();
         } else {
-
             Intent intent = new Intent(this, DynamicLinearLayoutActivity.class);
+            intent.putExtra("userId", userId);
+            intent.putExtra("noteId", collectionName);
             intent.putExtra("screenConfig", screenConfig);
             intent.putExtra("requestMode", requestMode);
             if (edit) {
@@ -315,6 +336,21 @@ public class ScreenDesignActivity extends BaseActivity {
             }
         };
         listView.setOnItemClickListener(listener);
+
+        AdapterView.OnItemLongClickListener listener2 = new AdapterView.OnItemLongClickListener() {
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                KeyValue kv = listAdapter.getItem(position);
+                MediaFields mediaFields = gson.fromJson(kv.getValue(), MediaFields.class);
+                mediaFields.init();
+                if(mediaFields.hasMedia()){
+                    mediaFields.setValues(gson.fromJson(kv.getValue(), Map.class));
+                    showPhotoMedia(mediaFields);
+                }
+                return true;
+            }
+        };
+        listView.setOnItemLongClickListener(listener2);
+
     }
 
     public void save() {
@@ -383,7 +419,7 @@ public class ScreenDesignActivity extends BaseActivity {
                 "        \"positionId\": \"1\",\n" +
                 "        \"controlType\": \"DropDownList\",\n" +
                 "        \"textLabel\": \"Field Type:\",\n" +
-                "        \"options\": \"Text\\nEditText\\nCheckBox\\nRadioButton\\nDropDownList\\nDatePicker\\nTimePicker\\nSaveButton\"\n" +
+                "        \"options\": \"Text\\nEditText\\nCheckBox\\nRadioButton\\nDropDownList\\nDatePicker\\nTimePicker\\nPhoto\"\n" +
                 "    },\n" +
                 "    {\n" +
                 "        \"controlId\": \"positionId\",\n" +
@@ -430,6 +466,69 @@ public class ScreenDesignActivity extends BaseActivity {
                 "        \"textLabel\": \"Save\"\n" +
                 "    }\n" +
                 "]";
+    }
+
+    private void showPhotoMedia(MediaFields mediaFields) {
+        Dialog builder = new Dialog(this);
+        builder.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        builder.getWindow().setBackgroundDrawable(
+                new ColorDrawable(android.graphics.Color.TRANSPARENT));
+        builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialogInterface) {
+                //nothing;
+            }
+        });
+        ImageView imageView = new ImageView(this);
+        imageView.setAdjustViewBounds(true);
+        imageView.setScaleType(ImageView.ScaleType.FIT_XY);
+
+        imageView.setOnTouchListener(new OnSwipeTouchListener(this){
+            @Override
+            public void onSwipeLeft() {
+                String mediaFieldId = mediaFields.getNextPhotoMediaField();
+                if(mediaFieldId != null) {
+                    downloadFile(mediaFieldId, mediaFields.getMediaFieldValue(mediaFieldId), imageView, builder);
+                }
+            }
+            @Override
+            public void onSwipeRight() {
+                String mediaFieldId = mediaFields.getPrevPhotoMediaField();
+                if(mediaFieldId != null) {
+                    downloadFile(mediaFieldId, mediaFields.getMediaFieldValue(mediaFieldId), imageView, builder);
+                }
+            }
+        });
+        builder.addContentView(imageView, new RelativeLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT));
+        String mediaFieldId = mediaFields.getNextPhotoMediaField();
+        downloadFile(mediaFieldId, mediaFields.getMediaFieldValue(mediaFieldId), imageView, builder);
+    };
+
+    private void downloadFile(String mediaFieldId, String mediaFieldValue, ImageView imageView, Dialog builder) {
+        //getting the storage reference
+        try{
+            if(storageReference == null) {
+                storageReference = FirebaseStorage.getInstance().getReference();
+            }
+            storageFileRef = storageReference.child(Constants.STORAGE_PATH_NOTES + userId + "/" + collectionName + "/" + mediaFieldId + "/" + mediaFieldValue);
+            //adding the file to reference
+            storageFileRef.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                @Override
+                public void onSuccess(Uri uri) {
+                    Glide.with(getApplicationContext()).load(uri).into(imageView);
+                    builder.show();
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception exception) {
+                    Toast.makeText(getApplicationContext(), "download failed: " + exception.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        } catch (Throwable throwable) {
+            Toast.makeText(getApplicationContext(), "download failed: " + throwable.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
 }

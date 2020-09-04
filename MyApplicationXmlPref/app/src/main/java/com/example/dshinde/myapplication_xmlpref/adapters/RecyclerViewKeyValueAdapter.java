@@ -1,6 +1,7 @@
 package com.example.dshinde.myapplication_xmlpref.adapters;
 
 import android.content.Context;
+import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,6 +12,7 @@ import android.widget.TextView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.helper.JsonHelper;
 import com.example.dshinde.myapplication_xmlpref.listners.RecyclerViewKeyValueItemListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 

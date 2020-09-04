@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ShabdaDetails {
+    private String shabda;
     private String meaning;
     private List<ShabdaUsage> usage = new ArrayList<>();
 
@@ -33,10 +34,16 @@ public class ShabdaDetails {
         this.usage.add(shabdaUsage);
     }
 
+    public String getShabda() {
+        return shabda;
+    }
     public String getMeaning() {
         return meaning;
     }
     public void setMeaning(String meaning) {
         this.meaning = meaning;
+    }
+    public void setShabda(String shabda) {
+        this.shabda= shabda;
     }
 }

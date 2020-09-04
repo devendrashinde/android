@@ -1,5 +1,6 @@
 package com.example.dshinde.myapplication_xmlpref.model;
 
+import android.net.Uri;
 import android.view.View;
 
 import com.example.dshinde.myapplication_xmlpref.common.ControlType;
@@ -16,7 +17,9 @@ public class ScreenControl {
     private transient String[] optionValues; // values parsed into array for checkbox, radio buttons, dropdowns
     private transient View labelControl;
     private transient View valueControl;
+    private transient View mediaControl;
     private transient View[] optionControls;
+    private transient Uri mediaUri;
 
     public ScreenControl(){
     }
@@ -79,9 +82,22 @@ public class ScreenControl {
     public View getValueControl() {
         return valueControl;
     }
-
     public void setValueControl(View valueControl) {
         this.valueControl = valueControl;
+    }
+
+    public View getMediaControl() {
+        return mediaControl;
+    }
+    public void setMediaControl(View mediaControl) {
+        this.mediaControl = mediaControl;
+    }
+
+    public Uri getMediaUri() {
+        return mediaUri;
+    }
+    public void setMediaUri(Uri mediaUri) {
+        this.mediaUri = mediaUri;
     }
 
     public String getTextLabel() {
@@ -101,7 +117,6 @@ public class ScreenControl {
     public View[] getOptionControls() {
         return optionControls;
     }
-
     public void setOptionControls(View[] optionControls) {
         this.optionControls = optionControls;
     }
@@ -109,7 +124,6 @@ public class ScreenControl {
     public String getControlId() {
         return controlId;
     }
-
     public void setControlId(String controlId) {
         this.controlId = controlId;
     }

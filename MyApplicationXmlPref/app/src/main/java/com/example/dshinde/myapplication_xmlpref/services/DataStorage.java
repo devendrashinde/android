@@ -25,9 +25,11 @@ public interface DataStorage extends DataStorageObservable {
     void save(String value);
 
     void disableSort();
+
     void enableSort();
 
     void disableNotifyDataChange();
+
     void enableNotifyDataChange();
 
     void save(String key, String value);
