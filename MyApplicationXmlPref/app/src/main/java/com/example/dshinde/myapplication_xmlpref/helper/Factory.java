@@ -4,15 +4,27 @@ import android.content.Context;
 
 import com.example.dshinde.myapplication_xmlpref.common.DataStorageType;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
+import com.example.dshinde.myapplication_xmlpref.listners.FireStorageListener;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
+import com.example.dshinde.myapplication_xmlpref.services.FileStorage;
 import com.example.dshinde.myapplication_xmlpref.services.FireDbDataStorageManagerImpl;
 import com.example.dshinde.myapplication_xmlpref.services.FireDbReadOnceDataStorageImpl;
+import com.example.dshinde.myapplication_xmlpref.services.FireStorageManager;
 import com.example.dshinde.myapplication_xmlpref.services.FireStoreDataStorageManagerImpl;
 import com.example.dshinde.myapplication_xmlpref.services.ReadOnceDataStorage;
 import com.example.dshinde.myapplication_xmlpref.services.SharedPrefDataStorageManagerImpl;
 import com.example.dshinde.myapplication_xmlpref.services.SharedPrefReadOnceDataStorageImpl;
 
 public class Factory {
+
+
+    public static FireStorageManager getFileStorageInstance(Context context, String collectionName){
+        return new FireStorageManager(context, collectionName);
+    }
+
+    public static FileStorage getFileStorageInstance(Context context, String collectionName, FireStorageListener fireStorageListener){
+        return new FireStorageManager(context, collectionName, fireStorageListener);
+    }
 
     public static DataStorage getDataStorageIntsance(Context context, DataStorageType dataStorageType, String name, boolean autoKey, boolean descendingOrder){
         DataStorage dataStorageManager=null;

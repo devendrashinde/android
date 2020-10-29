@@ -86,8 +86,6 @@ public class JsonHelper {
             formattedValue = formattedValue.replaceAll("=", "</b><br>");
             formattedValue = formattedValue.replaceAll("\\[", "");
             formattedValue = formattedValue.replaceAll("\\]", "");
-            formattedValue = formattedValue.replaceAll("\\*\\*\\* ", "<h3>");
-            formattedValue = formattedValue.replaceAll(" \\*\\*\\*", "</h3>");
         } else {
             formattedValue = formattedValue.replaceAll("\\\\n", "\n ");
             formattedValue = formattedValue.replaceAll("\",\"", "\n");
@@ -96,6 +94,8 @@ public class JsonHelper {
             formattedValue = formattedValue.replaceAll(":", ":\n ");
             formattedValue = formattedValue.replaceAll("\\}", "");
         }
+        formattedValue = formattedValue.replaceAll("\\*\\*\\* ", "<h1>");
+        formattedValue = formattedValue.replaceAll(" \\*\\*\\*", "</h1>");
         return formattedValue;
     }
 

@@ -20,7 +20,10 @@ public class Constants {
     public static final int DRAWABLE_RIGHT = 2;
     public static final int DRAWABLE_BOTTOM = 3;
     public static final int TAKE_PHOTO=504;
-    public static final int SELECT_PHOTO=505;
+    public static final int SELECT_IMAGE =505;
+    public static final int SELECT_DOCUMENT =506;
     public static final String[] EMPTY_ARRAY={};
-
+    public static final String IMAGE_FILE="image/*";
+    public static final String PDF_FILE="application/pdf";
+    public static final String AUDIO_FILE="audio";
 }

@@ -16,7 +16,8 @@ public enum ControlType {
     SaveButton("SaveButton"),
     BackButton("BackButton"),
     CancelButton("CancelButton"),
-    Photo("Photo");
+    Photo("Photo"),
+    Document("Document");
 
     private String value;
 

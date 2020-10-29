@@ -34,6 +34,8 @@ import com.bumptech.glide.Glide;
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.DynamicLinearLayoutActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.MediaViewActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.PdfViewActivity;
 import com.example.dshinde.myapplication_xmlpref.adapters.ListviewKeyValueObjectAdapter;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.Converter;
@@ -47,6 +49,8 @@ import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.example.dshinde.myapplication_xmlpref.model.MediaFields;
 import com.example.dshinde.myapplication_xmlpref.model.ScreenControl;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
+import com.github.chrisbanes.photoview.OnPhotoTapListener;
+import com.github.chrisbanes.photoview.PhotoView;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.storage.FirebaseStorage;
@@ -54,6 +58,7 @@ import com.google.firebase.storage.StorageReference;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.nio.InvalidMarkException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -343,13 +348,23 @@ public class ScreenDesignActivity extends BaseActivity {
                 MediaFields mediaFields = gson.fromJson(kv.getValue(), MediaFields.class);
                 mediaFields.init();
                 if(mediaFields.hasMedia()){
-                    mediaFields.setValues(gson.fromJson(kv.getValue(), Map.class));
-                    showPhotoMedia(mediaFields);
+                    //mediaFields.setValues(gson.fromJson(kv.getValue(), Map.class));
+                    //showPhotoMedia(mediaFields);
+                    startMediaActvity(kv.getValue());
                 }
                 return true;
             }
         };
         listView.setOnItemLongClickListener(listener2);
+
+    }
+
+    private void startMediaActvity(String mediaFields){
+        Intent intent = new Intent(getApplicationContext(), MediaViewActivity.class);
+        intent.putExtra("userId", userId);
+        intent.putExtra("noteId", collectionName);
+        intent.putExtra("mediaFields", mediaFields);
+        startActivity(intent);
 
     }
 
@@ -419,7 +434,7 @@ public class ScreenDesignActivity extends BaseActivity {
                 "        \"positionId\": \"1\",\n" +
                 "        \"controlType\": \"DropDownList\",\n" +
                 "        \"textLabel\": \"Field Type:\",\n" +
-                "        \"options\": \"Text\\nEditText\\nCheckBox\\nRadioButton\\nDropDownList\\nDatePicker\\nTimePicker\\nPhoto\"\n" +
+                "        \"options\": \"Text\\nEditText\\nCheckBox\\nRadioButton\\nDropDownList\\nDatePicker\\nTimePicker\\nPhoto\\nDocument\"\n" +
                 "    },\n" +
                 "    {\n" +
                 "        \"controlId\": \"positionId\",\n" +
@@ -468,7 +483,7 @@ public class ScreenDesignActivity extends BaseActivity {
                 "]";
     }
 
-    private void showPhotoMedia(MediaFields mediaFields) {
+    private void showPhotoMediaUsingPopup(MediaFields mediaFields) {
         Dialog builder = new Dialog(this);
         builder.requestWindowFeature(Window.FEATURE_NO_TITLE);
         builder.getWindow().setBackgroundDrawable(
@@ -479,10 +494,36 @@ public class ScreenDesignActivity extends BaseActivity {
                 //nothing;
             }
         });
-        ImageView imageView = new ImageView(this);
+        PhotoView imageView = new PhotoView(this);
         imageView.setAdjustViewBounds(true);
         imageView.setScaleType(ImageView.ScaleType.FIT_XY);
+        imageView.setOnPhotoTapListener(new OnPhotoTapListener(){
+            public void onPhotoTap(ImageView view, float x, float y) {
+                float xPercentage = x * 100f;
+                if(xPercentage < 30) {
+                    //left side tapped
+                    String mediaFieldId = mediaFields.getNextPhotoMediaField();
+                    if(mediaFieldId != null) {
+                        downloadFile(mediaFieldId, mediaFields.getMediaFieldValue(mediaFieldId), imageView, builder);
+                    }
+                }
+                if(xPercentage > 70) {
+                    //right side tapped
+                    String mediaFieldId = mediaFields.getPrevPhotoMediaField();
+                    if(mediaFieldId != null) {
+                        downloadFile(mediaFieldId, mediaFields.getMediaFieldValue(mediaFieldId), imageView, builder);
+                    }
+                }
+            }
+        });
+        builder.addContentView(imageView, new RelativeLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT));
+        String mediaFieldId = mediaFields.getNextPhotoMediaField();
+        downloadFile(mediaFieldId, mediaFields.getMediaFieldValue(mediaFieldId), imageView, builder);
+    };
 
+    private void setImageOnTouchListener(ImageView imageView, MediaFields mediaFields, Dialog  builder){
         imageView.setOnTouchListener(new OnSwipeTouchListener(this){
             @Override
             public void onSwipeLeft() {
@@ -499,12 +540,7 @@ public class ScreenDesignActivity extends BaseActivity {
                 }
             }
         });
-        builder.addContentView(imageView, new RelativeLayout.LayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT));
-        String mediaFieldId = mediaFields.getNextPhotoMediaField();
-        downloadFile(mediaFieldId, mediaFields.getMediaFieldValue(mediaFieldId), imageView, builder);
-    };
+    }
 
     private void downloadFile(String mediaFieldId, String mediaFieldValue, ImageView imageView, Dialog builder) {
         //getting the storage reference

@@ -11,14 +11,17 @@ public class MediaFields {
     public static String AUDIO_MEDIA="audioMediaFields";
     public static String VIDEO_MEDIA="videoMediaFields";
     public static String DOCS_MEDIA="documentMediaFields";
+
     public String photoMediaFields;
     public String audioMediaFields;
     public String videoMediaFields;
     public String documentMediaFields;
+
     private String[] photoMedia;
     private String[] audioMedia;
     private String[] videoMedia;
     private String[] documentMedia;
+
     private Map<String, String> values = new HashMap<>();
     private int counterNext=0;
     private int counterPrev=0;
@@ -44,6 +47,24 @@ public class MediaFields {
         return media;
     }
 
+    public String getNextDocumentMediaField() {
+        String media = null;
+        if (counterNext >= 0 && counterNext < documentMedia.length) {
+            counterPrev = counterNext - 1;
+            media = documentMedia[counterNext++];
+        }
+        return media;
+    }
+
+    public String getPrevDocumentMediaField() {
+        String media = null;
+        if( counterPrev >= 0 ) {
+            counterNext = counterPrev + 1;
+            media = documentMedia[counterPrev--];
+        }
+        return media;
+    }
+
     public String[] getPhotoMedia() {
         return photoMedia;
     }
@@ -62,6 +83,8 @@ public class MediaFields {
 
     public void init(){
         setPhotoMedia();
+        setDocumentMedia();
+        setAudioMedia();
     }
     private void setPhotoMedia() {
         photoMedia = photoMediaFields != null ? photoMediaFields.split(",") : Constants.EMPTY_ARRAY;;

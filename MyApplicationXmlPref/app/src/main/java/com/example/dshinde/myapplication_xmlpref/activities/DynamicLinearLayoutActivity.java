@@ -1,11 +1,10 @@
 package com.example.dshinde.myapplication_xmlpref.activities;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.DialogFragment;
 
-import android.app.ProgressDialog;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -23,6 +22,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.webkit.WebView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -43,22 +43,19 @@ import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.common.ControlType;
 import com.example.dshinde.myapplication_xmlpref.common.YesNo;
+import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
+import com.example.dshinde.myapplication_xmlpref.listners.FireStorageListener;
 import com.example.dshinde.myapplication_xmlpref.model.MediaFields;
 import com.example.dshinde.myapplication_xmlpref.model.ScreenControl;
 import com.example.dshinde.myapplication_xmlpref.pickers.DatePickerFragment;
 import com.example.dshinde.myapplication_xmlpref.pickers.TimePickerFragment;
-import com.google.android.gms.tasks.Continuation;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.OnProgressListener;
-import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
+import com.example.dshinde.myapplication_xmlpref.services.FileStorage;
+import com.github.chrisbanes.photoview.PhotoView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.theartofdev.edmodo.cropper.CropImage;
+import com.theartofdev.edmodo.cropper.CropImageView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -75,23 +72,20 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 
 public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private static final String TAKE_PHOTO = "Take Photo";
     private static final String SELECT_PHOTO = "Select Photo";
     private static final String CLASS_TAG = "DynamicActivity";
-    private String userId;
-    private String noteId;
+    private String collectionName;
     private LinearLayout linearLayout;
     private List<ScreenControl> controls;
     private Map<String, String> data = new HashMap<>();
     private Gson gson = new GsonBuilder().create();
     private Integer requestMode = null;
     private ScreenControl currentScreenControl;
-    private StorageReference storageReference;
-    private StorageReference storageFileRef;
+    private FileStorage mediaStorage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,8 +95,9 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         linearLayout = findViewById(R.id.linear_layout);
 
         Bundle bundle = getIntent().getExtras();
-        userId = bundle.getString("userId");
-        noteId = bundle.getString("noteId");
+        collectionName = Constants.STORAGE_PATH_NOTES +
+                bundle.getString("userId") + "/" +
+                bundle.getString("noteId");
         String screenConfig = bundle.getString("screenConfig");
         String screenData = bundle.getString("screenData");
         if (screenData != null && screenData.length() > 0) {
@@ -159,7 +154,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private void renderUI(String screenConfig) {
         Log.d(CLASS_TAG, "enter(renderUI)");
-        new Thread() {
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
                 parseConfig(screenConfig);
@@ -172,26 +167,31 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                     Log.i("---","Exception in thread");
                 }
             }
-        }.start();
+        });
         Log.d(CLASS_TAG, "exit(renderUI)");
     }
 
     private void addControlsToUI(ScreenControl screenControl) {
-        Log.d(CLASS_TAG, "enter(addControlsToUI: " + screenControl.getControlId());
-        if(screenControl.getLabelControl() != null){
-            linearLayout.addView(screenControl.getLabelControl());
-        }
-        if(screenControl.getControlType() == ControlType.CheckBox){
-            for(View view : screenControl.getOptionControls()){
-                linearLayout.addView(view);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Log.d(CLASS_TAG, "enter(addControlsToUI: " + screenControl.getControlId());
+                if (screenControl.getLabelControl() != null) {
+                    linearLayout.addView(screenControl.getLabelControl());
+                }
+                if (screenControl.getControlType() == ControlType.CheckBox) {
+                    for (View view : screenControl.getOptionControls()) {
+                        linearLayout.addView(view);
+                    }
+                } else if (screenControl.getValueControl() != null) {
+                    linearLayout.addView(screenControl.getValueControl());
+                }
+                if (screenControl.getMediaControl() != null) {
+                    linearLayout.addView(screenControl.getMediaControl());
+                }
+                Log.d(CLASS_TAG, "exit(addControlsToUI)");
             }
-        } else if(screenControl.getValueControl() != null){
-            linearLayout.addView(screenControl.getValueControl());
-        }
-        if(screenControl.getMediaControl() != null){
-            linearLayout.addView(screenControl.getMediaControl());
-        }
-        Log.d(CLASS_TAG, "exit(addControlsToUI)");
+        });
     }
 
     private void createControls() {
@@ -222,9 +222,12 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                 case DropDownList:
                     addDropDownList(screenControl);
                     break;
+                case Document:
+                    addDocumentControl(screenControl);
+                    break;
                 case Photo:
-                    if(storageReference == null) {
-                        storageReference = FirebaseStorage.getInstance().getReference();
+                    if(mediaStorage == null) {
+                        mediaStorage = Factory.getFileStorageInstance(this, collectionName);
                     }
                     addPhotoControl(screenControl);
                     break;
@@ -274,20 +277,20 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     }
 
     private void addSaveButton(ScreenControl screenControl) {
-        Button btn = getButton(screenControl);
+        Button btn = getButton(screenControl.getTextLabel());
         screenControl.setValueControl(btn);
         setSaveButtonListener(btn);
     }
 
-    private Button getButton(ScreenControl screenControl) {
+    private Button getButton(String label) {
         Button btn = new Button(this);
-        btn.setText(screenControl.getTextLabel());
+        btn.setText(label);
         btn.setId(View.generateViewId());
         return btn;
     }
 
     private void addCancelButton(ScreenControl screenControl) {
-        Button btn = getButton(screenControl);
+        Button btn = getButton(screenControl.getTextLabel());
         screenControl.setValueControl(btn);
         setCancelButtonListener(btn);
     }
@@ -434,20 +437,99 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         screenControl.setMediaControl(getImageView());
         setPhotoControlListener(rg, screenControl);
         String value = getValue(screenControl);
-        if(value != null){
-            downloadFile(screenControl.getControlId(), value, (ImageView)screenControl.getMediaControl());
+        if(value != null && !value.trim().isEmpty()){
+            downloadFile(screenControl.getControlId(), value, new PhotoListener((ImageView)screenControl.getMediaControl()));
         }
     }
 
-    private ImageView getImageView(){
-        ImageView imageview = new ImageView(this);
+    private void addDocumentControl(ScreenControl screenControl) {
+        addEditText(screenControl, false);
+        EditText valueControl = (EditText) screenControl.getValueControl();
+        valueControl.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_pdf_file_yellow_24dp, 0);
+        setDocumentSelector(screenControl);
+        Button btn = getButton("Open");
+        screenControl.setMediaControl(btn);
+        setOpenButtonListener(screenControl);
+
+        String value = getValue(screenControl);
+        if(value != null && !value.trim().isEmpty()){
+            downloadFile(screenControl.getControlId(), value,
+                    new PdfListener(valueControl));
+        }
+    }
+
+    private void setOpenButtonListener(ScreenControl screenControl) {
+        Button btn = (Button) screenControl.getMediaControl();
+        btn.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                EditText editText = (EditText)screenControl.getValueControl();
+                String fileName = editText.getText().toString();
+                if(fileName != null & !fileName.isEmpty()) {
+                    startPdfViewActivity(fileName);
+                }
+            }
+        });
+    }
+
+    private void startPdfViewActivity(String fileName) {
+        Intent intent = new Intent(getApplicationContext(), PdfViewActivity.class);
+        intent.putExtra("fileUri", fileName);
+        startActivity(intent);
+    }
+
+    private void startActionViewIntent(String fileName){
+        Uri path = Uri.parse(fileName);
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setDataAndType(path, "application/pdf");
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        try {
+            startActivity(intent);
+        }
+        catch (ActivityNotFoundException e) {
+            Toast.makeText(getApplicationContext(),
+                    "No Application Available to view document",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void setDocumentSelector(ScreenControl screenControl) {
+        EditText control = (EditText) screenControl.getValueControl();
+        control.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    if (event.getRawX() >= (control.getRight() - control.getCompoundDrawables()[Constants.DRAWABLE_RIGHT].getBounds().width())) {
+                        currentScreenControl = screenControl;
+                        selectFile(Constants.PDF_FILE, Constants.SELECT_DOCUMENT);
+                        return true;
+                    }
+                }
+                return false;
+            }
+        });
+    }
+    private PhotoView getImageView(){
+        PhotoView imageView = new PhotoView(this);
         LinearLayout.LayoutParams params = new LinearLayout
                 .LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        imageview.setLayoutParams(params);
-        imageview.setAdjustViewBounds(true);
-        imageview.setScaleType(ImageView.ScaleType.FIT_XY);
-        imageview.setId(View.generateViewId());
-        return imageview;
+        imageView.setLayoutParams(params);
+        imageView.setAdjustViewBounds(true);
+        imageView.setScaleType(ImageView.ScaleType.FIT_XY);
+        imageView.setId(View.generateViewId());
+        return imageView;
+    }
+
+    private WebView getWebView(){
+        WebView webView = new WebView(this);
+        LinearLayout.LayoutParams params = new LinearLayout
+                .LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        webView.setLayoutParams(params);
+        webView.getSettings().setBuiltInZoomControls(true);
+        webView.getSettings().setSupportZoom(true);
+        webView.getSettings().setLoadWithOverviewMode(false);
+        webView.getSettings().setUseWideViewPort(true);
+        webView.setId(View.generateViewId());
+        return webView;
     }
 
     private void setPhotoControlListener(RadioGroup radioGroup, ScreenControl screenControl) {
@@ -460,7 +542,8 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                     if(selectedButton.getText() == TAKE_PHOTO) {
                         takePhoto();
                     }else {
-                        selectPhoto();
+                        selectAndCropPhoto(Constants.IMAGE_FILE, Constants.SELECT_IMAGE);
+                        //selectFile(Constants.IMAGE_FILE, Constants.SELECT_IMAGE);
                     }
                 }
             });
@@ -502,38 +585,68 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         }
     }
 
-    private void selectPhoto() {
-        Log.d(CLASS_TAG, "SelectPhoto");
-        // Pick an image from storage
+    private void selectFile(String fileType, int actionCode) {
+        Log.d(CLASS_TAG, "SelectFile");
+        // Pick an file from storage
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("image/*");
-        startActivityForResult(intent, Constants.SELECT_PHOTO);
+        intent.setType(fileType);
+        startActivityForResult(intent, actionCode);
+    }
+
+    private void selectAndCropPhoto(String fileType, int actionCode) {
+        CropImage.activity()
+                .setGuidelines(CropImageView.Guidelines.ON)
+                .start(this);
+    }
+
+    private void cropPhoto(Uri photoUri) {
+        CropImage.activity(photoUri)
+                .setGuidelines(CropImageView.Guidelines.ON)
+                .start(this);
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode,resultCode,data);
-        if (requestCode == Constants.TAKE_PHOTO  && resultCode == RESULT_OK && currentScreenControl.getMediaUri() != null) {
-            //Bitmap image = BitmapFactory.decodeFile(currentPhotoUri);;
-
-            //Bitmap image = (Bitmap) data.getExtras().get("data"); // small image
-            //currentImageView.setImageBitmap(image);
-
-            ImageView currentImageView = (ImageView) currentScreenControl.getMediaControl();
-            currentImageView.setImageURI(currentScreenControl.getMediaUri());
-        } else {
-            if (requestCode == Constants.SELECT_PHOTO && resultCode == RESULT_OK && data != null && data.getData() != null) {
-                Uri selectedFile = data.getData();
-                try {
-                    //Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), filePath);
-                    //currentImageView.setImageBitmap(bitmap);
+        if(resultCode != RESULT_OK) {
+            return;
+        }
+        switch (requestCode){
+            case CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE :
+                CropImage.ActivityResult result = CropImage.getActivityResult(data);
+                if (resultCode == RESULT_OK) {
+                    Uri selectedFile = result.getUri();
                     currentScreenControl.setMediaUri(selectedFile);
-                    ImageView currentImageView = (ImageView) currentScreenControl.getMediaControl();
-                    currentImageView.setImageURI(selectedFile);
-                //} catch (IOException e) {
-                } catch (Exception e) {
-                    e.printStackTrace();
+                    ImageView currentView = (ImageView) currentScreenControl.getMediaControl();
+                    currentView.setImageURI(selectedFile);
+                } else if (resultCode == CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE) {
+                    Exception error = result.getError();
                 }
-            }
+                break;
+            case Constants.TAKE_PHOTO:
+                if (currentScreenControl.getMediaUri() != null) {
+                    cropPhoto(currentScreenControl.getMediaUri());
+                    //ImageView currentImageView = (ImageView) currentScreenControl.getMediaControl();
+                    //currentImageView.setImageURI(currentScreenControl.getMediaUri());
+                }
+                break;
+            case Constants.SELECT_IMAGE:
+                if( data != null && data.getData() != null) {
+                    Uri selectedFile = data.getData();
+                    currentScreenControl.setMediaUri(selectedFile);
+                    ImageView currentView = (ImageView) currentScreenControl.getMediaControl();
+                    currentView.setImageURI(selectedFile);
+                }
+                break;
+                case Constants.SELECT_DOCUMENT:
+                    if( data != null && data.getData() != null) {
+                        Uri selectedFile = data.getData();
+                        EditText editText = (EditText) currentScreenControl.getValueControl();
+                        currentScreenControl.setMediaUri(selectedFile);
+                        editText.setText(selectedFile.toString());
+                    }
+                    break;
+            default:
+                break;
         }
     }
 
@@ -569,7 +682,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     }
 
     private void closeActivityWithReturnValues() {
-        checkMediaAndUploadToFireStorage();
+        checkMediaAndUploadToStorage();
         Intent intent = new Intent();
         intent.putExtra("data", gson.toJson(data));
         if (requestMode == Constants.REQUEST_CODE_SCREEN_CAPTURE) {
@@ -579,11 +692,20 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         finish();
     }
 
-    private void checkMediaAndUploadToFireStorage(){
+    private void checkMediaAndUploadToStorage(){
         for (ScreenControl screenControl : controls) {
             if(screenControl.getMediaControl() != null && screenControl.getMediaUri() != null){
                 data.put(screenControl.getControlId(), StorageUtil.getFileName(this, screenControl.getMediaUri()));
-                data.put(MediaFields.PHOTO_MEDIA, getCommaSeparated(data.get(MediaFields.PHOTO_MEDIA), screenControl.getControlId()));
+                switch (screenControl.getControlType()){
+                    case Photo:
+                        data.put(MediaFields.PHOTO_MEDIA, getCommaSeparated(data.get(MediaFields.PHOTO_MEDIA), screenControl.getControlId()));
+                        break;
+                    case Document:
+                        data.put(MediaFields.DOCS_MEDIA, getCommaSeparated(data.get(MediaFields.DOCS_MEDIA), screenControl.getControlId()));
+                        break;
+                    default:
+                        break;
+                }
                 uploadFile(screenControl);
             }
         }
@@ -725,53 +847,55 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private void uploadFile(ScreenControl screenControl) {
         Uri filePath = screenControl.getMediaUri();
-        //getting the storage reference
-        try{
-            storageFileRef = storageReference.child(Constants.STORAGE_PATH_NOTES + userId + "/" + noteId + "/" + screenControl.getControlId() + "/" + StorageUtil.getFileName(this, filePath));
-            //adding the file to reference
-            storageFileRef
-                    .putFile(filePath).continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
-                @Override
-                public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
-                    if (!task.isSuccessful()) {
-                        throw task.getException();
-                    }
-                    return storageFileRef.getDownloadUrl();
-                }
-            }).addOnCompleteListener(new OnCompleteListener<Uri>() {
-                @Override
-                public void onComplete(@NonNull Task<Uri> task) {
-                    if (task.isSuccessful()) {
-                        Uri downloadUri = task.getResult();
-                        Toast.makeText(getApplicationContext(), "upload successful!!!", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(getApplicationContext(), "upload failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                }
-            });
-        } catch (Throwable throwable) {
-            Toast.makeText(getApplicationContext(), "upload failed: " + throwable.getMessage(), Toast.LENGTH_SHORT).show();
-        }
+        mediaStorage.uploadMedia(screenControl.getControlId(), filePath);
     }
 
-    private void downloadFile(String mediaFieldId, String mediaFieldValue, ImageView imageView) {
-        //getting the storage reference
-        try{
-            storageFileRef = storageReference.child(Constants.STORAGE_PATH_NOTES + userId + "/" + noteId + "/" + mediaFieldId + "/" + mediaFieldValue);
-            //adding the file to reference
-            storageFileRef.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
-                @Override
-                public void onSuccess(Uri uri) {
-                    Glide.with(getApplicationContext()).load(uri).into(imageView);
-                }
-            }).addOnFailureListener(new OnFailureListener() {
-                @Override
-                public void onFailure(@NonNull Exception exception) {
-                    Toast.makeText(getApplicationContext(), "download failed: " + exception.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
-        } catch (Throwable throwable) {
-            Toast.makeText(getApplicationContext(), "download failed: " + throwable.getMessage(), Toast.LENGTH_SHORT).show();
+    private void downloadFile(String mediaFieldId, String mediaFieldValue, FireStorageListener fireStorageListener) {
+        mediaStorage.getDownloadUrl(mediaFieldId, mediaFieldValue, fireStorageListener);
+    }
+
+    private class PhotoListener implements FireStorageListener {
+        final ImageView imageView;
+        public PhotoListener(ImageView imageView){
+            this.imageView = imageView;
+        }
+
+        @Override
+        public void downloadUriReceived(Uri fileUri) {
+            Glide.with(getApplicationContext()).load(fileUri).into(imageView);
+        }
+
+        @Override
+        public void downloadFileBytesReceived(byte[] bytes) {
+
+        }
+
+        @Override
+        public void uploadedUriReceived(Uri fileUri) {
+
+        }
+
+    }
+
+    private class PdfListener implements FireStorageListener {
+        EditText editText;
+        public PdfListener(EditText valueControl) {
+            editText = valueControl;
+        }
+
+        @Override
+        public void downloadUriReceived(Uri fileUri) {
+            editText.setText(fileUri.toString());
+        }
+
+        @Override
+        public void downloadFileBytesReceived(byte[] bytes) {
+
+        }
+
+        @Override
+        public void uploadedUriReceived(Uri fileUri) {
+
         }
     }
 }

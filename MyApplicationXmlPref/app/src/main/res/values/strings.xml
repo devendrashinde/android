@@ -60,5 +60,8 @@
     <string name="add_to_shadb_kosh">Add to Shabda Kosh</string>
     <string name="google_status_fmt">Google User: %s</string>
     <string name="google_title_text">Google Sign In</string>
+    <string name="title_activity_pdfview">PDFViewActivity</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
 
 </resources>
