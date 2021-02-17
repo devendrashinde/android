@@ -5,6 +5,9 @@ import android.text.Html;
 import android.text.Spanned;
 import android.util.TypedValue;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
@@ -33,6 +36,24 @@ public class ScrollingTextViewActivity extends BaseActivity implements View.OnTo
         parseText(data);
         defaultTextSize = textView.getTextSize();
         mScaleGestureDetector = new ScaleGestureDetector(this, new ScaleListener());
+    }
+
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.viewnote, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle item selection
+        switch (item.getItemId()) {
+            case R.id.menu_share:
+                share();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     public boolean dispatchKeyEvent(KeyEvent event) {
@@ -73,7 +94,8 @@ public class ScrollingTextViewActivity extends BaseActivity implements View.OnTo
     }
 
     public void share() {
-        share(textView.getText().toString());
+        shareHtml(textView.getText().toString());
+
     }
 
     @Override

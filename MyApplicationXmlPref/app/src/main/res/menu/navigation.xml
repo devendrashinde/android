@@ -100,7 +100,7 @@
         />
     <item
         android:id="@+id/menu_add_to_shadba_kosh"
-        android:title="@string/add_to_shadb_kosh"
+        android:title="@string/add_to_dictionary"
         app:showAsAction="ifRoom"
         />
 </menu>

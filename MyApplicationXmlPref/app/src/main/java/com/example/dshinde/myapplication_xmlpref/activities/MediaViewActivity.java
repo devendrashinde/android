@@ -1,34 +1,20 @@
 package com.example.dshinde.myapplication_xmlpref.activities;
 
-import android.media.MediaActionSound;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
-import android.view.MenuItem;
-import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.viewpager.widget.ViewPager;
 
-import com.bumptech.glide.Glide;
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.adapters.MediaFragmentAdapter;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
-import com.example.dshinde.myapplication_xmlpref.helper.Factory;
-import com.example.dshinde.myapplication_xmlpref.listners.FireStorageListener;
 import com.example.dshinde.myapplication_xmlpref.model.MediaFields;
-import com.example.dshinde.myapplication_xmlpref.services.FileStorage;
-import com.github.chrisbanes.photoview.PhotoView;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.tabs.TabLayout;
-import com.google.firebase.storage.StorageReference;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import java.util.List;
 import java.util.Map;
 
 public class MediaViewActivity extends AppCompatActivity {

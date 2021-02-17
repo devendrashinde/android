@@ -35,13 +35,11 @@ import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.DynamicLinearLayoutActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.MediaViewActivity;
-import com.example.dshinde.myapplication_xmlpref.activities.PdfViewActivity;
 import com.example.dshinde.myapplication_xmlpref.adapters.ListviewKeyValueObjectAdapter;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.Converter;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.helper.JsonHelper;
-import com.example.dshinde.myapplication_xmlpref.helper.StorageSelectionResult;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.listners.OnSwipeTouchListener;
@@ -58,11 +56,8 @@ import com.google.firebase.storage.StorageReference;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import java.nio.InvalidMarkException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class ScreenDesignActivity extends BaseActivity {
 
@@ -274,6 +269,13 @@ public class ScreenDesignActivity extends BaseActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.navigation, menu);
+        removeUnwantedMenuItems(menu);
+        myMenu = menu;
+        showEditView(isDesignMode());
+        return true;
+    }
+
+    private void removeUnwantedMenuItems(Menu menu) {
         menu.removeItem(R.id.menu_add_to_shadba_kosh);
         menu.removeItem(R.id.menu_backup);
         menu.removeItem(R.id.menu_sell);
@@ -288,9 +290,6 @@ public class ScreenDesignActivity extends BaseActivity {
             menu.removeItem(R.id.menu_remove);
             menu.removeItem(R.id.menu_view);
         }
-        myMenu = menu;
-        showEditView(isDesignMode());
-        return true;
     }
 
     @Override
@@ -388,7 +387,7 @@ public class ScreenDesignActivity extends BaseActivity {
     }
 
     public void share() {
-        share(JsonHelper.formatAsString(valueField));
+        shareText(JsonHelper.formatAsString(valueField));
     }
 
     @Override
@@ -434,12 +433,12 @@ public class ScreenDesignActivity extends BaseActivity {
                 "        \"positionId\": \"1\",\n" +
                 "        \"controlType\": \"DropDownList\",\n" +
                 "        \"textLabel\": \"Field Type:\",\n" +
-                "        \"options\": \"Text\\nEditText\\nCheckBox\\nRadioButton\\nDropDownList\\nDatePicker\\nTimePicker\\nPhoto\\nDocument\"\n" +
+                "        \"options\": \"Text\\nEditText\\nEditNumber\\nExpression\\nCheckBox\\nRadioButton\\nDropDownList\\nDatePicker\\nTimePicker\\nPhoto\\nDocument\"\n" +
                 "    },\n" +
                 "    {\n" +
                 "        \"controlId\": \"positionId\",\n" +
                 "        \"positionId\": \"2\",\n" +
-                "        \"controlType\": \"EditText\",\n" +
+                "        \"controlType\": \"EditNumber\",\n" +
                 "        \"textLabel\": \"Field position on screen:\"\n" +
                 "    },\n" +
                 "    {\n" +
@@ -472,7 +471,7 @@ public class ScreenDesignActivity extends BaseActivity {
                 "        \"controlId\": \"options\",\n" +
                 "        \"positionId\": \"7\",\n" +
                 "        \"controlType\": \"MultiLineEditText\",\n" +
-                "        \"textLabel\": \"Enter values for DropdownList/Checkbox/RadioButtons on separate lines:\"\n" +
+                "        \"textLabel\": \"Enter values for DropdownList/Checkbox/RadioButtons/Expression on separate lines:\"\n" +
                 "    },\n" +
                 "    {\n" +
                 "        \"controlId\": \"saveButton\",\n" +

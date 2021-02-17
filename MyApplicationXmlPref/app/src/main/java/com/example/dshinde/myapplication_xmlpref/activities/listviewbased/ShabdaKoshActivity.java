@@ -262,7 +262,7 @@ public class ShabdaKoshActivity extends BaseActivity {
         String key = keyField.getText().toString();
         String value = valueField.getText().toString();
         if (!value.isEmpty() && !value.isEmpty()) {
-            share(key + "\n" + value);
+            shareText(key + "\n" + value);
         }
     }
 

@@ -151,7 +151,7 @@ public abstract class DataStorageManager implements DataStorage {
         StringBuilder dataString  = new StringBuilder();
         if (!data.isEmpty()) {
             for (KeyValue entry : data) {
-                dataString.append(Constants.CR_LF).append(entry.getKey().trim()).append(Constants.CR_LF).append(entry.getValue().trim()).append(Constants.CR_LF);
+                dataString.append(Constants.CR_LF).append(entry.getKey().trim()).append(Constants.CR_LF).append(entry.getValue().trim());
             }
         }
         return dataString.toString();

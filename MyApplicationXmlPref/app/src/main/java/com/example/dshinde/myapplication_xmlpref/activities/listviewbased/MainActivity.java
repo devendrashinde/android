@@ -56,7 +56,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
     DataStorage dataStorageManager;
     ReadOnceDataStorage readOnceDataStorage;
     String key;
-    String sharedPreferenceName = Constants.DATABASE_PATH_NOTES;
+    String collectionName = Constants.DATABASE_PATH_NOTES;
     private static final String CLASS_TAG = "MainActivity";
 
     @Override
@@ -85,7 +85,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
         dataStorageManager = Factory.getDataStorageIntsance(context,
                 getDataStorageType(),
-                sharedPreferenceName,
+                collectionName,
                 true,
                 false, new DataStorageListener() {
                     @Override
@@ -240,7 +240,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
 
     public void share() {
         String fileName = valueField.getText().toString();
-        share(fileName);
+        shareText(fileName);
     }
 
     public void edit() {
@@ -412,7 +412,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
     }
 
     private void export(DocumentFile dir) {
-        String path = StorageUtil.saveAsTextToDocumentFile(this, dir, sharedPreferenceName, dataStorageManager.getDataString());
+        String path = StorageUtil.saveAsTextToDocumentFile(this, dir, collectionName, dataStorageManager.getDataString());
         if (path != null) {
             Toast.makeText(this, "Saved to " + path,
                     Toast.LENGTH_LONG).show();
@@ -426,7 +426,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
     private void backup(DocumentFile dir) {
         List<KeyValue> subjects = dataStorageManager.getValues();
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        String path = StorageUtil.saveAsObjectToDocumentFile(this, dir, sharedPreferenceName, gson.toJson(subjects));
+        String path = StorageUtil.saveAsObjectToDocumentFile(this, dir, collectionName, gson.toJson(subjects));
 
         if (path != null) {
             Toast.makeText(this, "Saved to " + path,

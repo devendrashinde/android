@@ -6,9 +6,12 @@ import java.util.Map;
 public enum ControlType {
     Text("Text"),
     EditText("EditText"),
+    EditNumber("EditNumber"),
+    Expression("Expression"),
     MultiLineEditText("MultiLineEditText"),
     CheckBox("CheckBox"),
     RadioButton("RadioButton"),
+    Button("Button"),
     TimePicker("TimePicker"),
     DatePicker("DatePicker"),
     DropDownList("DropDownList"),

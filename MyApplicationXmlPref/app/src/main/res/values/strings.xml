@@ -47,6 +47,7 @@
     <string name="signed_out">Signed Out</string>
     <string name="enter_subject">enter name</string>
     <string name="enter_text">enter text</string>
+    <string name="selectItem">enter text to find or select from list</string>
     <string name="shabdaKosh">ShabdaKosh</string>
     <string name="add_control">Add Field</string>
     <string name="add_record">Add Record</string>
@@ -57,11 +58,12 @@
     <string name="screen_preview">Screen Preview</string>
     <string name="desc_firebase_lockup">Firebase logo and name</string>
     <string name="firebase_status_fmt">Firebase User: %s</string>
-    <string name="add_to_shadb_kosh">Add to Shabda Kosh</string>
+    <string name="add_to_dictionary">Add to Shabda Kosh</string>
     <string name="google_status_fmt">Google User: %s</string>
     <string name="google_title_text">Google Sign In</string>
     <string name="title_activity_pdfview">PDFViewActivity</string>
     <string name="previous">Previous</string>
     <string name="next">Next</string>
+    <string name="title_activity_biometric_sign_in">BiometricSignIn</string>
 
 </resources>

@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.documentfile.provider.DocumentFile;
 
 import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.common.DataStorageType;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 
@@ -76,13 +77,21 @@ public class BaseActivity extends AppCompatActivity {
         startActivityForResult(selectFile, actionCode);
     }
 
-    protected void share(String text) {
+    protected void shareText(String text) {
+        share(text, Constants.TEXT_PLAIN);
+    }
+
+    protected void shareHtml(String text) {
+        share(text, Constants.TEXT_HTML);
+    }
+
+    protected void share(String text, String type) {
         if (!text.isEmpty()) {
             Intent sendIntent = new Intent();
             sendIntent.setAction(Intent.ACTION_SEND);
-            String textToShare = this.getTitle() + System.getProperty(System.lineSeparator()) + text;
+            String textToShare = this.getTitle() + Constants.CR_LF + text;
             sendIntent.putExtra(Intent.EXTRA_TEXT, textToShare);
-            sendIntent.setType("text/plain");
+            sendIntent.setType(type);
             startActivity(sendIntent);
         }
     }

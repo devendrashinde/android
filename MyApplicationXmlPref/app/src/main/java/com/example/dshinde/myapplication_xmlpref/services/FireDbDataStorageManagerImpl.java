@@ -265,10 +265,6 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
         return data;
     }
 
-    public String getDataString() {
-        return "";
-    }
-
     public String getDataString(String collectionName) {
         return getDataMap(collectionName).toString();
     }

@@ -228,7 +228,7 @@ public class SellTeaActivity extends BaseActivity implements ListviewActions {
 
     public void share() {
         if (cafeSellSummary != null) {
-            share(gson.toJson(cafeSellSummary));
+            shareText(gson.toJson(cafeSellSummary));
         }
     }
 

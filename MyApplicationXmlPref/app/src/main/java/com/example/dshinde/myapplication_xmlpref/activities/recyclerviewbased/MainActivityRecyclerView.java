@@ -23,6 +23,7 @@ import androidx.documentfile.provider.DocumentFile;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.dshinde.myapplication_xmlpref.activities.RandomButtonActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.Main2Activity;
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.ScreenDesignActivity;
@@ -165,7 +166,11 @@ public class MainActivityRecyclerView extends BaseActivity  {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.navigation, menu);
         menu.removeItem(R.id.menu_add);
+        menu.removeItem(R.id.menu_share);
         menu.removeItem(R.id.menu_clear);
+        //menu.removeItem(R.id.menu_settings);
+        menu.removeItem(R.id.menu_sell);
+        menu.removeItem(R.id.menu_pay);
         return true;
     }
 
@@ -207,7 +212,8 @@ public class MainActivityRecyclerView extends BaseActivity  {
                 doSell();
                 return true;
             case R.id.menu_settings:
-                doSettings();
+                //doSettings();
+                showTestActivity();
                 return true;
             case R.id.menu_design_screen:
                 doDesignOrCapture();
@@ -218,6 +224,14 @@ public class MainActivityRecyclerView extends BaseActivity  {
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    private void showTestActivity() {
+        String fileName = valueField.getText().toString();
+        Intent intent = new Intent(MainActivityRecyclerView.this, PicklistActivityRecyclerView.class);
+        intent.putExtra("filename", fileName);
+        intent.putExtra("userId", userId);
+        startActivity(intent);
     }
 
     public void remove() {
@@ -233,12 +247,13 @@ public class MainActivityRecyclerView extends BaseActivity  {
         dataStorageManager.save(key, value);
         clear();
     }
+
     public void share() {
         String fileName = valueField.getText().toString();
         if (!fileName.isEmpty()) {
             Intent sendIntent = new Intent();
             sendIntent.setAction(Intent.ACTION_SEND);
-            String textToShare = fileName + "\n" + SharedPrefManager.getDataString(this, fileName);
+            String textToShare = fileName + Constants.CR_LF + SharedPrefManager.getDataString(this, fileName);
             sendIntent.putExtra(Intent.EXTRA_TEXT, textToShare);
             sendIntent.setType("text/plain");
             startActivity(sendIntent);
@@ -307,6 +322,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
 
     private RecyclerViewKeyValueItemListener getOnItemClickListenerToListView() {
         RecyclerViewKeyValueItemListener listener = new RecyclerViewKeyValueItemListener() {
+            @Override
             public void onItemClick(KeyValue kv) {
                 key = kv.getKey();
                 setEditView(kv.getValue());

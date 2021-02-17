@@ -24,7 +24,6 @@ import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.webkit.WebView;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -35,7 +34,6 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Scroller;
 import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
@@ -43,6 +41,7 @@ import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.common.ControlType;
 import com.example.dshinde.myapplication_xmlpref.common.YesNo;
+import com.example.dshinde.myapplication_xmlpref.helper.DynamicControls;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.FireStorageListener;
@@ -207,6 +206,12 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                 case EditText:
                     addEditText(screenControl, false);
                     break;
+                case EditNumber:
+                    addEditNumber(screenControl);
+                    break;
+                case Expression:
+                    addExpression(screenControl);
+                    break;
                 case MultiLineEditText:
                     addEditText(screenControl, true);
                     break;
@@ -238,8 +243,84 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         Log.d(CLASS_TAG, "exit(createControls)");
     }
 
+    private void addExpression(ScreenControl screenControl) {
+        addText(screenControl);
+        EditText editText = DynamicControls.getEditText(this);
+        screenControl.setValueControl(editText);
+        editText.setEnabled(false);
+    }
+
+    private String evaluateExpression(ScreenControl screenControl) {
+        String expression[] = screenControl.getOptionValues();
+        String lastValue = null;
+        for(int index = 0; index < expression.length; index++){
+            if (fieldIsOperator(expression[index])){
+                if(lastValue == null) {
+                    lastValue = data.get(expression[index - 1]);
+                }
+                String operator = expression[index];
+                String value2 = data.get(expression[index+1]);
+                index++;
+                lastValue = solveExpression(lastValue, value2, operator);
+            }
+        }
+        return lastValue;
+    }
+
+    private String solveExpression(String value1, String value2, String operator) {
+        float v1 = value1 != null && !value1.isEmpty() ? Float.valueOf(value1) : 0;
+        float v2 = value2 != null && !value2.isEmpty() ? Float.valueOf(value2) : 0;
+        float result = 0;
+        switch (operator){
+            case "+":
+                result = v1 + v2;
+                break;
+            case "-":
+                result = v1 - v2;
+                break;
+            case "/":
+                if(v2 > 0) {
+                    result = v1 / v2;
+                }
+                break;
+            case "*":
+                result = v1 * v2;
+                break;
+            default:
+                result = 0;
+        }
+        return String.valueOf(result);
+    }
+
+    private boolean fieldIsOperator(String field) {
+        switch (field){
+            case "+":
+            case "-":
+            case "/":
+            case "*":
+                return true;
+        }
+        return false;
+    }
+
+    private void setExpressionValue() {
+        /*
+        find all expression fields and try to resolve and set value of respective expression control
+         */
+        for (ScreenControl screenControl : controls) {
+            switch (screenControl.getControlType()) {
+                case Expression:
+                    EditText editText = (EditText) screenControl.getValueControl();
+                    editText.setText(evaluateExpression(screenControl));
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
     private void addText(ScreenControl screenControl) {
-        screenControl.setLabelControl(getTextView(screenControl.getTextLabel()));
+        screenControl.setLabelControl(DynamicControls.getTextView(this, screenControl.getTextLabel()));
     }
 
     private String getValue(ScreenControl screenControl){
@@ -249,13 +330,19 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private void addEditText(ScreenControl screenControl, boolean multiLine) {
         addText(screenControl);
-        EditText editText = getEditText();
+        EditText editText = DynamicControls.getEditText(this);
         if (multiLine) {
             addMultiLineEditText(editText);
         }
         screenControl.setValueControl(editText);
         setEditTextListener(screenControl);
         editText.setText(getValue(screenControl));
+    }
+
+    private void addEditNumber(ScreenControl screenControl) {
+        addEditText(screenControl, false);
+        EditText editText = (EditText) screenControl.getValueControl();
+        editText.setRawInputType(InputType.TYPE_CLASS_NUMBER);
     }
 
     private void addMultiLineEditText(EditText editText) {
@@ -270,27 +357,14 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         editText.setImeOptions(EditorInfo.IME_FLAG_NO_ENTER_ACTION);
     }
 
-    private EditText getEditText() {
-        EditText editText = new EditText(this);
-        editText.setId(View.generateViewId());
-        return editText;
-    }
-
     private void addSaveButton(ScreenControl screenControl) {
-        Button btn = getButton(screenControl.getTextLabel());
+        Button btn = DynamicControls.getButton(this, screenControl.getTextLabel());
         screenControl.setValueControl(btn);
         setSaveButtonListener(btn);
     }
 
-    private Button getButton(String label) {
-        Button btn = new Button(this);
-        btn.setText(label);
-        btn.setId(View.generateViewId());
-        return btn;
-    }
-
     private void addCancelButton(ScreenControl screenControl) {
-        Button btn = getButton(screenControl.getTextLabel());
+        Button btn = DynamicControls.getButton(this, screenControl.getTextLabel());
         screenControl.setValueControl(btn);
         setCancelButtonListener(btn);
     }
@@ -299,29 +373,9 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         addText(screenControl);
         String[] options = screenControl.getOptionValues();
         List<String> values = getOptionValues(screenControl);
-        RadioGroup rg = addRadioGroupControl(options, values);
+        RadioGroup rg = DynamicControls.getRadioGroupControl(this, options, values);
         screenControl.setValueControl(rg);
         setRadioGroupChangeListner(screenControl);
-    }
-
-    private RadioGroup addRadioGroupControl(String options[], List<String> values){
-        RadioGroup rg = new RadioGroup(this);
-        rg.setOrientation(options.length <= 2 ? RadioGroup.HORIZONTAL : RadioGroup.VERTICAL);
-        rg.setId(View.generateViewId());
-        int selectedId = -1;
-        for (String option : options) {
-            RadioButton rb = new RadioButton(this);
-            rb.setText(option);
-            rb.setId(View.generateViewId());
-            rg.addView(rb);
-            if (values.contains(option)) {
-                selectedId = rb.getId();
-            }
-        }
-        if (selectedId != -1) {
-            rg.check(selectedId);
-        }
-        return rg;
     }
 
     private List<String> getOptionValues(ScreenControl screenControl){
@@ -342,34 +396,18 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     private void addCheckbox(ScreenControl screenControl) {
         addText(screenControl);
         String[] options = screenControl.getOptionValues();
-        View[] optionControls = new View[options.length];
         List<String> values = getOptionValues(screenControl);
-        for (int i = 0; i < options.length; i++) {
-            CheckBox cb = new CheckBox(this);
-            cb.setText(options[i]);
-            cb.setId(View.generateViewId());
-            optionControls[i] = cb;
-            if (values.contains(options[i])) {
-                cb.setChecked(true);
-            }
-        }
+        View[] optionControls = DynamicControls.getCheckbox(this, options, values);
         screenControl.setOptionControls(optionControls);
         setCheckBoxChangeListner(screenControl);
     }
 
     private void addDropDownList(ScreenControl screenControl) {
         addText(screenControl);
-        Spinner spin = new Spinner(this);
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, screenControl.getOptionValues());
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spin.setAdapter(adapter);
+        String value = data.get(screenControl.getControlId());
+        Spinner spin = DynamicControls.getDropDownList(this, screenControl.getOptionValues(), value);
         screenControl.setValueControl(spin);
         setDropDownListListener(screenControl);
-        String value = data.get(screenControl.getControlId());
-        if (value != null) {
-            int spinnerPosition = adapter.getPosition(value);
-            spin.setSelection(spinnerPosition);
-        }
     }
 
     private void addTimePicker(ScreenControl screenControl) {
@@ -384,13 +422,6 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         EditText valueControl = (EditText) screenControl.getValueControl();
         valueControl.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_dashboard_black_24dp, 0);
         setDatePicker(valueControl);
-    }
-
-    private TextView getTextView(String label) {
-        TextView textView = new TextView(this);
-        textView.setText(label);
-        textView.setId(View.generateViewId());
-        return textView;
     }
 
     private void setDatePicker(EditText control) {
@@ -428,7 +459,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     private void addPhotoControl(ScreenControl screenControl) {
         addText(screenControl);
         String options[] = {TAKE_PHOTO, SELECT_PHOTO};
-        RadioGroup rg = addRadioGroupControl(options, Collections.EMPTY_LIST);
+        RadioGroup rg = DynamicControls.getRadioGroupControl(this, options, Collections.EMPTY_LIST);
         RadioButton rbTakePhoto = (RadioButton) rg.getChildAt(0);
         rbTakePhoto.setButtonDrawable(R.drawable.ic_photo_camera_red_24dp);
         RadioButton rbSelectPhoto = (RadioButton) rg.getChildAt(1);
@@ -447,9 +478,9 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         EditText valueControl = (EditText) screenControl.getValueControl();
         valueControl.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_pdf_file_yellow_24dp, 0);
         setDocumentSelector(screenControl);
-        Button btn = getButton("Open");
+        Button btn = DynamicControls.getButton(this, "Open");
         screenControl.setMediaControl(btn);
-        setOpenButtonListener(screenControl);
+        setOpenDocumentButtonListener(screenControl);
 
         String value = getValue(screenControl);
         if(value != null && !value.trim().isEmpty()){
@@ -458,14 +489,13 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         }
     }
 
-    private void setOpenButtonListener(ScreenControl screenControl) {
+    private void setOpenDocumentButtonListener(ScreenControl screenControl) {
         Button btn = (Button) screenControl.getMediaControl();
         btn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                EditText editText = (EditText)screenControl.getValueControl();
-                String fileName = editText.getText().toString();
-                if(fileName != null & !fileName.isEmpty()) {
-                    startPdfViewActivity(fileName);
+                Uri fileName = screenControl.getMediaUri();
+                if(fileName != null ) {
+                    startPdfViewActivity(fileName.toString());
                 }
             }
         });
@@ -576,7 +606,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
             File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
             File image = File.createTempFile(
                 imageFileName,  /* prefix */
-                ".jpg",         /* suffix */
+                ".jpg",   /* suffix */
                 storageDir      /* directory */
             );
             return image;
@@ -637,14 +667,14 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                     currentView.setImageURI(selectedFile);
                 }
                 break;
-                case Constants.SELECT_DOCUMENT:
-                    if( data != null && data.getData() != null) {
-                        Uri selectedFile = data.getData();
-                        EditText editText = (EditText) currentScreenControl.getValueControl();
-                        currentScreenControl.setMediaUri(selectedFile);
-                        editText.setText(selectedFile.toString());
-                    }
-                    break;
+            case Constants.SELECT_DOCUMENT:
+                if( data != null && data.getData() != null) {
+                    Uri selectedFile = data.getData();
+                    EditText editText = (EditText) currentScreenControl.getValueControl();
+                    currentScreenControl.setMediaUri(selectedFile);
+                    editText.setText(StorageUtil.getFileName(this, selectedFile));
+                }
+                break;
             default:
                 break;
         }
@@ -655,6 +685,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         editText.addTextChangedListener(new TextWatcher() {
             public void afterTextChanged(Editable s) {
                 data.put(screenControl.getControlId(), s.toString());
+                setExpressionValue();
             }
 
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -831,7 +862,10 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     };
 
     private boolean isMultiOptionControl(ControlType type) {
-        return type == ControlType.CheckBox || type == ControlType.RadioButton || type == ControlType.DropDownList;
+        return type == ControlType.CheckBox
+                || type == ControlType.RadioButton
+                || type == ControlType.DropDownList
+                || type == ControlType.Expression;
     }
 
     @Override
