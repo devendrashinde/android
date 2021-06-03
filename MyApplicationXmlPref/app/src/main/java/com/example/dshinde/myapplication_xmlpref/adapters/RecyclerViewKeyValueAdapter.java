@@ -9,6 +9,7 @@ import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.TextView;
 
+import androidx.core.text.HtmlCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dshinde.myapplication_xmlpref.R;
@@ -147,7 +148,13 @@ public class RecyclerViewKeyValueAdapter extends RecyclerView.Adapter<RecyclerVi
 
         // Set item views based on your views and data model
         viewHolder.keyView.setText(keyValue.getKey());
-        viewHolder.valueView.setText(keyValue.getValue());
+
+        if(JsonHelper.isJSONValid(keyValue.getValue())) {
+            viewHolder.valueView.setText(HtmlCompat.fromHtml(JsonHelper.formatAsString(keyValue.getValue(), true),HtmlCompat.FROM_HTML_MODE_LEGACY));
+        } else {
+            viewHolder.valueView.setText(keyValue.getValue());
+        }
+
     }
 
     // Return the size of your dataset (invoked by the layout manager)

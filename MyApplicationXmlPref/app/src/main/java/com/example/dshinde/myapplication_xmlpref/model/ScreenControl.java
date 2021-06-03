@@ -13,6 +13,7 @@ public class ScreenControl {
     private String positionId;
     private String defaultValue;
     private ControlType controlType;
+    private String noteData; // \n separated values checkbox, radio buttons and dropdowns
     private String options; // \n separated values checkbox, radio buttons and dropdowns
     private transient String[] optionValues; // values parsed into array for checkbox, radio buttons, dropdowns
     private transient View labelControl;
@@ -54,6 +55,14 @@ public class ScreenControl {
 
     public void setOptions(String options) {
         this.options = options;
+    }
+
+    public String getNoteData() {
+        return noteData;
+    }
+
+    public void setNoteData(String noteData) {
+        this.noteData= noteData;
     }
 
     public int getId() {

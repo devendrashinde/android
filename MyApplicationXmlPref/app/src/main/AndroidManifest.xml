@@ -21,41 +21,51 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:windowSoftInputMode="adjustResize">
+        <activity android:name=".activities.drawables.DrawableActivity"
+            android:configChanges="orientation|screenSize">
+        </activity>
         <activity
             android:name=".launcher.SignInActivity"
-            android:configChanges="orientation|screenSize"/>
+            android:configChanges="orientation|screenSize" />
         <activity
             android:name=".activities.PdfViewActivity"
+            android:configChanges="orientation|screenSize"
             android:label="@string/title_activity_pdfview"
-            android:theme="@style/AppTheme.NoActionBar"
-            android:configChanges="orientation|screenSize"/>
-        <activity android:name=".activities.DynamicLinearLayoutActivity"
-            android:configChanges="orientation|screenSize"/>
-        <activity android:name=".activities.listviewbased.ScreenDesignActivity"
-            android:configChanges="orientation|screenSize"/>
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".activities.DynamicLinearLayoutActivity"
+            android:configChanges="orientation|screenSize" />
+        <activity
+            android:name=".activities.listviewbased.ScreenDesignActivity"
+            android:configChanges="orientation|screenSize" />
         <activity
             android:name=".activities.ScrollingTextViewActivity"
             android:label="@string/title_scrolling_textview_activity" />
         <activity android:name=".activities.DialogActivity" />
-        <activity android:name=".launcher.BiometricSignIn"
+        <activity
+            android:name=".launcher.BiometricSignIn"
             android:configChanges="orientation|screenSize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".auth.GoogleSignInActivity"
-            android:configChanges="orientation|screenSize"/>
-        <activity android:name=".activities.listviewbased.MainActivity"
-            android:configChanges="orientation|screenSize"/>
-        <activity android:name=".activities.recyclerviewbased.PicklistActivityRecyclerView"
-            android:configChanges="orientation|screenSize"/>
-        <activity android:name=".activities.recyclerviewbased.MainActivityRecyclerView"
-            android:configChanges="orientation|screenSize"/>
+        <activity
+            android:name=".auth.GoogleSignInActivity"
+            android:configChanges="orientation|screenSize" />
+        <activity
+            android:name=".activities.listviewbased.MainActivity"
+            android:configChanges="orientation|screenSize" />
+        <activity
+            android:name=".activities.recyclerviewbased.PicklistActivityRecyclerView"
+            android:configChanges="orientation|screenSize" />
+        <activity
+            android:name=".activities.recyclerviewbased.MainActivityRecyclerView"
+            android:configChanges="orientation|screenSize" />
         <activity
             android:name=".activities.listviewbased.Main2Activity"
-            android:label="@string/title_activity_main2"
-            android:configChanges="orientation|screenSize"/>
+            android:configChanges="orientation|screenSize"
+            android:label="@string/title_activity_main2" />
         <activity
             android:name=".activities.listviewbased.SellTeaActivity"
             android:label="@string/sellTea" />
@@ -64,18 +74,21 @@
             android:label="@string/cafeSettings" />
         <activity
             android:name=".activities.listviewbased.ShabdaKoshActivity"
-            android:label="@string/shabdaKosh"
-            android:configChanges="orientation|screenSize"/>
-        <activity android:name=".activities.MediaViewActivity"
-            android:configChanges="orientation|screenSize"/>
-        <activity android:name=".activities.PhotoViewActivity"
-            android:configChanges="orientation|screenSize"/>
-        <activity android:name=".activities.RandomButtonActivity"
-            android:configChanges="orientation|screenSize"/>
+            android:configChanges="orientation|screenSize"
+            android:label="@string/shabdaKosh" />
+        <activity
+            android:name=".activities.MediaViewActivity"
+            android:configChanges="orientation|screenSize" />
+        <activity
+            android:name=".activities.PhotoViewActivity"
+            android:configChanges="orientation|screenSize" />
+        <activity
+            android:name=".activities.RandomButtonActivity"
+            android:configChanges="orientation|screenSize" />
         <activity
             android:name="com.theartofdev.edmodo.cropper.CropImageActivity"
-            android:theme="@style/Base.Theme.AppCompat"
-            android:configChanges="orientation|screenSize"/>
+            android:configChanges="orientation|screenSize"
+            android:theme="@style/Base.Theme.AppCompat" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

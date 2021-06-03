@@ -24,6 +24,7 @@ public class Constants {
     public static final int TAKE_PHOTO=504;
     public static final int SELECT_IMAGE =505;
     public static final int SELECT_DOCUMENT =506;
+    public static final int SELECT_MYNOTE =507;
     public static final String[] EMPTY_ARRAY={};
     public static final String IMAGE_FILE="image/*";
     public static final String PDF_FILE="application/pdf";

@@ -65,5 +65,5 @@
     <string name="previous">Previous</string>
     <string name="next">Next</string>
     <string name="title_activity_biometric_sign_in">BiometricSignIn</string>
-
+    <string name="server_client_id">334043020289-3hlevnmgrkvsg4ff1ej7cni1bvqckkc8.apps.googleusercontent.com</string>
 </resources>

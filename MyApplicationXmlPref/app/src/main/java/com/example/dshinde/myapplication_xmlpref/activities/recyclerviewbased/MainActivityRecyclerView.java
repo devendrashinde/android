@@ -24,6 +24,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dshinde.myapplication_xmlpref.activities.RandomButtonActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.drawables.DrawableActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.Main2Activity;
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.ScreenDesignActivity;
@@ -228,7 +229,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
 
     private void showTestActivity() {
         String fileName = valueField.getText().toString();
-        Intent intent = new Intent(MainActivityRecyclerView.this, PicklistActivityRecyclerView.class);
+        Intent intent = new Intent(MainActivityRecyclerView.this, DrawableActivity.class);
         intent.putExtra("filename", fileName);
         intent.putExtra("userId", userId);
         startActivity(intent);
@@ -393,7 +394,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     private void startDesignOrEditActivity(String fileName, Integer requestMode, String screeConfig) {
-        Intent intent = new Intent(MainActivityRecyclerView.this, ScreenDesignActivity.class);
+        Intent intent = new Intent(this, ScreenDesignActivity.class);
         intent.putExtra("screenName", fileName);
         intent.putExtra("requestMode", requestMode);
         intent.putExtra("userId", userId);

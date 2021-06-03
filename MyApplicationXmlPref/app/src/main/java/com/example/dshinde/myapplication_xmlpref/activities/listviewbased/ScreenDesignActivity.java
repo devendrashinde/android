@@ -468,16 +468,18 @@ public class ScreenDesignActivity extends BaseActivity {
                 "        \"textLabel\": \"Label Text:\"\n" +
                 "    },\n" +
                 "    {\n" +
-                "        \"controlId\": \"options\",\n" +
+                "        \"controlId\": \"noteData\",\n" +
                 "        \"positionId\": \"7\",\n" +
-                "        \"controlType\": \"MultiLineEditText\",\n" +
-                "        \"textLabel\": \"Enter values for DropdownList/Checkbox/RadioButtons/Expression on separate lines:\"\n" +
+                "        \"controlType\": \"RadioButton\",\n" +
+                "        \"textLabel\": \"Pick value from MyNote?\",\n" +
+                "        \"defaultValue\": \"No\",\n" +
+                "        \"options\": \"Yes\\nNo\"\n" +
                 "    },\n" +
                 "    {\n" +
-                "        \"controlId\": \"saveButton\",\n" +
-                "        \"positionId\": \"9\",\n" +
-                "        \"controlType\": \"SaveButton\",\n" +
-                "        \"textLabel\": \"Save\"\n" +
+                "        \"controlId\": \"options\",\n" +
+                "        \"positionId\": \"8\",\n" +
+                "        \"controlType\": \"MultiLineEditText\",\n" +
+                "        \"textLabel\": \"Enter values for DropdownList/Checkbox/RadioButtons/Expression/MyNote on separate lines:\"\n" +
                 "    }\n" +
                 "]";
     }

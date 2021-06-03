@@ -75,6 +75,7 @@ public class BiometricSignIn extends BaseActivity {
         biometricLoginButton.setOnClickListener(view -> {
             biometricPrompt.authenticate(promptInfo);
         });
+        biometricPrompt.authenticate(promptInfo);
     }
 
     private void startSignInActivity() {

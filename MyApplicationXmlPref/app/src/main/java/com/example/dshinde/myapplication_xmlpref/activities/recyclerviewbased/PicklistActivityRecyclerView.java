@@ -1,52 +1,30 @@
 package com.example.dshinde.myapplication_xmlpref.activities.recyclerviewbased;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
-import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
-import androidx.documentfile.provider.DocumentFile;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
-import com.example.dshinde.myapplication_xmlpref.activities.RandomButtonActivity;
-import com.example.dshinde.myapplication_xmlpref.activities.ScrollingTextViewActivity;
-import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.CafeSettingsActivity;
-import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.Main2Activity;
-import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.ScreenDesignActivity;
-import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.SellTeaActivity;
-import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.ShabdaKoshActivity;
 import com.example.dshinde.myapplication_xmlpref.adapters.MarginItemDecoration;
 import com.example.dshinde.myapplication_xmlpref.adapters.RecyclerViewKeyValueAdapter;
-import com.example.dshinde.myapplication_xmlpref.common.Constants;
-import com.example.dshinde.myapplication_xmlpref.helper.Converter;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
-import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.listners.RecyclerViewKeyValueItemListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
-import com.example.dshinde.myapplication_xmlpref.services.ReadOnceDataStorage;
-import com.example.dshinde.myapplication_xmlpref.services.SharedPrefManager;
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -204,8 +182,7 @@ public class PicklistActivityRecyclerView extends BaseActivity  {
                 String value = getSelectedItemsValue(kv);
                 Intent intent = new Intent();
                 intent.putExtra("data", value);
-                setResult(Constants.RESULT_CODE_OK, intent);
-                showInShortToast("Returning " + value);
+                setResult(RESULT_OK, intent);
                 finish();
             }
 

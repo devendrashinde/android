@@ -38,12 +38,15 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.activities.recyclerviewbased.MainActivityRecyclerView;
+import com.example.dshinde.myapplication_xmlpref.activities.recyclerviewbased.PicklistActivityRecyclerView;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.common.ControlType;
 import com.example.dshinde.myapplication_xmlpref.common.YesNo;
 import com.example.dshinde.myapplication_xmlpref.helper.DynamicControls;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
+import com.example.dshinde.myapplication_xmlpref.helper.Utils;
 import com.example.dshinde.myapplication_xmlpref.listners.FireStorageListener;
 import com.example.dshinde.myapplication_xmlpref.model.MediaFields;
 import com.example.dshinde.myapplication_xmlpref.model.ScreenControl;
@@ -85,6 +88,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     private Integer requestMode = null;
     private ScreenControl currentScreenControl;
     private FileStorage mediaStorage;
+    private String userId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,8 +98,9 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         linearLayout = findViewById(R.id.linear_layout);
 
         Bundle bundle = getIntent().getExtras();
+        userId = bundle.getString("userId");
         collectionName = Constants.STORAGE_PATH_NOTES +
-                bundle.getString("userId") + "/" +
+                userId + "/" +
                 bundle.getString("noteId");
         String screenConfig = bundle.getString("screenConfig");
         String screenData = bundle.getString("screenData");
@@ -239,6 +244,18 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                 default:
                     break;
             }
+
+            switch (screenControl.getControlType()){
+                case EditText:
+                case EditNumber:
+                case MultiLineEditText:
+                    if(screenControl.getNoteData() != null) {
+                        addPicker((EditText) screenControl.getValueControl(), R.drawable.ic_dashboard_black_24dp);
+                        setPicklistListener(screenControl);
+                    }
+                default:
+                    break;
+            }
         }
         Log.d(CLASS_TAG, "exit(createControls)");
     }
@@ -253,21 +270,47 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     private String evaluateExpression(ScreenControl screenControl) {
         String expression[] = screenControl.getOptionValues();
         String lastValue = null;
-        for(int index = 0; index < expression.length; index++){
-            if (fieldIsOperator(expression[index])){
-                if(lastValue == null) {
-                    lastValue = data.get(expression[index - 1]);
+        boolean numericExp = expression.length > 1;
+        if(!numericExp) {
+            expression = screenControl.getOptions().split(" ");
+        }
+        for (int index = 0; index < expression.length; index++) {
+            if(numericExp) {
+                if (fieldIsOperator(expression[index])) {
+                    if (lastValue == null) {
+                        lastValue = data.get(expression[index - 1]);
+                    }
+                    String operator = expression[index];
+                    String value2 = data.get(expression[index + 1]);
+                    index++;
+                    lastValue = solveExpression(lastValue, value2, operator);
                 }
-                String operator = expression[index];
-                String value2 = data.get(expression[index+1]);
-                index++;
-                lastValue = solveExpression(lastValue, value2, operator);
+            } else {
+                if(expression[index].trim().length() > 0) {
+                    String value = expression[index];
+                    if(data.containsKey(expression[index])) {
+                        value = data.get(expression[index]);
+                    }
+                    if (lastValue == null) {
+                        lastValue = value;
+                    } else {
+                        lastValue = solveExpression(lastValue, value);
+                    }
+                }
             }
         }
+
         return lastValue;
     }
 
+    private String solveExpression(String value1, String value2) {
+        return value1 + " " + value2;
+    }
+
     private String solveExpression(String value1, String value2, String operator) {
+        if(!Utils.isNumeric(value1) || !Utils.isNumeric(value2)) {
+            return solveExpression(value1, value2);
+        }
         float v1 = value1 != null && !value1.isEmpty() ? Float.valueOf(value1) : 0;
         float v2 = value2 != null && !value2.isEmpty() ? Float.valueOf(value2) : 0;
         float result = 0;
@@ -311,7 +354,9 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
             switch (screenControl.getControlType()) {
                 case Expression:
                     EditText editText = (EditText) screenControl.getValueControl();
-                    editText.setText(evaluateExpression(screenControl));
+                    if(editText != null) {
+                        editText.setText(evaluateExpression(screenControl));
+                    }
                     break;
                 default:
                     break;
@@ -413,15 +458,19 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     private void addTimePicker(ScreenControl screenControl) {
         addEditText(screenControl, false);
         EditText valueControl = (EditText) screenControl.getValueControl();
-        valueControl.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_dashboard_black_24dp, 0);
+        addPicker(valueControl, R.drawable.ic_dashboard_black_24dp);
         setTimePicker(valueControl);
     }
 
     private void addDatePicker(ScreenControl screenControl) {
         addEditText(screenControl, false);
         EditText valueControl = (EditText) screenControl.getValueControl();
-        valueControl.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_dashboard_black_24dp, 0);
+        addPicker(valueControl, R.drawable.ic_dashboard_black_24dp);
         setDatePicker(valueControl);
+    }
+
+    private void addPicker(EditText valueControl, int p) {
+        valueControl.setCompoundDrawablesWithIntrinsicBounds(0, 0, p, 0);
     }
 
     private void setDatePicker(EditText control) {
@@ -476,7 +525,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     private void addDocumentControl(ScreenControl screenControl) {
         addEditText(screenControl, false);
         EditText valueControl = (EditText) screenControl.getValueControl();
-        valueControl.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_pdf_file_yellow_24dp, 0);
+        addPicker(valueControl, R.drawable.ic_pdf_file_yellow_24dp);
         setDocumentSelector(screenControl);
         Button btn = DynamicControls.getButton(this, "Open");
         screenControl.setMediaControl(btn);
@@ -522,6 +571,30 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         }
     }
 
+    private void setPicklistListener(ScreenControl screenControl) {
+        EditText control = (EditText) screenControl.getValueControl();
+        control.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    if (event.getRawX() >= (control.getRight() - control.getCompoundDrawables()[Constants.DRAWABLE_RIGHT].getBounds().width())) {
+                        currentScreenControl = screenControl;
+                        pickFromMyNote(screenControl.getOptions(), Constants.SELECT_MYNOTE);
+                        return true;
+                    }
+                }
+                return false;
+            }
+        });
+    }
+
+    private void pickFromMyNote(String options, int actionCode) {
+        Intent intent = new Intent(this, PicklistActivityRecyclerView.class);
+        intent.putExtra("filename", options.replaceAll("\\n", "/"));
+        intent.putExtra("userId", userId);
+        startActivityForResult(intent, actionCode);
+    }
+
     private void setDocumentSelector(ScreenControl screenControl) {
         EditText control = (EditText) screenControl.getValueControl();
         control.setOnTouchListener(new View.OnTouchListener() {
@@ -538,6 +611,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
             }
         });
     }
+
     private PhotoView getImageView(){
         PhotoView imageView = new PhotoView(this);
         LinearLayout.LayoutParams params = new LinearLayout
@@ -673,6 +747,12 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                     EditText editText = (EditText) currentScreenControl.getValueControl();
                     currentScreenControl.setMediaUri(selectedFile);
                     editText.setText(StorageUtil.getFileName(this, selectedFile));
+                }
+                break;
+            case Constants.SELECT_MYNOTE:
+                if( data != null) {
+                    EditText editText = (EditText) currentScreenControl.getValueControl();
+                    editText.setText(data.getExtras().getString("data"));
                 }
                 break;
             default:

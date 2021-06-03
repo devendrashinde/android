@@ -10,6 +10,8 @@ import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.TextView;
 
+import androidx.core.text.HtmlCompat;
+
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.helper.JsonHelper;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
@@ -75,7 +77,7 @@ public class ListviewKeyValueObjectAdapter extends ArrayAdapter<KeyValue> implem
         holder.keyView.setText(kv.getKey());
 
         if(JsonHelper.isJSONValid(kv.getValue())) {
-            holder.valueView.setText(Html.fromHtml(JsonHelper.formatAsString(kv.getValue(), true)));
+            holder.valueView.setText(HtmlCompat.fromHtml((JsonHelper.formatAsString(kv.getValue(), true)),HtmlCompat.FROM_HTML_MODE_LEGACY));
         } else {
             holder.valueView.setText(kv.getValue());
         }
