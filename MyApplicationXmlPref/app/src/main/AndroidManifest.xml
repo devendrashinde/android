@@ -63,6 +63,9 @@
             android:name=".activities.recyclerviewbased.MainActivityRecyclerView"
             android:configChanges="orientation|screenSize" />
         <activity
+            android:name=".activities.recyclerviewbased.Main2ActivityRecyclerView"
+            android:configChanges="orientation|screenSize" />
+        <activity
             android:name=".activities.listviewbased.Main2Activity"
             android:configChanges="orientation|screenSize"
             android:label="@string/title_activity_main2" />

@@ -1,10 +1,8 @@
 package com.example.dshinde.myapplication_xmlpref.activities.recyclerviewbased;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
@@ -23,25 +21,21 @@ import androidx.documentfile.provider.DocumentFile;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.dshinde.myapplication_xmlpref.activities.RandomButtonActivity;
-import com.example.dshinde.myapplication_xmlpref.activities.drawables.DrawableActivity;
-import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.Main2Activity;
 import com.example.dshinde.myapplication_xmlpref.R;
-import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.ScreenDesignActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.ScrollingTextViewActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.drawables.DrawableActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.CafeSettingsActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.ScreenDesignActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.SellTeaActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.ShabdaKoshActivity;
-import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
-import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.CafeSettingsActivity;
 import com.example.dshinde.myapplication_xmlpref.adapters.MarginItemDecoration;
 import com.example.dshinde.myapplication_xmlpref.adapters.RecyclerViewKeyValueAdapter;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.Converter;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
-import com.example.dshinde.myapplication_xmlpref.helper.JsonHelper;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
-import com.example.dshinde.myapplication_xmlpref.listners.ListviewActions;
 import com.example.dshinde.myapplication_xmlpref.listners.RecyclerViewKeyValueItemListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
@@ -49,10 +43,6 @@ import com.example.dshinde.myapplication_xmlpref.services.ReadOnceDataStorage;
 import com.example.dshinde.myapplication_xmlpref.services.SharedPrefManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.Collections;
 import java.util.List;
@@ -280,7 +270,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     private void startEditActivity(String fileName) {
-        Intent intent = new Intent(MainActivityRecyclerView.this, Main2Activity.class);
+        Intent intent = new Intent(MainActivityRecyclerView.this, Main2ActivityRecyclerView.class);
         intent.putExtra("filename", fileName);
         intent.putExtra("userId", userId);
         startActivity(intent);
@@ -509,12 +499,11 @@ public class MainActivityRecyclerView extends BaseActivity  {
     private void importFile(String collectionName, String data) {
         valueField.setText(collectionName);
         save();
-        Intent intent = new Intent(MainActivityRecyclerView.this, Main2Activity.class);
+        Intent intent = new Intent(MainActivityRecyclerView.this, Main2ActivityRecyclerView.class);
         intent.putExtra("filename", collectionName);
         intent.putExtra("userId", userId);
         intent.putExtra("dataToImport", data);
         startActivity(intent);
-
     }
 
     @Override
