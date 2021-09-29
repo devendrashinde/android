@@ -57,15 +57,6 @@ public class RelationshipView extends View {
         paint.setColor(0xff74AC23);
         paint.setStyle(Paint.Style.FILL);
         paint.setTextSize(TEXT_HEIGHT);
-
-        /*
-        canvas.drawRect(x, y, x + width, y + height, paint);
-
-        for(int i=0; i < width; i++) {
-            canvas.drawLine(x + width / 2, y + height, x+i, y + height * 2, paint);
-        }
-        */
-
         drawName(canvas, x, y + TEXT_HEIGHT, relationShipFrom, paint);
     }
 
