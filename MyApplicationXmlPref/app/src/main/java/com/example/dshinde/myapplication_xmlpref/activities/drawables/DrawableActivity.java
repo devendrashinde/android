@@ -2,12 +2,16 @@ package com.example.dshinde.myapplication_xmlpref.activities.drawables;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.Window;
 import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -26,6 +30,8 @@ import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.example.dshinde.myapplication_xmlpref.services.ReadOnceDataStorage;
 import com.github.chrisbanes.photoview.PhotoView;
+import com.theartofdev.edmodo.cropper.CropImage;
+import com.theartofdev.edmodo.cropper.CropImageView;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -93,11 +99,14 @@ public class DrawableActivity extends BaseActivity {
         if(customDrawableView != null){
             scroll_view.removeView(customDrawableView);
         }
+        photoView = DynamicControls.getPhotoView(this, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.MATCH_PARENT));
         customDrawableView = new RelationshipView(this, parentNode, relationShips);
         customDrawableView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.MATCH_PARENT));
         scroll_view.addView(customDrawableView);
     }
+
 
     private void setParents() {
         if(parent != null) {
@@ -161,6 +170,30 @@ public class DrawableActivity extends BaseActivity {
         startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE), StorageUtil.PICK_DOCUMENT_FOLDER_FOR_EXPORT);
     }
 
+    public static Bitmap loadBitmapFromView(View view) {
+
+        // width measure spec
+        int widthSpec = View.MeasureSpec.makeMeasureSpec(
+                view.getMeasuredWidth(), View.MeasureSpec.EXACTLY);
+        // height measure spec
+        int heightSpec = View.MeasureSpec.makeMeasureSpec(
+                view.getMeasuredHeight(), View.MeasureSpec.EXACTLY);
+        // measure the view
+        view.measure(widthSpec, heightSpec);
+        // set the layout sizes
+        view.layout(view.getLeft(), view.getTop(), view.getMeasuredWidth() + view.getLeft(), view.getMeasuredHeight() + view.getTop());
+        // create the bitmap
+        Bitmap bitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
+        // create a canvas used to get the view's image and draw it on the bitmap
+        Canvas c = new Canvas(bitmap);
+        // position the image inside the canvas
+        c.translate(-view.getScrollX(), -view.getScrollY());
+        // get the canvas
+        view.draw(c);
+
+        return bitmap;
+    }
+
     protected void doExport(DocumentFile mediaStorageDir) {
 
         // save view to file
@@ -168,39 +201,30 @@ public class DrawableActivity extends BaseActivity {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageName = "IMG_" + timeStamp + ".jpg";
 
-        String selectedOutputPath = mediaStorageDir.getUri().getPath() + File.separator + imageName;
+        DocumentFile file = mediaStorageDir.createFile(StorageUtil.JPEG_FILE, imageName);
 
-        customDrawableView.setDrawingCacheEnabled(true);
-        customDrawableView.buildDrawingCache();
-        Bitmap bitmap = customDrawableView.getDrawingCache();
-        //Bitmap bitmap = Bitmap.createBitmap(customDrawableView.getDrawingCache());
-        customDrawableView.setDrawingCacheEnabled(false);
-        customDrawableView.destroyDrawingCache();
+        Bitmap bitmap = loadBitmapFromView(customDrawableView);
 
-        int maxSize = 1080;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    OutputStream out = getApplicationContext().getContentResolver().openOutputStream(file.getUri());
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+                    out.flush();
+                    out.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
 
-        int bWidth = bitmap.getWidth();
-        int bHeight = bitmap.getHeight();
+    }
 
-        if (bWidth > bHeight) {
-            int imageHeight = (int) Math.abs(maxSize * ((float)bitmap.getWidth() / (float) bitmap.getHeight()));
-            bitmap = Bitmap.createScaledBitmap(bitmap, maxSize, imageHeight, true);
-        } else {
-            int imageWidth = (int) Math.abs(maxSize * ((float)bitmap.getWidth() / (float) bitmap.getHeight()));
-            bitmap = Bitmap.createScaledBitmap(bitmap, imageWidth, maxSize, true);
-        }
-
-        OutputStream fOut = null;
-        try {
-            File file = new File(selectedOutputPath);
-            fOut = new FileOutputStream(file);
-
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fOut);
-            fOut.flush();
-            fOut.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    private void cropPhoto(Uri photoUri) {
+        CropImage.activity(photoUri)
+                .setGuidelines(CropImageView.Guidelines.ON)
+                .start(this);
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {

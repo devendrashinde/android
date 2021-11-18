@@ -41,6 +41,7 @@ public class StorageUtil {
     public static final String TXT = ".txt";
     private static final String TEXT_FILE = "text/plain; charset=utf-8";
     private static final String JSON_FILE = "application/json; charset=utf-8";
+    public static final String JPEG_FILE = "image/jpeg";
     public static final String OBJ = ".obj";
     public static final String JSON = ".json";
 

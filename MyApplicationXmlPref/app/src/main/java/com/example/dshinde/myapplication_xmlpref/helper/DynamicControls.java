@@ -6,10 +6,14 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.TextView;
+
+import com.github.chrisbanes.photoview.PhotoView;
 
 import java.util.List;
 
@@ -79,6 +83,20 @@ public class DynamicControls {
             spinner.setSelection(spinnerPosition);
         }
         return spinner;
+    }
+
+    public static PhotoView getPhotoView(Context context, LinearLayout.LayoutParams params){
+        PhotoView imageView = new PhotoView(context);
+        imageView.setLayoutParams(params);
+        imageView.setAdjustViewBounds(true);
+        imageView.setScaleType(ImageView.ScaleType.FIT_XY);
+        imageView.setId(View.generateViewId());
+        return imageView;
+    }
+
+    public static PhotoView getPhotoView(Context context){
+        return getPhotoView(context, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
     }
 
 }

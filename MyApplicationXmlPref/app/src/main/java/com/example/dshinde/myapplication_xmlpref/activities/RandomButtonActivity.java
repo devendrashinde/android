@@ -38,6 +38,7 @@ public class RandomButtonActivity extends BaseActivity {
     private int nextButtonId = 0;
     TextView textView;
     float defaultTextSize = 60;
+    int counter=0;
     public static final int SIZE = 10;
     private float mScaleFactor = 1.0f;
 
@@ -109,7 +110,8 @@ public class RandomButtonActivity extends BaseActivity {
                     textView.setText(textView.getText() + " " + button.getText());
                     removeButton(button);
                     if(nextButtonId == controls.size() - 1){
-                        textView.setText("");
+                        counter++;
+                        textView.setText(getCounter());
                         addControlsToLayoutRandomly();
                     }
                     else {
@@ -118,6 +120,10 @@ public class RandomButtonActivity extends BaseActivity {
                 }
             }
         });
+    }
+
+    private String getCounter() {
+        return counter > 0 ? "(" + counter + ") " : "";
     }
 
     private int getNavigationBarHeight() {

@@ -514,7 +514,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         RadioButton rbSelectPhoto = (RadioButton) rg.getChildAt(1);
         rbSelectPhoto.setButtonDrawable(R.drawable.ic_photo_library_magenta_24dp);
         screenControl.setValueControl(rg);
-        screenControl.setMediaControl(getImageView());
+        screenControl.setMediaControl(DynamicControls.getPhotoView(this));
         setPhotoControlListener(rg, screenControl);
         String value = getValue(screenControl);
         if(value != null && !value.trim().isEmpty()){
@@ -610,17 +610,6 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                 return false;
             }
         });
-    }
-
-    private PhotoView getImageView(){
-        PhotoView imageView = new PhotoView(this);
-        LinearLayout.LayoutParams params = new LinearLayout
-                .LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        imageView.setLayoutParams(params);
-        imageView.setAdjustViewBounds(true);
-        imageView.setScaleType(ImageView.ScaleType.FIT_XY);
-        imageView.setId(View.generateViewId());
-        return imageView;
     }
 
     private WebView getWebView(){
