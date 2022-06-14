@@ -23,6 +23,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.GraphViewActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.ScrollingTextViewActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.drawables.DrawableActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.CafeSettingsActivity;
@@ -219,7 +220,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
 
     private void showTestActivity() {
         String fileName = valueField.getText().toString();
-        Intent intent = new Intent(MainActivityRecyclerView.this, DrawableActivity.class);
+        Intent intent = new Intent(MainActivityRecyclerView.this, GraphViewActivity.class);
         intent.putExtra("filename", fileName);
         intent.putExtra("userId", userId);
         startActivity(intent);

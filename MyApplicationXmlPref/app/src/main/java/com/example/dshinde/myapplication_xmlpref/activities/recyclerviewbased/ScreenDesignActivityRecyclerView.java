@@ -18,12 +18,10 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -37,7 +35,6 @@ import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.DynamicLinearLayoutActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.MediaViewActivity;
-import com.example.dshinde.myapplication_xmlpref.adapters.ListviewKeyValueObjectAdapter;
 import com.example.dshinde.myapplication_xmlpref.adapters.MarginItemDecoration;
 import com.example.dshinde.myapplication_xmlpref.adapters.RecyclerViewKeyValueAdapter;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
@@ -227,7 +224,7 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
         }
     }
 
-    private void startDyanmicScreenPreviewActivity() {
+    private void startDynamicsScreenPreviewActivity() {
         if (dataStorageManager.count() > 0) {
             Intent intent = new Intent(this, DynamicLinearLayoutActivity.class);
             intent.putExtra("screenConfig", Converter.getValuesJsonString(dataStorageManager.getValues()));
@@ -256,7 +253,7 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
         screenPreview = (Button) findViewById(R.id.btnPreview);
         screenPreview.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                startDyanmicScreenPreviewActivity();
+                startDynamicsScreenPreviewActivity();
             }
         });
     }
@@ -315,7 +312,7 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
                 remove();
                 return true;
             case R.id.menu_view:
-                startDyanmicScreenPreviewActivity();
+                startDynamicsScreenPreviewActivity();
                 return true;
             case R.id.menu_share:
                 share();
