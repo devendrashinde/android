@@ -25,8 +25,13 @@ public class Constants {
     public static final int SELECT_IMAGE =505;
     public static final int SELECT_DOCUMENT =506;
     public static final int SELECT_MYNOTE =507;
+    public static final int SELECT_AUDIO =508;
     public static final String[] EMPTY_ARRAY={};
     public static final String IMAGE_FILE="image/*";
     public static final String PDF_FILE="application/pdf";
-    public static final String AUDIO_FILE="audio";
+    public static final String AUDIO_FILE="audio/*";
+    public static final String NAAMASMRAN = "Naamasmran";
+    public static final String MEANING = "Meaning";
+    public static final String AUDIO_NOTE = "Audio Note";
+    public static final String MEDIA_NOTE = "mediaNote";
 }

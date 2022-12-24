@@ -84,7 +84,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     private void initDataStorageAndLoadData(Context context) {
-        Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
+        Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageInstance");
         dataStorageManager = Factory.getDataStorageIntsance(context,
                 getDataStorageType(),
                 sharedPreferenceName,

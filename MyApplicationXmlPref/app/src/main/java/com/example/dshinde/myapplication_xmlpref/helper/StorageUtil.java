@@ -6,9 +6,11 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.provider.OpenableColumns;
 
 import androidx.documentfile.provider.DocumentFile;
+import androidx.loader.content.CursorLoader;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -267,6 +269,17 @@ public class StorageUtil {
                 result = result.substring(cut + 1);
             }
         }
+        return result;
+    }
+
+    public static String getAudioPath(Context context, Uri uri) {
+        String[] proj = { MediaStore.Images.Media.DATA };
+        CursorLoader loader = new CursorLoader(context, uri, proj, null, null, null);
+        Cursor cursor = loader.loadInBackground();
+        int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+        cursor.moveToFirst();
+        String result = cursor.getString(column_index);
+        cursor.close();
         return result;
     }
 

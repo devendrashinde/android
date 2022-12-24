@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.example.dshinde.myapplication_xmlpref">
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28"/>
+    <uses-permission android:name="android.permission.MANAGE_DOCUMENTS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_INTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_INTERNAL_STORAGE" />
@@ -50,12 +56,17 @@
             android:exported="true"
             android:label="@string/title_scrolling_textview_activity" />
         <activity
+            android:name=".activities.AudioVideoActivity"
+            android:exported="true"
+            android:label="Audio Note" >
+        </activity>
+        <activity
             android:name=".activities.GraphViewActivity"
             android:exported="true"
             android:label="Graph" />
         <activity android:name=".activities.DialogActivity"
             android:exported="true"/>
-        <!-- Launcher Actibity-->
+        <!-- Launcher Activity-->
         <activity
             android:name=".auth.GoogleSignInActivity"
             android:exported="true"

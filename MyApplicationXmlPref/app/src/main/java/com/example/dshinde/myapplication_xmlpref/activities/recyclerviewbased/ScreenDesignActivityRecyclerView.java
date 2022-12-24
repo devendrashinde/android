@@ -121,10 +121,10 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
             setPreviewActionListener();
         }
         setSearchFieldWatcher();
-        setValueFieldClearButtonAction();
+        setSearchFieldClearButtonAction();
     }
 
-    private void setValueFieldClearButtonAction() {
+    private void setSearchFieldClearButtonAction() {
         searchText.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -202,12 +202,12 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
     private void setAddActionListener() {
         addButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                startDyanmicScreenDesignActivity(false);
+                startDynamicScreenDesignActivity(false);
             }
         });
     }
 
-    private void startDyanmicScreenDesignActivity(boolean edit) {
+    private void startDynamicScreenDesignActivity(boolean edit) {
         if (edit && (valueField == null || valueField.length() == 0)) {
             Toast.makeText(this, "Please select record to Edit it.",
                     Toast.LENGTH_SHORT).show();
@@ -236,7 +236,7 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
     private void setEditActionListener() {
         editButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                startDyanmicScreenDesignActivity(true);
+                startDynamicScreenDesignActivity(true);
             }
         });
     }
@@ -299,13 +299,13 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
         // Handle item selection
         switch (item.getItemId()) {
             case R.id.menu_add:
-                startDyanmicScreenDesignActivity(false);
+                startDynamicScreenDesignActivity(false);
                 return true;
             case R.id.menu_edit:
                 if (isDesignMode()) {
                     showEditView(!(editViewLayout.getVisibility() == View.VISIBLE));
                 } else {
-                    startDyanmicScreenDesignActivity(true);
+                    startDynamicScreenDesignActivity(true);
                 }
                 return true;
             case R.id.menu_remove:

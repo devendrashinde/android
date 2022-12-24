@@ -6,10 +6,13 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -25,6 +28,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.activities.AudioVideoActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.RandomButtonActivity;
 import com.example.dshinde.myapplication_xmlpref.adapters.MarginItemDecoration;
@@ -49,16 +53,16 @@ import java.util.List;
 
 public class Main2ActivityRecyclerView extends BaseActivity implements ListviewActions {
 
-    public static final String NAAMASMRAN = "Naamasmran";
-    public static final String MEANING = "Meaning";
     EditText keyField;
     EditText valueField;
+    EditText searchText;
     RecyclerView listView;
     Button divider;
     RecyclerViewKeyValueAdapter listAdapter;
     DataStorage dataStorageManager;
     String collectionName = null;
     LinearLayout editViewLayout;
+    LinearLayout searchViewLayout;
     Menu myMenu;
     private static final String CLASS_TAG = "Main2Activity";
 
@@ -111,12 +115,32 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
         valueField = (EditText) findViewById(R.id.etValue);
         listView = (RecyclerView) findViewById(R.id.list);
         editViewLayout = (LinearLayout) findViewById(R.id.editView);
+        searchViewLayout = (LinearLayout) findViewById(R.id.searchView);
+        searchText = (EditText) findViewById(R.id.searchText);
         setTitle(collectionName);
         populateListView();
+        setSearchFieldWatcher();
+        setSearchFieldClearButtonAction();
+    }
+
+    private void setSearchFieldClearButtonAction() {
+        searchText.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    if (event.getRawX() >= (searchText.getRight() - searchText.getCompoundDrawables()[Constants.DRAWABLE_RIGHT].getBounds().width())) {
+                        searchText.setText("");
+                        return true;
+                    }
+                }
+                return false;
+            }
+        });
     }
 
     private void showEditView(boolean show) {
         editViewLayout.setVisibility(show ? View.VISIBLE : View.GONE);
+        searchViewLayout.setVisibility(show ? View.GONE : View.VISIBLE);
         MenuItem menuItem = myMenu.findItem(R.id.menu_edit);
         Drawable icon = getDrawable(show ? R.drawable.ic_format_line_spacing_black_24dp : R.drawable.ic_edit_black);
         menuItem.setIcon(icon);
@@ -178,6 +202,32 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
     private void setEditView(String key, String value) {
         keyField.setText(key);
         valueField.setText(value);
+    }
+
+    private void setSearchFieldWatcher() {
+        searchText.addTextChangedListener(new TextWatcher() {
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // as user is typing test, need to clear earlier key if any and user need to select the record from list
+                if (count < before) {
+                    // We're deleting char so we need to reset the adapter data
+                    listAdapter.resetData();
+                }
+                listAdapter.getFilter().filter(s.toString());
+            }
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count,
+                                          int after) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
+
     }
 
     private RecyclerViewKeyValueItemListener getOnItemClickListenerToListView() {
@@ -323,17 +373,22 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
                 //nothing;
             }
         });
-        RadioGroup rg = DynamicControls.getRadioGroupControl(this, new String[]{NAAMASMRAN, MEANING}, new ArrayList<>());
+        RadioGroup rg = DynamicControls.getRadioGroupControl(this,
+                new String[]{Constants.NAAMASMRAN, Constants.MEANING, Constants.AUDIO_NOTE},
+                new ArrayList<>());
         rg.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(RadioGroup group, int checkedId) {
                 RadioButton selectedButton = (RadioButton) builder.findViewById(checkedId);
                 if (selectedButton != null) {
                     switch (selectedButton.getText().toString()) {
-                        case NAAMASMRAN:
+                        case Constants.NAAMASMRAN:
                             displayRandomButtonActivity(value);
                             break;
-                        case MEANING:
+                        case Constants.MEANING:
+                            break;
+                        case Constants.AUDIO_NOTE:
+                            displayAudioVideoActivity(key, value);
                             break;
                     }
                     builder.dismiss();
@@ -347,5 +402,13 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
         builder.show();
     }
 
-    ;
+    private void displayAudioVideoActivity(String key, String value) {
+        Intent intent = new Intent(Main2ActivityRecyclerView.this, AudioVideoActivity.class);
+        intent.putExtra("userId", userId);
+        intent.putExtra("note", collectionName);
+        intent.putExtra("key", key);
+        intent.putExtra("value", value);
+        startActivity(intent);
+    }
+
 }
