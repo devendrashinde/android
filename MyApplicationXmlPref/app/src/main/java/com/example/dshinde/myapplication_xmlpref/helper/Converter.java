@@ -7,7 +7,9 @@ import com.google.gson.GsonBuilder;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class Converter {
 
@@ -38,6 +40,14 @@ public class Converter {
         }
         values.append("]");
         return values.toString();
+    }
+
+    public static List<KeyValue> geKeyValueList(Map<String, String> data) {
+        List<KeyValue> keyValues = new ArrayList<>();
+        for (Map.Entry<String, String> entry: data.entrySet()){
+            keyValues.add(new KeyValue(entry.getKey(), entry.getValue()));
+        }
+        return keyValues;
     }
 
     public static String getKeysJsonString(List<KeyValue> data) {

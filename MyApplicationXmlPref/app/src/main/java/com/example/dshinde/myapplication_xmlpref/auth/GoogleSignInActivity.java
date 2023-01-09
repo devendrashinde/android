@@ -198,6 +198,7 @@ public class GoogleSignInActivity extends BaseActivity implements
             findViewById(R.id.signInButton).setVisibility(View.GONE);
             findViewById(R.id.signOutAndDisconnect).setVisibility(View.VISIBLE);
             Snackbar.make(findViewById(R.id.main_layout), "Successful Sign In", Snackbar.LENGTH_SHORT).show();
+            startMainActivity(user.getUid());
 
         } else {
             mStatusTextView.setText(R.string.signed_out);

@@ -249,7 +249,7 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
                         if(databaseError == null) {
                             Log.d(CLASS_TAG, "DB updated successfully");
                         } else {
-                            Log.d(CLASS_TAG, "DB updated failed, error " + databaseError);
+                            Log.d(CLASS_TAG, "DB update failed, error " + databaseError);
                         }
                     }
                 });

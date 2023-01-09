@@ -9,7 +9,7 @@
     <LinearLayout
         android:id="@+id/selectFileView"
         android:layout_width="match_parent"
-        android:layout_height="225dp"
+        android:layout_height="150dp"
         android:layout_alignParentStart="true"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
@@ -19,48 +19,62 @@
             android:id="@+id/fileUri"
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:drawableRight="@drawable/ic_pdf_file_yellow_24dp"
-            android:focusable="true"
+            android:drawableRight="@drawable/ic_action_audio_note"
+            android:focusable="false"
             android:focusableInTouchMode="true"
             android:hint="@string/select_audio_file"
-            android:inputType="text"
-            app:autoSizeTextType="uniform"/>
-
-        <Button
-            android:id="@+id/buttonPlay"
+            android:inputType="none"
+            app:autoSizeTextType="uniform" />
+        <LinearLayout
+            android:id="@+id/buttonsView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Play" />
+            android:layout_centerInParent="true"
+            android:layout_marginTop="0dp"
+            android:orientation="horizontal"
+            android:weightSum="3">
+            <ImageButton
+                android:id="@+id/buttonPrevious"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:srcCompat="@drawable/ic_action_previous" />
 
-        <Button
-            android:id="@+id/buttonPause"
+            <ImageButton
+                android:id="@+id/buttonPlay"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:srcCompat="@drawable/ic_action_play" />
+
+            <ImageButton
+                android:id="@+id/buttonNext"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:srcCompat="@drawable/ic_action_next" />
+        </LinearLayout>
+
+        <SeekBar
+            android:id="@+id/seekbar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Pause" />
-
-        <Button
-            android:id="@+id/buttonStop"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Stop" />
-
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/searchView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
-        android:orientation="vertical">
-
+            android:layout_gravity="center"
+            android:layout_margin="8dp" />
     </LinearLayout>
 
     <TextView
         android:id="@+id/textNote"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:text="TextView" />
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:background="@color/colorBlue"
+        android:paddingLeft="10dp"
+        android:scrollbars = "vertical"
+        android:text="TextView"
+        android:textColor="@color/colorWhite"
+        android:textSize="25sp" />
 
 </LinearLayout>

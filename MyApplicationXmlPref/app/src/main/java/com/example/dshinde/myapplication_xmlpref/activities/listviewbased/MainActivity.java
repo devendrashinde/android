@@ -529,7 +529,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
      */
     private void startActivityForEdit(String collection) {
         readOnceDataStorage = Factory.getReadOnceDataStorageIntsance(this,
-                getDataStorageType(), Constants.SCREEN_DESIGN + collection,
+                getDataStorageType(), Constants.SCREEN_DESIGN_NOTE_PREFIX + collection,
                 new DataStorageListener() {
                     @Override
                     public void dataChanged(String key, String value) {

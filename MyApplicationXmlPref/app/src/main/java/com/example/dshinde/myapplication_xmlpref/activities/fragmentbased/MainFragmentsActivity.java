@@ -39,7 +39,6 @@ import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.helper.JsonHelper;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
-import com.example.dshinde.myapplication_xmlpref.listners.ListviewActions;
 import com.example.dshinde.myapplication_xmlpref.listners.RecyclerViewKeyValueItemListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
@@ -543,7 +542,7 @@ public class MainFragmentsActivity extends BaseActivity {
     private void startActivityForAction(String collection, String action) {
         readOnceDataStorage = Factory.getReadOnceDataStorageIntsance(this,
             getDataStorageType(),
-            (action.equals("EDIT") ? Constants.SCREEN_DESIGN : "") + collection,
+            (action.equals("EDIT") ? Constants.SCREEN_DESIGN_NOTE_PREFIX : "") + collection,
             new DataStorageListener() {
                 @Override
                 public void dataChanged(String key, String value) {

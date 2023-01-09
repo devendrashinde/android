@@ -364,9 +364,6 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
     private void showPopup(String key, String value) {
         Dialog builder = new Dialog(this);
         builder.setTitle("What you want to do");
-        //builder.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        //builder.getWindow().setBackgroundDrawable(
-        //        new ColorDrawable(android.graphics.Color.TRANSPARENT));
         builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
             public void onDismiss(DialogInterface dialogInterface) {
@@ -374,7 +371,7 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
             }
         });
         RadioGroup rg = DynamicControls.getRadioGroupControl(this,
-                new String[]{Constants.NAAMASMRAN, Constants.MEANING, Constants.AUDIO_NOTE},
+                new String[]{Constants.NAAMASMRAN, Constants.AUDIO_NOTE},
                 new ArrayList<>());
         rg.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
@@ -384,8 +381,6 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
                     switch (selectedButton.getText().toString()) {
                         case Constants.NAAMASMRAN:
                             displayRandomButtonActivity(value);
-                            break;
-                        case Constants.MEANING:
                             break;
                         case Constants.AUDIO_NOTE:
                             displayAudioVideoActivity(key, value);

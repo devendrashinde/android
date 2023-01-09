@@ -16,7 +16,8 @@ public class Constants {
     public static final int REQUEST_CODE_SCREEN_CAPTURE = 503;
     public static final int RESULT_CODE_OK = 1;
     public static final int RESULT_CODE_CANCEL = -1;
-    public static final String SCREEN_DESIGN = "screenDesign:";
+    public static final String SCREEN_DESIGN_NOTE_PREFIX = "screenDesign:";
+    public static final String MEDIA_NOTE_PREFIX = "mediaNote:";
     public static final int DRAWABLE_LEFT = 0;
     public static final int DRAWABLE_TOP = 1;
     public static final int DRAWABLE_RIGHT = 2;
@@ -30,8 +31,10 @@ public class Constants {
     public static final String IMAGE_FILE="image/*";
     public static final String PDF_FILE="application/pdf";
     public static final String AUDIO_FILE="audio/*";
+    public static final String VIEW_NOTE = "View Note";
+    public static final String PLAY_NOTE = "Play Audio Note";
     public static final String NAAMASMRAN = "Naamasmran";
-    public static final String MEANING = "Meaning";
     public static final String AUDIO_NOTE = "Audio Note";
-    public static final String MEDIA_NOTE = "mediaNote";
+    public static final String SCREEN_DESIGN = "Screen Design";
+    public static final String VIEW_RELATIONSHIP = "Relationship";
 }

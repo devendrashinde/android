@@ -48,6 +48,10 @@
             android:exported="true"
             android:configChanges="orientation|screenSize" />
         <activity
+            android:name=".activities.RelationshipActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize" />
+        <activity
             android:name=".activities.listviewbased.ScreenDesignActivity"
             android:exported="true"
             android:configChanges="orientation|screenSize" />

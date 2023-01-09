@@ -23,13 +23,12 @@ import java.util.Set;
 
 public class RelationshipActivity extends BaseActivity {
 
+    private static final String CLASS_TAG = "RelationshipActivity";
     RelationshipView customDrawableView;
     public ScrollView scroll_view;
     public HorizontalScrollView h_scroll_view;
     public LinearLayout lin_layout;
-    PhotoView photoView;
     String collectionName;
-    private static final String CLASS_TAG = "DrawableActivity";
     ReadOnceDataStorage readOnceDataStorage;
     Map<String, Set<String>> relationShips;
     String parentNode;
@@ -41,6 +40,7 @@ public class RelationshipActivity extends BaseActivity {
         Bundle bundle = getIntent().getExtras();
         collectionName = bundle.getString("filename");
         userId = bundle.getString("userId");
+        setTitle(collectionName);
         initDataStorageAndLoadData();
 
         lin_layout = new LinearLayout(this);
@@ -66,8 +66,6 @@ public class RelationshipActivity extends BaseActivity {
         h_scroll_view.addView(scroll_view);
         setContentView(h_scroll_view);
     }
-
-
 
     private void initDataStorageAndLoadData() {
 
@@ -105,8 +103,8 @@ public class RelationshipActivity extends BaseActivity {
         parentNode = parent.iterator().next();
     }
 
-    private void addToMap(String key, String value){
-        relationShips.computeIfAbsent(key, k -> new HashSet<>());
-        relationShips.get(key).add(value);
+    private void addToMap(String parentName, String childNameAndRelation){
+        relationShips.computeIfAbsent(parentName, k -> new HashSet<>());
+        relationShips.get(parentName).add(childNameAndRelation);
     }
 }

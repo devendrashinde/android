@@ -165,7 +165,7 @@ public class ScreenDesignActivity extends BaseActivity {
     private void initDataStorageAndLoadData(Context context) {
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
         dataStorageManager = Factory.getDataStorageIntsance(context, getDataStorageType(),
-                (isDesignMode() ? Constants.SCREEN_DESIGN : "") + collectionName,
+                (isDesignMode() ? Constants.SCREEN_DESIGN_NOTE_PREFIX : "") + collectionName,
                 false, false, getDataStorageListener());
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->loadData");
         dataStorageManager.loadData();

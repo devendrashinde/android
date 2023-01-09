@@ -96,6 +96,10 @@ public class JsonHelper {
         }
         formattedValue = formattedValue.replaceAll("\\*\\*\\* ", "<h1>");
         formattedValue = formattedValue.replaceAll(" \\*\\*\\*", "</h1>");
+        formattedValue = formattedValue.replaceAll("\\*\\* ", "<h2>");
+        formattedValue = formattedValue.replaceAll(" \\*\\*", "</h2>");
+        formattedValue = formattedValue.replaceAll("\\* ", "<h3>");
+        formattedValue = formattedValue.replaceAll(" \\*", "</h3>");
         return formattedValue;
     }
 

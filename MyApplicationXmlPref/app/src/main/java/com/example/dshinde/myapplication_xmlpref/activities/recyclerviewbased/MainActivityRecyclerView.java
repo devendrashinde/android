@@ -1,5 +1,6 @@
 package com.example.dshinde.myapplication_xmlpref.activities.recyclerviewbased;
 
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -13,7 +14,11 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
@@ -22,10 +27,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.activities.AudioVideoActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.GraphViewActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.RelationshipActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.ScrollingTextViewActivity;
-import com.example.dshinde.myapplication_xmlpref.activities.drawables.DrawableActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.CafeSettingsActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.ScreenDesignActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.SellTeaActivity;
@@ -34,6 +40,7 @@ import com.example.dshinde.myapplication_xmlpref.adapters.MarginItemDecoration;
 import com.example.dshinde.myapplication_xmlpref.adapters.RecyclerViewKeyValueAdapter;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.Converter;
+import com.example.dshinde.myapplication_xmlpref.helper.DynamicControls;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
@@ -45,6 +52,8 @@ import com.example.dshinde.myapplication_xmlpref.services.SharedPrefManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -208,7 +217,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
                 showTestActivity();
                 return true;
             case R.id.menu_design_screen:
-                doDesignOrCapture();
+                designScreen();
                 return true;
             case R.id.menu_add_to_shadba_kosh:
                 addToShadaKosh();
@@ -225,6 +234,15 @@ public class MainActivityRecyclerView extends BaseActivity  {
         intent.putExtra("userId", userId);
         startActivity(intent);
     }
+
+    private void startRelationshipActivity() {
+        String fileName = valueField.getText().toString();
+        Intent intent = new Intent(MainActivityRecyclerView.this, RelationshipActivity.class);
+        intent.putExtra("filename", fileName);
+        intent.putExtra("userId", userId);
+        startActivity(intent);
+    }
+
 
     public void remove() {
         Log.d(CLASS_TAG, "remove");
@@ -324,17 +342,76 @@ public class MainActivityRecyclerView extends BaseActivity  {
             public boolean onItemLongClick(KeyValue kv) {
                 String value = kv.getValue();
                 setEditView(value);
-                viewNote(value);
+                showPopup(kv.getValue());
                 return true;
             }
         };
         return listener;
     }
 
+    private void showPopup(String value) {
+        Dialog builder = new Dialog(this);
+        builder.setTitle("What you want to do");
+        builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialogInterface) {
+                //nothing;
+            }
+        });
+        RadioGroup rg = DynamicControls.getRadioGroupControl(this,
+                new String[]{Constants.VIEW_NOTE,
+                        Constants.PLAY_NOTE,
+                        Constants.SCREEN_DESIGN,
+                        Constants.VIEW_RELATIONSHIP},
+                new ArrayList<>());
+        rg.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                RadioButton selectedButton = (RadioButton) builder.findViewById(checkedId);
+                if (selectedButton != null) {
+                    switch (selectedButton.getText().toString()) {
+                        case Constants.VIEW_NOTE:
+                            viewNote(value);;
+                            break;
+                        case Constants.PLAY_NOTE:
+                            playNote(value);
+                            break;
+                        case Constants.SCREEN_DESIGN:
+                            designScreen();
+                            break;
+                        case Constants.VIEW_RELATIONSHIP:
+                            startRelationshipActivity();
+                            break;
+                    }
+                    builder.dismiss();
+                }
+            }
+        });
+
+        builder.addContentView(rg, new RelativeLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
+        builder.show();
+    }
+
+    private void playNote(String fileName) {
+        if (fileName != null && !fileName.isEmpty()) {
+            startActivityForAction(fileName, "PLAY");
+        }
+    }
+
     private void viewNote(String fileName) {
         if (fileName != null && !fileName.isEmpty()) {
             startActivityForAction(fileName, "VIEW");
         }
+    }
+
+    private void startAudioNoteActivity(String title, List<KeyValue> values) {
+        Intent intent = new Intent(MainActivityRecyclerView.this, AudioVideoActivity.class);
+        intent.putExtra("userId", userId);
+        intent.putExtra("note", title);
+        intent.putExtra("data", (Serializable) values);
+        startActivity(intent);
     }
 
     private void startViewNoteActivity(String title, String text) {
@@ -376,7 +453,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
         startActivity(intent);
     }
 
-    private void doDesignOrCapture() {
+    private void designScreen() {
 
         String fileName = valueField.getText().toString();
         if (!fileName.isEmpty()) {
@@ -536,7 +613,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
     private void startActivityForAction(String collection, String action) {
         readOnceDataStorage = Factory.getReadOnceDataStorageIntsance(this,
             getDataStorageType(),
-            (action.equals("EDIT") ? Constants.SCREEN_DESIGN : "") + collection,
+            (action.equals("EDIT") ? Constants.SCREEN_DESIGN_NOTE_PREFIX : "") + collection,
             new DataStorageListener() {
                 @Override
                 public void dataChanged(String key, String value) {
@@ -560,6 +637,9 @@ public class MainActivityRecyclerView extends BaseActivity  {
                         case "VIEW":
                             startViewNoteActivity(collection, Converter.getKeyValuesJsonString(data));
                             break;
+                        case "PLAY":
+                            startAudioNoteActivity(collection, data);
+                            break;
                         case "BACKUP":
                             if (data.size() > 0) {
                                 String path = StorageUtil.saveAsObjectToDocumentFile(getApplicationContext(), selectedDir, collection, gson.toJson(data));
@@ -574,4 +654,5 @@ public class MainActivityRecyclerView extends BaseActivity  {
                 }
             });
     }
+
 }
