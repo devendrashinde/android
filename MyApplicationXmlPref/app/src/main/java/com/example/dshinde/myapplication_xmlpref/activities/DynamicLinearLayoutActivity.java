@@ -782,14 +782,16 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     }
 
     private void closeActivityWithReturnValues() {
-        checkMediaAndUploadToStorage();
-        Intent intent = new Intent();
-        intent.putExtra("data", gson.toJson(data));
-        if (requestMode == Constants.REQUEST_CODE_SCREEN_CAPTURE) {
-            intent.putExtra("key", getIndexValues());
+        if(!CheckForRequiredValues()) {
+            checkMediaAndUploadToStorage();
+            Intent intent = new Intent();
+            intent.putExtra("data", gson.toJson(data));
+            if (requestMode == Constants.REQUEST_CODE_SCREEN_CAPTURE) {
+                intent.putExtra("key", getIndexValues());
+            }
+            setResult(Constants.RESULT_CODE_OK, intent);
+            finish();
         }
-        setResult(Constants.RESULT_CODE_OK, intent);
-        finish();
     }
 
     private void checkMediaAndUploadToStorage(){
@@ -816,6 +818,37 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
             return existingValue + "," + newValue;
         }
         return newValue;
+    }
+
+    private boolean CheckForRequiredValues() {
+        StringBuilder indexValues = new StringBuilder("");
+        boolean requiredValueMissing=false;
+        for (ScreenControl screenControl : controls) {
+            if (YesNo.YES.getValue().equals(screenControl.getIndexField())) {
+                String value = data.get(screenControl.getControlId());
+                if (value == null || value.isEmpty()) {
+                    switch (screenControl.getControlType()) {
+                        case DatePicker:
+                        case EditNumber:
+                        case MultiLineEditText:
+                        case DropDownList:
+                        case EditText:
+                        case TimePicker:
+                            EditText ctl = (EditText) screenControl.getValueControl();
+                            ctl.setError(screenControl.getTextLabel() + " value required");
+                            break;
+                        default:
+                            Toast.makeText(this,
+                                    screenControl.getTextLabel() + " value required",
+                                    Toast.LENGTH_SHORT).show();
+                            break;
+
+                    }
+                    requiredValueMissing=true;
+                }
+            }
+        }
+        return requiredValueMissing;
     }
 
     private String getIndexValues() {

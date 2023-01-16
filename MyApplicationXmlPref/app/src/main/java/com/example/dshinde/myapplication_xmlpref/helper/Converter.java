@@ -1,5 +1,9 @@
 package com.example.dshinde.myapplication_xmlpref.helper;
 
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.view.View;
+
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -64,5 +68,16 @@ public class Converter {
 
     public static String getJsonString(List<KeyValue> data) {
         return new GsonBuilder().create().toJson(data);
+    }
+
+    public static Bitmap viewToBitmap(View view) {
+        return viewToBitmap(view, view.getWidth(), view.getHeight());
+    }
+
+    public static Bitmap viewToBitmap(View view, int width, int height) {
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        view.draw(canvas);
+        return bitmap;
     }
 }

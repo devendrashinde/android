@@ -1,19 +1,24 @@
 package com.example.dshinde.myapplication_xmlpref.activities;
 
 import android.os.Bundle;
+import android.view.View;
 import android.view.Window;
+import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.Spinner;
 
-import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
+import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.drawables.RelationshipView;
+import com.example.dshinde.myapplication_xmlpref.helper.BitmapUtil;
 import com.example.dshinde.myapplication_xmlpref.helper.Converter;
+import com.example.dshinde.myapplication_xmlpref.helper.DynamicControls;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.example.dshinde.myapplication_xmlpref.services.ReadOnceDataStorage;
-import com.github.chrisbanes.photoview.PhotoView;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,7 +29,7 @@ import java.util.Set;
 public class RelationshipActivity extends BaseActivity {
 
     private static final String CLASS_TAG = "RelationshipActivity";
-    RelationshipView customDrawableView;
+    RelationshipView relationshipView;
     public ScrollView scroll_view;
     public HorizontalScrollView h_scroll_view;
     public LinearLayout lin_layout;
@@ -32,7 +37,8 @@ public class RelationshipActivity extends BaseActivity {
     ReadOnceDataStorage readOnceDataStorage;
     Map<String, Set<String>> relationShips;
     String parentNode;
-
+    String[] parents;
+    Spinner parentsList;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,12 +65,37 @@ public class RelationshipActivity extends BaseActivity {
     }
 
     private void setView() {
-        customDrawableView = new RelationshipView(this, parentNode, relationShips);
-        customDrawableView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT));
-        scroll_view.addView(customDrawableView);
+        createRelationshipView();
         h_scroll_view.addView(scroll_view);
-        setContentView(h_scroll_view);
+        lin_layout.addView(parentsList);
+        lin_layout.addView(getExportButton());
+        lin_layout.addView(h_scroll_view);
+        setContentView(lin_layout);
+
+    }
+
+    private View getExportButton() {
+        Button export = DynamicControls.getButton(this, getString(R.string.export));
+        export.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                BitmapUtil.saveBitmap(getApplicationContext(),
+                        Converter.viewToBitmap(relationshipView,
+                                relationshipView.getViewWidth(), relationshipView.getViewHeight()),
+                        parentNode);
+            }
+        });
+        return export;
+    }
+
+    private void createRelationshipView() {
+        if(relationshipView != null) {
+            scroll_view.removeView(relationshipView);
+        }
+        relationshipView = new RelationshipView(this, parentNode, relationShips);
+        relationshipView.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT));
+        scroll_view.addView(relationshipView);
     }
 
     private void initDataStorageAndLoadData() {
@@ -93,7 +124,7 @@ public class RelationshipActivity extends BaseActivity {
         Set<String> childs = new HashSet<>();
         for(KeyValue key : keyValues){
             String[] parts = key.getKey().split(",");
-            addToMap(parts[0],parts[1] + "," + parts[2]);
+            addToMap(parts[0],parts[1] + "," + (parts.length == 3 ? parts[2] : ""));
             if(!childs.contains(parts[0])) {
                 parent.add(parts[0]);
             }
@@ -101,6 +132,23 @@ public class RelationshipActivity extends BaseActivity {
             parent.remove(parts[1]);
         }
         parentNode = parent.iterator().next();
+        parents = parent.toArray(new String[parent.size()]);;
+        createParentListControl();
+    }
+    private void createParentListControl() {
+        parentsList = DynamicControls.getDropDownList(this, parents, parentNode);
+        parentsList.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                parentNode = parentsList.getItemAtPosition(i).toString();
+                createRelationshipView();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
     }
 
     private void addToMap(String parentName, String childNameAndRelation){
