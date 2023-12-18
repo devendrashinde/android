@@ -6,6 +6,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
+import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.FireStorageListener;
 import com.google.android.gms.tasks.Continuation;
@@ -55,7 +56,7 @@ public class FireStorageManager implements FileStorage {
         }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception exception) {
-                Toast.makeText(context, "download failed: " + exception.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, context.getResources().getString(R.string.download_failed) + "\n" + exception.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -90,7 +91,7 @@ public class FireStorageManager implements FileStorage {
                         fireStorageListener.uploadedUriReceived(uri);
                     }
                 } else {
-                    Toast.makeText(context, "upload failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, context.getResources().getString(R.string.upload_failed) + "\n" + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -109,7 +110,7 @@ public class FireStorageManager implements FileStorage {
         }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception exception) {
-                Toast.makeText(context, "download failed: " + exception.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, context.getResources().getString(R.string.download_failed) +"\n" + exception.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

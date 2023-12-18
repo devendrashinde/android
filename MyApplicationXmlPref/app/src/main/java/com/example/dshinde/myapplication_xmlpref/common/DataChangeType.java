@@ -5,5 +5,6 @@ public enum DataChangeType {
     DELETED,
     MODIFIED,
     MOVED,
-    ALL_DATA;
+    ALL_DATA,
+    NONE;
 }

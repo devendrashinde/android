@@ -26,10 +26,15 @@ public class DynamicControls {
         return textView;
     }
 
-    public static EditText getEditText(Context context) {
+    public static EditText getEditText(Context context, String text) {
         EditText editText = new EditText(context);
         editText.setId(View.generateViewId());
+        editText.setText(text);
         return editText;
+    }
+
+    public static EditText getEditText(Context context) {
+        return getEditText(context, "");
     }
 
     public static Button getButton(Context context, String label) {

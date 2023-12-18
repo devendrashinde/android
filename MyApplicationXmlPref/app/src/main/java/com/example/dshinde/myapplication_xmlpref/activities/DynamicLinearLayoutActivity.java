@@ -38,12 +38,12 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.example.dshinde.myapplication_xmlpref.R;
-import com.example.dshinde.myapplication_xmlpref.activities.recyclerviewbased.MainActivityRecyclerView;
 import com.example.dshinde.myapplication_xmlpref.activities.recyclerviewbased.PicklistActivityRecyclerView;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.common.ControlType;
 import com.example.dshinde.myapplication_xmlpref.common.YesNo;
 import com.example.dshinde.myapplication_xmlpref.helper.DynamicControls;
+import com.example.dshinde.myapplication_xmlpref.helper.ExpressionSolver;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.helper.Utils;
@@ -53,15 +53,10 @@ import com.example.dshinde.myapplication_xmlpref.model.ScreenControl;
 import com.example.dshinde.myapplication_xmlpref.pickers.DatePickerFragment;
 import com.example.dshinde.myapplication_xmlpref.pickers.TimePickerFragment;
 import com.example.dshinde.myapplication_xmlpref.services.FileStorage;
-import com.github.chrisbanes.photoview.PhotoView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.theartofdev.edmodo.cropper.CropImage;
 import com.theartofdev.edmodo.cropper.CropImageView;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
@@ -69,22 +64,20 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
-    private static final String TAKE_PHOTO = "Take Photo";
-    private static final String SELECT_PHOTO = "Select Photo";
     private static final String CLASS_TAG = "DynamicActivity";
     private String collectionName;
     private LinearLayout linearLayout;
     private List<ScreenControl> controls;
     private Map<String, String> data = new HashMap<>();
-    private Gson gson = new GsonBuilder().create();
+    private final Gson gson = new GsonBuilder().create();
     private Integer requestMode = null;
     private ScreenControl currentScreenControl;
     private FileStorage mediaStorage;
@@ -98,26 +91,26 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         linearLayout = findViewById(R.id.linear_layout);
 
         Bundle bundle = getIntent().getExtras();
-        userId = bundle.getString("userId");
+        userId = bundle.getString(Constants.USERID);
         collectionName = Constants.STORAGE_PATH_NOTES +
                 userId + "/" +
-                bundle.getString("noteId");
-        String screenConfig = bundle.getString("screenConfig");
-        String screenData = bundle.getString("screenData");
+                bundle.getString(Constants.NOTE_ID);
+        String screenConfig = bundle.getString(Constants.SCREEN_CONFIG);
+        String screenData = bundle.getString(Constants.SCREEN_DATA);
         if (screenData != null && screenData.length() > 0) {
             data = gson.fromJson(screenData, Map.class);
         }
-        requestMode = bundle.getInt("requestMode", Constants.REQUEST_CODE_SCREEN_DESIGN);
+        requestMode = bundle.getInt(Constants.REQUEST_MODE, Constants.REQUEST_CODE_SCREEN_DESIGN);
 
         switch (requestMode){
             case Constants.REQUEST_CODE_SCREEN_DESIGN:
-                setTitle("Screen Design: Define field");
+                setTitle(getResources().getString(R.string.screen_design_define_field));
                 break;
             case Constants.REQUEST_CODE_SCREEN_CAPTURE:
-                setTitle("Add/Edit Record");
+                setTitle(getResources().getString(R.string.add_or_edit_record));
                 break;
             default:
-                setTitle("Screen Design: Preview");
+                setTitle(getResources().getString(R.string.screen_design_preview));
                 break;
         }
         renderUI(screenConfig);
@@ -136,9 +129,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         menu.removeItem(R.id.menu_backup);
         menu.removeItem(R.id.menu_import);
         menu.removeItem(R.id.menu_view);
-        menu.removeItem(R.id.menu_pay);
-        menu.removeItem(R.id.menu_sell);
-        menu.removeItem(R.id.menu_settings);
+        menu.removeItem(R.id.menu_test);
         menu.removeItem(R.id.menu_design_screen);
         menu.removeItem(R.id.menu_add_to_shadba_kosh);
         return true;
@@ -151,6 +142,8 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
             case R.id.menu_save:
                 closeActivityWithReturnValues();
                 return true;
+            case R.id.menu_daylight:
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -158,40 +151,41 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private void renderUI(String screenConfig) {
         Log.d(CLASS_TAG, "enter(renderUI)");
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
-            @Override
-            public void run() {
-                parseConfig(screenConfig);
-                createControls();
-                try {
-                    for (ScreenControl screenControl : controls) {
-                        new Handler(Looper.getMainLooper()).post(() -> addControlsToUI(screenControl));
-                    }
-                } catch (final Exception ex) {
-                    Log.i("---","Exception in thread");
+        new Handler(Looper.getMainLooper()).post(() -> {
+            parseConfig(screenConfig);
+            createControls();
+            LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            layoutParams.setMargins(10, 0, 10, 0);
+
+            try {
+                for (ScreenControl screenControl : controls) {
+                    new Handler(Looper.getMainLooper()).post(() -> addControlsToUI(screenControl, layoutParams));
                 }
+            } catch (final Exception ex) {
+                Log.i("---","Exception in thread");
             }
         });
         Log.d(CLASS_TAG, "exit(renderUI)");
     }
 
-    private void addControlsToUI(ScreenControl screenControl) {
+    private void addControlsToUI(ScreenControl screenControl, LinearLayout.LayoutParams layoutParams) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 Log.d(CLASS_TAG, "enter(addControlsToUI: " + screenControl.getControlId());
                 if (screenControl.getLabelControl() != null) {
-                    linearLayout.addView(screenControl.getLabelControl());
+                    linearLayout.addView(screenControl.getLabelControl(), layoutParams);
                 }
                 if (screenControl.getControlType() == ControlType.CheckBox) {
                     for (View view : screenControl.getOptionControls()) {
-                        linearLayout.addView(view);
+                        linearLayout.addView(view, layoutParams);
                     }
                 } else if (screenControl.getValueControl() != null) {
-                    linearLayout.addView(screenControl.getValueControl());
+                    linearLayout.addView(screenControl.getValueControl(), layoutParams);
                 }
                 if (screenControl.getMediaControl() != null) {
-                    linearLayout.addView(screenControl.getMediaControl());
+                    linearLayout.addView(screenControl.getMediaControl(), layoutParams);
                 }
                 Log.d(CLASS_TAG, "exit(addControlsToUI)");
             }
@@ -268,82 +262,12 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     }
 
     private String evaluateExpression(ScreenControl screenControl) {
-        String expression[] = screenControl.getOptionValues();
-        String lastValue = null;
+        String[] expression = screenControl.getOptionValues();
         boolean numericExp = expression.length > 1;
         if(!numericExp) {
             expression = screenControl.getOptions().split(" ");
         }
-        for (int index = 0; index < expression.length; index++) {
-            if(numericExp) {
-                if (fieldIsOperator(expression[index])) {
-                    if (lastValue == null) {
-                        lastValue = data.get(expression[index - 1]);
-                    }
-                    String operator = expression[index];
-                    String value2 = data.get(expression[index + 1]);
-                    index++;
-                    lastValue = solveExpression(lastValue, value2, operator);
-                }
-            } else {
-                if(expression[index].trim().length() > 0) {
-                    String value = expression[index];
-                    if(data.containsKey(expression[index])) {
-                        value = data.get(expression[index]);
-                    }
-                    if (lastValue == null) {
-                        lastValue = value;
-                    } else {
-                        lastValue = solveExpression(lastValue, value);
-                    }
-                }
-            }
-        }
-
-        return lastValue;
-    }
-
-    private String solveExpression(String value1, String value2) {
-        return value1 + " " + value2;
-    }
-
-    private String solveExpression(String value1, String value2, String operator) {
-        if(!Utils.isNumeric(value1) || !Utils.isNumeric(value2)) {
-            return solveExpression(value1, value2);
-        }
-        float v1 = value1 != null && !value1.isEmpty() ? Float.valueOf(value1) : 0;
-        float v2 = value2 != null && !value2.isEmpty() ? Float.valueOf(value2) : 0;
-        float result = 0;
-        switch (operator){
-            case "+":
-                result = v1 + v2;
-                break;
-            case "-":
-                result = v1 - v2;
-                break;
-            case "/":
-                if(v2 > 0) {
-                    result = v1 / v2;
-                }
-                break;
-            case "*":
-                result = v1 * v2;
-                break;
-            default:
-                result = 0;
-        }
-        return String.valueOf(result);
-    }
-
-    private boolean fieldIsOperator(String field) {
-        switch (field){
-            case "+":
-            case "-":
-            case "/":
-            case "*":
-                return true;
-        }
-        return false;
+        return ExpressionSolver.evaluateExpression(expression, data);
     }
 
     private void setExpressionValue() {
@@ -402,25 +326,13 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         editText.setImeOptions(EditorInfo.IME_FLAG_NO_ENTER_ACTION);
     }
 
-    private void addSaveButton(ScreenControl screenControl) {
-        Button btn = DynamicControls.getButton(this, screenControl.getTextLabel());
-        screenControl.setValueControl(btn);
-        setSaveButtonListener(btn);
-    }
-
-    private void addCancelButton(ScreenControl screenControl) {
-        Button btn = DynamicControls.getButton(this, screenControl.getTextLabel());
-        screenControl.setValueControl(btn);
-        setCancelButtonListener(btn);
-    }
-
     private void addRadioButton(ScreenControl screenControl) {
         addText(screenControl);
         String[] options = screenControl.getOptionValues();
         List<String> values = getOptionValues(screenControl);
         RadioGroup rg = DynamicControls.getRadioGroupControl(this, options, values);
         screenControl.setValueControl(rg);
-        setRadioGroupChangeListner(screenControl);
+        setRadioGroupChangeListener(screenControl);
     }
 
     private List<String> getOptionValues(ScreenControl screenControl){
@@ -444,7 +356,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         List<String> values = getOptionValues(screenControl);
         View[] optionControls = DynamicControls.getCheckbox(this, options, values);
         screenControl.setOptionControls(optionControls);
-        setCheckBoxChangeListner(screenControl);
+        setCheckBoxChangeListener(screenControl);
     }
 
     private void addDropDownList(ScreenControl screenControl) {
@@ -474,18 +386,15 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     }
 
     private void setDatePicker(EditText control) {
-        control.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_UP) {
-                    if (event.getRawX() >= (control.getRight() - control.getCompoundDrawables()[Constants.DRAWABLE_RIGHT].getBounds().width())) {
-                        DialogFragment datePickerFragment = new DatePickerFragment(control);
-                        datePickerFragment.show(getSupportFragmentManager(), "datePicker");
-                        return true;
-                    }
+        control.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_UP) {
+                if (event.getRawX() >= (control.getRight() - control.getCompoundDrawables()[Constants.DRAWABLE_RIGHT].getBounds().width())) {
+                    DialogFragment datePickerFragment = new DatePickerFragment(control);
+                    datePickerFragment.show(getSupportFragmentManager(), "datePicker");
+                    return true;
                 }
-                return false;
             }
+            return false;
         });
     }
 
@@ -507,7 +416,8 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private void addPhotoControl(ScreenControl screenControl) {
         addText(screenControl);
-        String options[] = {TAKE_PHOTO, SELECT_PHOTO};
+        String options[] = {getResources().getString(R.string.take_photo),
+                getResources().getString(R.string.select_photo)};
         RadioGroup rg = DynamicControls.getRadioGroupControl(this, options, Collections.EMPTY_LIST);
         RadioButton rbTakePhoto = (RadioButton) rg.getChildAt(0);
         rbTakePhoto.setButtonDrawable(R.drawable.ic_photo_camera_red_24dp);
@@ -516,9 +426,10 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         screenControl.setValueControl(rg);
         screenControl.setMediaControl(DynamicControls.getPhotoView(this));
         setPhotoControlListener(rg, screenControl);
-        String value = getValue(screenControl);
-        if(value != null && !value.trim().isEmpty()){
-            downloadFile(screenControl.getControlId(), value, new PhotoListener((ImageView)screenControl.getMediaControl()));
+        String photoFileName = getValue(screenControl);
+        if(photoFileName != null && !photoFileName.trim().isEmpty()){
+            downloadFile(screenControl.getControlId(), photoFileName,
+                    new PhotoListener((ImageView)screenControl.getMediaControl(), screenControl));
         }
     }
 
@@ -531,10 +442,10 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         screenControl.setMediaControl(btn);
         setOpenDocumentButtonListener(screenControl);
 
-        String value = getValue(screenControl);
-        if(value != null && !value.trim().isEmpty()){
-            downloadFile(screenControl.getControlId(), value,
-                    new PdfListener(valueControl));
+        String documentFileName = getValue(screenControl);
+        if(documentFileName != null && !documentFileName.trim().isEmpty()){
+            downloadFile(screenControl.getControlId(), documentFileName,
+                    new PdfListener(valueControl, screenControl));
         }
     }
 
@@ -559,14 +470,14 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     private void startActionViewIntent(String fileName){
         Uri path = Uri.parse(fileName);
         Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setDataAndType(path, "application/pdf");
+        intent.setDataAndType(path, Constants.PDF_FILE);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         try {
             startActivity(intent);
         }
         catch (ActivityNotFoundException e) {
             Toast.makeText(getApplicationContext(),
-                    "No Application Available to view document",
+                    getResources().getString(R.string.no_application_available_to_view_document),
                     Toast.LENGTH_SHORT).show();
         }
     }
@@ -590,8 +501,8 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private void pickFromMyNote(String options, int actionCode) {
         Intent intent = new Intent(this, PicklistActivityRecyclerView.class);
-        intent.putExtra("filename", options.replaceAll("\\n", "/"));
-        intent.putExtra("userId", userId);
+        intent.putExtra(Constants.PARAM_FILENAME, options.replaceAll("\\n", "/"));
+        intent.putExtra(Constants.USERID, userId);
         startActivityForResult(intent, actionCode);
     }
 
@@ -632,11 +543,10 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                 public void onCheckedChanged(RadioGroup group, int checkedId) {
                     RadioButton selectedButton = (RadioButton) findViewById(checkedId);
                     currentScreenControl = screenControl;
-                    if(selectedButton.getText() == TAKE_PHOTO) {
+                    if(selectedButton.getText() == getResources().getString(R.string.take_photo)) {
                         takePhoto();
                     }else {
                         selectAndCropPhoto(Constants.IMAGE_FILE, Constants.SELECT_IMAGE);
-                        //selectFile(Constants.IMAGE_FILE, Constants.SELECT_IMAGE);
                     }
                 }
             });
@@ -718,8 +628,6 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
             case Constants.TAKE_PHOTO:
                 if (currentScreenControl.getMediaUri() != null) {
                     cropPhoto(currentScreenControl.getMediaUri());
-                    //ImageView currentImageView = (ImageView) currentScreenControl.getMediaControl();
-                    //currentImageView.setImageURI(currentScreenControl.getMediaUri());
                 }
                 break;
             case Constants.SELECT_IMAGE:
@@ -781,10 +689,23 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         });
     }
 
+    private Map<String, String> trimData() {
+        Map<String, String> map = new LinkedHashMap<>();
+
+        for (Map.Entry<String,String> entry : data.entrySet()) {
+            String value = entry.getValue();
+            if( value != null && value.trim().length() > 0) {
+                map.put(entry.getKey(), value.trim());
+            }
+        }
+        return map;
+    }
+
     private void closeActivityWithReturnValues() {
         if(!CheckForRequiredValues()) {
             checkMediaAndUploadToStorage();
             Intent intent = new Intent();
+            data = trimData();
             intent.putExtra("data", gson.toJson(data));
             if (requestMode == Constants.REQUEST_CODE_SCREEN_CAPTURE) {
                 intent.putExtra("key", getIndexValues());
@@ -859,7 +780,10 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                 if (value != null) {
                     if(screenControl.getControlType() == ControlType.DatePicker) {
                         value = value.replaceAll("/", "-");
+                    } else{
+                        value = value.replaceAll(",", " ");
                     }
+                    value = value.replaceAll("\\s+"," ").trim();
                     indexValues.append((indexValues.length() > 0 ? "," : "") + value);
                 }
             }
@@ -891,7 +815,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         });
     }
 
-    private void setRadioGroupChangeListner(ScreenControl screenControl) {
+    private void setRadioGroupChangeListener(ScreenControl screenControl) {
         RadioGroup radioGroup = (RadioGroup) screenControl.getValueControl();
         radioGroup
                 .setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
@@ -905,7 +829,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                 });
     }
 
-    private void setCheckBoxChangeListner(ScreenControl screenControl) {
+    private void setCheckBoxChangeListener(ScreenControl screenControl) {
         for (View view : screenControl.getOptionControls()) {
             CheckBox checkBox = (CheckBox) view;
             checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -930,44 +854,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     }
 
     private void parseConfig(String screenConfigJson) {
-        Log.d(CLASS_TAG, "parseConfig");
-        controls = new ArrayList<>();
-
-        try {
-            JSONArray arr = new JSONArray(screenConfigJson);
-            for (int i = 0; i < arr.length(); i++) {
-                JSONObject obj = arr.getJSONObject(i);
-                ScreenControl item = gson.fromJson(obj.toString(), ScreenControl.class);
-                if(item.getPositionId() == null){
-                    item.setPositionId(String.format("%03d", i+1));
-                } else{
-                    item.setPositionId(String.format("%03d", Integer.valueOf(item.getPositionId())));
-                }
-                if (isMultiOptionControl(item.getControlType()) &&
-                        item.getOptions() != null &&
-                        item.getOptions().length() > 0) {
-                    item.setOptionValues(item.getOptions().split("\\n"));
-                }
-                controls.add(item);
-            }
-            Collections.sort(controls, positionIdComparator);
-
-        } catch (JSONException e) {
-            System.out.print(e);
-        }
-    }
-
-    Comparator<ScreenControl> positionIdComparator = new Comparator<ScreenControl>() {
-        public int compare(ScreenControl m1, ScreenControl m2) {
-            return m1.getPositionId().compareTo(m2.getPositionId());
-        }
-    };
-
-    private boolean isMultiOptionControl(ControlType type) {
-        return type == ControlType.CheckBox
-                || type == ControlType.RadioButton
-                || type == ControlType.DropDownList
-                || type == ControlType.Expression;
+        controls = Utils.parseScreenConfig(screenConfigJson);
     }
 
     @Override
@@ -992,13 +879,16 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private class PhotoListener implements FireStorageListener {
         final ImageView imageView;
-        public PhotoListener(ImageView imageView){
+        ScreenControl screenControl;
+        public PhotoListener(ImageView imageView, ScreenControl screenControl){
             this.imageView = imageView;
+            this.screenControl = screenControl;
         }
 
         @Override
         public void downloadUriReceived(Uri fileUri) {
             Glide.with(getApplicationContext()).load(fileUri).into(imageView);
+            screenControl.setMediaUri(fileUri);
         }
 
         @Override
@@ -1015,13 +905,16 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private class PdfListener implements FireStorageListener {
         EditText editText;
-        public PdfListener(EditText valueControl) {
-            editText = valueControl;
+        ScreenControl screenControl;
+        public PdfListener(EditText valueControl, ScreenControl screenControl) {
+            this.editText = valueControl;
+            this.screenControl = screenControl;
         }
 
         @Override
         public void downloadUriReceived(Uri fileUri) {
             editText.setText(fileUri.toString());
+            screenControl.setMediaUri(fileUri);
         }
 
         @Override

@@ -259,7 +259,7 @@ public class StorageUtil {
                     result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
                 }
             } finally {
-                cursor.close();
+                if (cursor != null) cursor.close();
             }
         }
         if (result == null) {

@@ -1,6 +1,8 @@
 package com.example.dshinde.myapplication_xmlpref.activities;
 
 import android.os.Bundle;
+import android.util.TypedValue;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.widget.AdapterView;
@@ -12,13 +14,14 @@ import android.widget.Spinner;
 
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.drawables.RelationshipView;
+import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.BitmapUtil;
 import com.example.dshinde.myapplication_xmlpref.helper.Converter;
 import com.example.dshinde.myapplication_xmlpref.helper.DynamicControls;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
-import com.example.dshinde.myapplication_xmlpref.services.ReadOnceDataStorage;
+import com.example.dshinde.myapplication_xmlpref.services.ReadWriteOnceDataStorage;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,18 +37,20 @@ public class RelationshipActivity extends BaseActivity {
     public HorizontalScrollView h_scroll_view;
     public LinearLayout lin_layout;
     String collectionName;
-    ReadOnceDataStorage readOnceDataStorage;
+    ReadWriteOnceDataStorage readWriteOnceDataStorage;
     Map<String, Set<String>> relationShips;
     String parentNode;
     String[] parents;
     Spinner parentsList;
+    private int scaleFactor = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         Bundle bundle = getIntent().getExtras();
-        collectionName = bundle.getString("filename");
-        userId = bundle.getString("userId");
+        collectionName = bundle.getString(Constants.PARAM_FILENAME);
+        userId = bundle.getString(Constants.USERID);
         setTitle(collectionName);
         initDataStorageAndLoadData();
 
@@ -91,7 +96,7 @@ public class RelationshipActivity extends BaseActivity {
         if(relationshipView != null) {
             scroll_view.removeView(relationshipView);
         }
-        relationshipView = new RelationshipView(this, parentNode, relationShips);
+        relationshipView = new RelationshipView(this, parentNode, relationShips, scaleFactor);
         relationshipView.setLayoutParams(new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.MATCH_PARENT));
@@ -100,8 +105,7 @@ public class RelationshipActivity extends BaseActivity {
 
     private void initDataStorageAndLoadData() {
 
-        readOnceDataStorage = Factory.getReadOnceDataStorageIntsance(this,
-            getDataStorageType(),
+        readWriteOnceDataStorage = Factory.getReadOnceFireDataStorageInstance(
             collectionName,
             new DataStorageListener() {
                 @Override
@@ -111,7 +115,7 @@ public class RelationshipActivity extends BaseActivity {
                 @Override
                 public void dataLoaded(List<KeyValue> data) {
                     String jsonString = Converter.getValuesJsonString(data);
-                    readOnceDataStorage.removeDataStorageListeners();
+                    readWriteOnceDataStorage.removeDataStorageListeners();
                     parse(data);
                     setView();
                 }
@@ -155,4 +159,26 @@ public class RelationshipActivity extends BaseActivity {
         relationShips.computeIfAbsent(parentName, k -> new HashSet<>());
         relationShips.get(parentName).add(childNameAndRelation);
     }
+
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        int action = event.getAction();
+        int keyCode = event.getKeyCode();
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_VOLUME_UP:
+                if (action == KeyEvent.ACTION_DOWN) {
+                    scaleFactor = scaleFactor + 5;
+                    createRelationshipView();
+                }
+                return true;
+            case KeyEvent.KEYCODE_VOLUME_DOWN:
+                if (action == KeyEvent.ACTION_DOWN) {
+                    scaleFactor = scaleFactor - 5;
+                    createRelationshipView();
+                }
+                return true;
+            default:
+                return super.dispatchKeyEvent(event);
+        }
+    }
+
 }

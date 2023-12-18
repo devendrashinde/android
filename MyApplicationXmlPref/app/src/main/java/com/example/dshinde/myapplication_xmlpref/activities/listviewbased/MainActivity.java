@@ -36,7 +36,7 @@ import com.example.dshinde.myapplication_xmlpref.listners.ListviewActions;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
-import com.example.dshinde.myapplication_xmlpref.services.ReadOnceDataStorage;
+import com.example.dshinde.myapplication_xmlpref.services.ReadWriteOnceDataStorage;
 import com.example.dshinde.myapplication_xmlpref.services.SharedPrefManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -54,7 +54,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
     ListView listView;
     ListviewKeyValueObjectAdapter listAdapter;
     DataStorage dataStorageManager;
-    ReadOnceDataStorage readOnceDataStorage;
+    ReadWriteOnceDataStorage readWriteOnceDataStorage;
     String key;
     String collectionName = Constants.DATABASE_PATH_NOTES;
     private static final String CLASS_TAG = "MainActivity";
@@ -65,7 +65,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
         Log.d(CLASS_TAG, "onCreate");
         super.onStart();
         Bundle bundle = getIntent().getExtras();
-        userId = bundle.getString("userId");
+        userId = bundle.getString(Constants.USERID);
         // Check if user is signed in (non-null) and update UI accordingly.
         loadUI();
         initDataStorageAndLoadData(this);
@@ -83,7 +83,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
 
     private void initDataStorageAndLoadData(Context context) {
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
-        dataStorageManager = Factory.getDataStorageIntsance(context,
+        dataStorageManager = Factory.getDataStorageInstance(context,
                 getDataStorageType(),
                 collectionName,
                 true,
@@ -194,10 +194,9 @@ public class MainActivity extends BaseActivity implements ListviewActions {
             case R.id.menu_view:
                 viewFile();
                 return true;
-            case R.id.menu_sell:
-                doSell();
+            case R.id.menu_daylight:
                 return true;
-            case R.id.menu_settings:
+            case R.id.menu_test:
                 doSettings();
                 return true;
             case R.id.menu_design_screen:
@@ -252,8 +251,8 @@ public class MainActivity extends BaseActivity implements ListviewActions {
 
     private void startEditActivity(String fileName) {
         Intent intent = new Intent(MainActivity.this, Main2Activity.class);
-        intent.putExtra("filename", fileName);
-        intent.putExtra("userId", userId);
+        intent.putExtra(Constants.PARAM_FILENAME, fileName);
+        intent.putExtra(Constants.USERID, userId);
         startActivity(intent);
     }
 
@@ -321,20 +320,12 @@ public class MainActivity extends BaseActivity implements ListviewActions {
         }
     }
 
-    public void doSell() {
-        String fileName = valueField.getText().toString();
-        if (!fileName.isEmpty()) {
-            Intent intent = new Intent(MainActivity.this, SellTeaActivity.class);
-            intent.putExtra("filename", fileName);
-            intent.putExtra("userId", userId);
-            startActivity(intent);
-        }
-    }
-
     public void doSettings() {
-        Intent intent = new Intent(MainActivity.this, CafeSettingsActivity.class);
-        intent.putExtra("userId", userId);
+        /*
+        Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+        intent.putExtra(Constants.USERID, userId);
         startActivity(intent);
+         */
     }
 
     private void doDesignOrCapture() {
@@ -349,7 +340,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
         Intent intent = new Intent(MainActivity.this, ScreenDesignActivity.class);
         intent.putExtra("screenName", fileName);
         intent.putExtra("requestMode", requestMode);
-        intent.putExtra("userId", userId);
+        intent.putExtra(Constants.USERID, userId);
         if (requestMode == Constants.REQUEST_CODE_SCREEN_CAPTURE) {
             intent.putExtra("screenConfig", screeConfig);
         }
@@ -364,7 +355,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
         if (collectionName != null && !collectionName.isEmpty()) {
             Intent intent = new Intent(MainActivity.this, ShabdaKoshActivity.class);
             intent.putExtra("collectionToAddToShabdaKosh", collectionName);
-            intent.putExtra("userId", userId);
+            intent.putExtra(Constants.USERID, userId);
             startActivity(intent);
         }
     }
@@ -414,7 +405,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
     private void export(DocumentFile dir) {
         String path = StorageUtil.saveAsTextToDocumentFile(this, dir, collectionName, dataStorageManager.getDataString());
         if (path != null) {
-            Toast.makeText(this, "Saved to " + path,
+            Toast.makeText(this, getResources().getString(R.string.save_to) + " " + path,
                     Toast.LENGTH_LONG).show();
         }
     }
@@ -429,7 +420,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
         String path = StorageUtil.saveAsObjectToDocumentFile(this, dir, collectionName, gson.toJson(subjects));
 
         if (path != null) {
-            Toast.makeText(this, "Saved to " + path,
+            Toast.makeText(this, getResources().getString(R.string.save_to) + " " +  path,
                     Toast.LENGTH_SHORT).show();
 
             for (KeyValue entry : subjects) {
@@ -438,7 +429,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
                 path = StorageUtil.saveAsObjectToDocumentFile(this, dir, fileName,
                         dataStorageManager.getDataString(fileName));
                 if (path != null) {
-                    Toast.makeText(this, "Saved to " + path,
+                    Toast.makeText(this, getResources().getString(R.string.save_to) + " " +  path,
                             Toast.LENGTH_SHORT).show();
                 }
             }
@@ -468,7 +459,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
                 save();
             }
         } catch (JSONException ex) {
-            Toast.makeText(this, "Failed to import file, error\n" + ex.getMessage(),
+            Toast.makeText(this, getResources().getString(R.string.failed_to_import_file) + "\n" + ex.getMessage(),
                     Toast.LENGTH_LONG).show();
         }
     }
@@ -494,11 +485,11 @@ public class MainActivity extends BaseActivity implements ListviewActions {
                     if (requestCode == StorageUtil.PICK_FILE_FOR_IMPORT) {
                         if (fileName.substring(fileName.lastIndexOf(".")).equalsIgnoreCase(".json")) {
                             JSONObject fileData = StorageUtil.getObjectFromDocumentFile(this, fileUri);
-                            Toast.makeText(this, "Importing from file " + fileName,
+                            Toast.makeText(this, getResources().getString(R.string.importing_from_file) + " " + fileName,
                                     Toast.LENGTH_LONG).show();
                             importFile(getFileNameWithOutExtension(fileName), fileData);
                         } else {
-                            Toast.makeText(this, "Only JSON files are supported",
+                            Toast.makeText(this, getResources().getString(R.string.only_json_files_are_supported),
                                     Toast.LENGTH_LONG).show();
                         }
                     } else {
@@ -506,7 +497,7 @@ public class MainActivity extends BaseActivity implements ListviewActions {
                         if (text != null) {
                             displayTextviewActivity(fileName, text);
                         } else {
-                            Toast.makeText(this, "Unable to read data from file : " + fileName,
+                            Toast.makeText(this, getResources().getString(R.string.unable_to_read_data_from_file) + " " + fileName,
                                     Toast.LENGTH_LONG).show();
                         }
                     }
@@ -528,8 +519,8 @@ public class MainActivity extends BaseActivity implements ListviewActions {
     otherwise start normal edit activity
      */
     private void startActivityForEdit(String collection) {
-        readOnceDataStorage = Factory.getReadOnceDataStorageIntsance(this,
-                getDataStorageType(), Constants.SCREEN_DESIGN_NOTE_PREFIX + collection,
+        readWriteOnceDataStorage = Factory.getReadOnceFireDataStorageInstance(
+                Constants.SCREEN_DESIGN_NOTE_PREFIX + collection,
                 new DataStorageListener() {
                     @Override
                     public void dataChanged(String key, String value) {

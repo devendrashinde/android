@@ -1,6 +1,5 @@
 package com.example.dshinde.myapplication_xmlpref.services;
 
-import android.content.Context;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -32,6 +31,7 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
     private ValueEventListener valueEventListener;
     private ChildEventListener childEventListener;
     private static final String CLASS_TAG = "FireDataStorageManager";
+    private static FirebaseDatabase firebaseDatabase;
 
     public FireDbDataStorageManagerImpl(String collectionName, boolean autoKey) {
         this(collectionName, autoKey, false);
@@ -51,10 +51,16 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
 
     private void getDatabaseCollectionReference() {
         Log.d(CLASS_TAG, "getDatabaseCollectionReference");
+        if(firebaseDatabase == null) {
+            firebaseDatabase = FirebaseDatabase.getInstance();
+            firebaseDatabase.setPersistenceEnabled(true);
+        }
         if(mDatabase == null || mAuth == null) {
             mAuth = FirebaseAuth.getInstance();
-            mDatabase = FirebaseDatabase.getInstance()
-                    .getReference((autoKey ? "" : Constants.DATABASE_PATH_NOTE_DETAILS + "/") + collectionName + "/" + mAuth.getUid());
+            mDatabase = firebaseDatabase.getReference(
+                    (autoKey ? "" :
+                            Constants.DATABASE_PATH_NOTE_DETAILS + "/") + collectionName + "/" + mAuth.getUid());
+            mDatabase.keepSynced(true);
         }
     }
 
@@ -102,16 +108,16 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
             }
 
             @Override
-            public void onChildRemoved(DataSnapshot dataSnapshot) {
+            public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
                 Log.d(CLASS_TAG, "data removed");
                 loadItem(dataSnapshot, DataChangeType.DELETED, true);
             }
 
             @Override
-            public void onChildMoved(DataSnapshot dataSnapshot, String prevChildKey) {}
+            public void onChildMoved(@NonNull DataSnapshot dataSnapshot, String prevChildKey) {}
 
             @Override
-            public void onCancelled(DatabaseError databaseError) {
+            public void onCancelled(@NonNull DatabaseError databaseError) {
                 Log.d(CLASS_TAG, "addChangedDataListener->error occured " + databaseError);
             }
         };
@@ -167,40 +173,37 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
         if (notify) notifyDataChanged();
     }
 
-    private void notifyDataChanged(){
+    private void notifyDataChanged() {
         Log.d(CLASS_TAG, "notifyDataChanged");
         notifyDataLoaded();
     }
 
     public void remove(String key) {
         Log.d(CLASS_TAG, "remove record");
-        new Thread() {
+        new Thread(() -> {
+        removeFromDataSource(key);
+        notifyDataChanged();
+        Query query;
+        if (autoKey) {
+            query = mDatabase.orderByValue().equalTo(key);
+        } else {
+            query = mDatabase.orderByKey().equalTo(key);
+        }
+        query.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
-            public void run() {
-            Query query;
-            removeFromDataSource(key);
-            notifyDataChanged();
-            if (autoKey) {
-                query = mDatabase.orderByValue().equalTo(key);
-            } else {
-                query = mDatabase.orderByKey().equalTo(key);
-            }
-            query.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    for (DataSnapshot snapshotRef : dataSnapshot.getChildren()) {
-                        Log.d(CLASS_TAG, "removing record " + snapshotRef.getRef());
-                        snapshotRef.getRef().removeValue();
-                    }
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for (DataSnapshot snapshotRef : dataSnapshot.getChildren()) {
+                    Log.d(CLASS_TAG, "removing record " + snapshotRef.getRef());
+                    snapshotRef.getRef().removeValue();
                 }
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-                    Log.d(CLASS_TAG, "remove->error occured " + databaseError);
+            }
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                Log.d(CLASS_TAG, "remove->error occured " + databaseError);
 
-                }
-            });
             }
-        }.start();
+        });
+        }).start();
     }
 
     public void removeAll() {
@@ -215,9 +218,6 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
     }
 
     public void save(String key, String value) {
-        if (autoKey && (key == null || key.isEmpty())) {
-            key = getNewKey();
-        }
         updateDB(Collections.singletonList(new KeyValue(key, value)));
     }
 
@@ -227,34 +227,28 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
 
     private void updateDB(List<KeyValue> values) {
         Log.d(CLASS_TAG, "updating DB");
-        new Thread() {
-            @Override
-            public void run() {
-                Map<String, Object> childUpdates = new HashMap<>();
-                for (KeyValue kv : values) {
-                    if (autoKey) {
-                        if(kv.getKey() == null || kv.getKey().isEmpty()) {
-                            kv.setKey(getNewKey());
-                        }
-                        childUpdates.put(kv.getValue(), kv.getKey());
-                    } else {
-                        childUpdates.put(kv.getKey(), kv.getValue());
+        new Thread(() -> {
+            Map<String, Object> childUpdates = new HashMap<>();
+            for (KeyValue kv : values) {
+                if (autoKey) {
+                    if(kv.getKey() == null || kv.getKey().isEmpty()) {
+                        kv.setKey(getNewKey());
                     }
-                    updateDataSource(kv.getKey(),kv.getValue());
+                    childUpdates.put(kv.getValue(), kv.getKey());
+                } else {
+                    childUpdates.put(kv.getKey(), kv.getValue());
                 }
-                notifyDataChanged();
-                mDatabase.updateChildren(childUpdates, new DatabaseReference.CompletionListener() {
-                    @Override
-                    public void onComplete(@Nullable DatabaseError databaseError, @NonNull DatabaseReference databaseReference) {
-                        if(databaseError == null) {
-                            Log.d(CLASS_TAG, "DB updated successfully");
-                        } else {
-                            Log.d(CLASS_TAG, "DB update failed, error " + databaseError);
-                        }
-                    }
-                });
+                updateDataSource(kv.getKey(),kv.getValue());
             }
-        }.start();
+            notifyDataChanged();
+            mDatabase.updateChildren(childUpdates, (databaseError, databaseReference) -> {
+                if(databaseError == null) {
+                    Log.d(CLASS_TAG, "DB updated successfully");
+                } else {
+                    Log.d(CLASS_TAG, "DB update failed, error " + databaseError);
+                }
+            });
+        }).start();
     }
 
     public KeyValue getValue(int index) {
@@ -298,3 +292,4 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
         }
     }
 }
+

@@ -14,20 +14,21 @@ import java.util.Map;
 import java.util.Set;
 
 public class RelationshipView extends View {
-    public static final int HLINE_WIDTH = 100;
-    public static final int TEXT_HEIGHT = 100;
-    public static final int RELATION_TEXT_HEIGHT = 30;
-    public static final int THICKNESS = 10;
+    public int LINE_WIDTH = 100;
+    public int TEXT_HEIGHT = 100;
+    public int RELATION_TEXT_HEIGHT = 50;
+    public int THICKNESS = 10;
     private RelationshipViewListener relationshipViewListener=null;
     private int viewHeight=3000;
     private int viewWidth=2500;
     Map<String, Set<String>> relationShips;
     String relationShipFrom;
 
-    public RelationshipView(Context context, String relationShipFrom, Map<String, Set<String>> relationShips) {
+    public RelationshipView(Context context, String relationShipFrom, Map<String, Set<String>> relationShips, int scaleFactor) {
         super(context);
         this.relationShips = relationShips;
         this.relationShipFrom = relationShipFrom;
+        this.scaleView(scaleFactor);
         updateHeight();
         DisplayMetrics metrics = new DisplayMetrics();
         ((Activity)context).getWindowManager().getDefaultDisplay().getMetrics(metrics);
@@ -78,10 +79,12 @@ public class RelationshipView extends View {
         }
     }
 
-    private void drawName(Canvas canvas, int x, int y, String name, Paint paint) {
+    private void drawName(Canvas canvas, int x, int y, String name, Paint paint, int textHeight) {
+        paint.setTextSize(textHeight);
         canvas.drawText(name, x + THICKNESS, y, paint);
         updateViewWidth ((int) (x + THICKNESS + paint.measureText(name)));
     }
+
     private void updateViewWidth(int newWidth){
         if(viewWidth < newWidth) {
             viewWidth =newWidth + 10;
@@ -89,16 +92,17 @@ public class RelationshipView extends View {
     }
 
     private int getChildrenAndDraw(Canvas canvas, int x, int y, String name, Paint paint, int offset) {
-        String[] childs = getChildrens(name);
-        return drawChildrens(canvas, x, y, name, childs, paint, offset);
+        String[] children = getChildren(name);
+        return drawChildren(canvas, x, y, name, children, paint, offset);
     }
 
-    private int drawChildrens(Canvas canvas, int left, int top, String name, String[] childs, Paint paint, int offset) {
+    private int drawChildren(Canvas canvas, int left, int top, String name, String[] childs, Paint paint, int offset) {
         for(int child=1; child <= childs.length; child++){
             String childName = childs[child - 1].split(",")[0];
-            String relation = childs[child - 1].split(",")[1];
+            String[] temp = childs[child - 1].split(",");
+            String relation = temp.length >= 2 ? temp[1] : "";
             LeftTop leftTop = drawChild(canvas, paint, left, top, childName, relation,child + offset);
-            offset += drawChildrens(canvas, leftTop.getLeft(), leftTop.getTop(), childName, getChildrens(childName), paint, 0);
+            offset += drawChildren(canvas, leftTop.getLeft(), leftTop.getTop(), childName, getChildren(childName), paint, 0);
         }
         return offset + childs.length;
     }
@@ -109,23 +113,21 @@ public class RelationshipView extends View {
         drawHorizontalLine(canvas, paint, left, vLineBottom);
         int childLeft = left + TEXT_HEIGHT + THICKNESS;
         int childTop = top + (childNumber * TEXT_HEIGHT) + THICKNESS;
-        paint.setTextSize(TEXT_HEIGHT);
-        drawName(canvas, childLeft, childTop, childName, paint);
+        drawName(canvas, childLeft, childTop, childName, paint, TEXT_HEIGHT);
         float offset = paint.measureText(childName);
         if(relation.length() > 0) {
-            paint.setTextSize(RELATION_TEXT_HEIGHT);
             String relationToDraw = "(" + relation + ")";
-            drawName(canvas, (int) (childLeft + offset + 10), childTop, relationToDraw, paint);
+            drawName(canvas, (int) (childLeft + offset + 10), childTop, relationToDraw, paint, RELATION_TEXT_HEIGHT);
         }
         return new LeftTop(childLeft, childTop);
     }
 
     private void drawHorizontalLine(Canvas canvas, Paint paint, int lineLeft, int lineTop) {
-        canvas.drawRect(lineLeft, lineTop, lineLeft + HLINE_WIDTH, lineTop + THICKNESS, paint);
+        canvas.drawRect(lineLeft, lineTop, lineLeft + LINE_WIDTH, lineTop + THICKNESS, paint);
         viewHeight = lineTop + THICKNESS  + 10;
     }
 
-    private String[] getChildrens(String name) {
+    private String[] getChildren(String name) {
         if(relationShips.containsKey(name)) {
             Object[] temp = relationShips.get(name).toArray();
             return Arrays.copyOf(temp, temp.length, String[].class);
@@ -161,5 +163,13 @@ public class RelationshipView extends View {
             offset += entry.getValue().size();
         }
         viewHeight = offset * TEXT_HEIGHT;
+    }
+
+    public void scaleView(int scaleFactor) {
+        TEXT_HEIGHT += scaleFactor;
+        LINE_WIDTH += scaleFactor;
+        RELATION_TEXT_HEIGHT += (scaleFactor/2);
+        THICKNESS += (scaleFactor / 10);
+        if(THICKNESS <= 0 ) THICKNESS = 1;
     }
 }

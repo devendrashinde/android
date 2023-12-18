@@ -1,9 +1,13 @@
 package com.example.dshinde.myapplication_xmlpref.activities.recyclerviewbased;
 
-import android.app.Dialog;
+import static com.example.dshinde.myapplication_xmlpref.common.Constants.DRAWABLE_RIGHT;
+
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
@@ -14,17 +18,21 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.EditText;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
-import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.documentfile.provider.DocumentFile;
+import androidx.lifecycle.Observer;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.work.Constraints;
+import androidx.work.Data;
+import androidx.work.NetworkType;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkInfo;
+import androidx.work.WorkManager;
 
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.AudioVideoActivity;
@@ -32,42 +40,43 @@ import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.GraphViewActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.RelationshipActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.ScrollingTextViewActivity;
-import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.CafeSettingsActivity;
-import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.ScreenDesignActivity;
-import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.SellTeaActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.ShabdaKoshActivity;
 import com.example.dshinde.myapplication_xmlpref.adapters.MarginItemDecoration;
 import com.example.dshinde.myapplication_xmlpref.adapters.RecyclerViewKeyValueAdapter;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.Converter;
-import com.example.dshinde.myapplication_xmlpref.helper.DynamicControls;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.listners.RecyclerViewKeyValueItemListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
+import com.example.dshinde.myapplication_xmlpref.services.BackupBackgroundService;
+import com.example.dshinde.myapplication_xmlpref.services.BackupWorker;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
-import com.example.dshinde.myapplication_xmlpref.services.ReadOnceDataStorage;
+import com.example.dshinde.myapplication_xmlpref.services.ReadWriteOnceDataStorage;
 import com.example.dshinde.myapplication_xmlpref.services.SharedPrefManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.theartofdev.edmodo.cropper.CropImage;
+import com.theartofdev.edmodo.cropper.CropImageView;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-
-import static com.example.dshinde.myapplication_xmlpref.common.Constants.DRAWABLE_RIGHT;
+import java.util.Map;
+import java.util.Optional;
 
 public class MainActivityRecyclerView extends BaseActivity  {
+    private static final int REQ_CODE = 0;
     EditText valueField;
     RecyclerView listView;
     RecyclerViewKeyValueAdapter listAdapter;
     DataStorage dataStorageManager;
     DocumentFile selectedDir;
-    ReadOnceDataStorage readOnceDataStorage;
+    ReadWriteOnceDataStorage readWriteOnceDataStorage;
     String key;
-    String sharedPreferenceName = Constants.DATABASE_PATH_NOTES;
+    String databasePathNotes = Constants.DATABASE_PATH_NOTES;
     private static final String CLASS_TAG = "MainActivityRV";
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
@@ -76,7 +85,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
         super.onCreate(savedInstanceState);
         Log.d(CLASS_TAG, "onCreate");
         Bundle bundle = getIntent().getExtras();
-        userId = bundle.getString("userId");
+        userId = bundle.getString(Constants.USERID);
         // Check if user is signed in (non-null) and update UI accordingly.
         loadUI();
         initDataStorageAndLoadData(this);
@@ -94,9 +103,9 @@ public class MainActivityRecyclerView extends BaseActivity  {
 
     private void initDataStorageAndLoadData(Context context) {
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageInstance");
-        dataStorageManager = Factory.getDataStorageIntsance(context,
+        dataStorageManager = Factory.getDataStorageInstance(context,
                 getDataStorageType(),
-                sharedPreferenceName,
+                databasePathNotes,
                 true,
                 false, new DataStorageListener() {
                     @Override
@@ -169,9 +178,10 @@ public class MainActivityRecyclerView extends BaseActivity  {
         menu.removeItem(R.id.menu_add);
         menu.removeItem(R.id.menu_share);
         menu.removeItem(R.id.menu_clear);
-        //menu.removeItem(R.id.menu_settings);
-        menu.removeItem(R.id.menu_sell);
-        menu.removeItem(R.id.menu_pay);
+        menu.removeItem(R.id.menu_remove);
+        menu.removeItem(R.id.menu_copy);
+        menu.removeItem(R.id.menu_daylight);
+        menu.removeItem(R.id.menu_nightlight);
         return true;
     }
 
@@ -209,11 +219,9 @@ public class MainActivityRecyclerView extends BaseActivity  {
             case R.id.menu_view:
                 viewFile();
                 return true;
-            case R.id.menu_sell:
-                doSell();
+            case R.id.menu_daylight:
                 return true;
-            case R.id.menu_settings:
-                //doSettings();
+            case R.id.menu_test:
                 showTestActivity();
                 return true;
             case R.id.menu_design_screen:
@@ -230,30 +238,25 @@ public class MainActivityRecyclerView extends BaseActivity  {
     private void showTestActivity() {
         String fileName = valueField.getText().toString();
         Intent intent = new Intent(MainActivityRecyclerView.this, GraphViewActivity.class);
-        intent.putExtra("filename", fileName);
-        intent.putExtra("userId", userId);
+        intent.putExtra(Constants.PARAM_FILENAME, fileName);
+        intent.putExtra(Constants.USERID, userId);
         startActivity(intent);
     }
 
     private void startRelationshipActivity() {
         String fileName = valueField.getText().toString();
         Intent intent = new Intent(MainActivityRecyclerView.this, RelationshipActivity.class);
-        intent.putExtra("filename", fileName);
-        intent.putExtra("userId", userId);
+        intent.putExtra(Constants.PARAM_FILENAME, fileName);
+        intent.putExtra(Constants.USERID, userId);
         startActivity(intent);
     }
 
 
     public void remove() {
-        Log.d(CLASS_TAG, "remove");
-        if (key != null) {
-            dataStorageManager.remove(key);
-        }
-        clear();
     }
 
     public void save() {
-        String value = valueField.getText().toString();
+        String value = valueField.getText().toString().trim();
         dataStorageManager.save(key, value);
         clear();
     }
@@ -265,7 +268,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
             sendIntent.setAction(Intent.ACTION_SEND);
             String textToShare = fileName + Constants.CR_LF + SharedPrefManager.getDataString(this, fileName);
             sendIntent.putExtra(Intent.EXTRA_TEXT, textToShare);
-            sendIntent.setType("text/plain");
+            sendIntent.setType(Constants.TEXT_PLAIN);
             startActivity(sendIntent);
         }
     }
@@ -274,24 +277,24 @@ public class MainActivityRecyclerView extends BaseActivity  {
         String fileName = valueField.getText().toString();
         if (!fileName.isEmpty()) {
             if(fileName.equals(Constants.SHABDA_KOSH)){
-                startShabdsKoshActivity(fileName);
+                startShabdaKoshActivity(fileName);
             } else {
                 startActivityForAction(fileName, "EDIT");
             }
         }
     }
 
-    private void startShabdsKoshActivity(String fileName) {
+    private void startShabdaKoshActivity(String fileName) {
         Intent intent = new Intent(MainActivityRecyclerView.this, ShabdaKoshActivity.class);
-        intent.putExtra("filename", fileName);
-        intent.putExtra("userId", userId);
+        intent.putExtra(Constants.PARAM_FILENAME, fileName);
+        intent.putExtra(Constants.USERID, userId);
         startActivity(intent);
     }
 
     private void startEditActivity(String fileName) {
         Intent intent = new Intent(MainActivityRecyclerView.this, Main2ActivityRecyclerView.class);
-        intent.putExtra("filename", fileName);
-        intent.putExtra("userId", userId);
+        intent.putExtra(Constants.PARAM_FILENAME, fileName);
+        intent.putExtra(Constants.USERID, userId);
         startActivity(intent);
     }
 
@@ -350,65 +353,46 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     private void showPopup(String value) {
-        Dialog builder = new Dialog(this);
-        builder.setTitle("What you want to do");
-        builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
-            @Override
-            public void onDismiss(DialogInterface dialogInterface) {
-                //nothing;
-            }
-        });
-        RadioGroup rg = DynamicControls.getRadioGroupControl(this,
-                new String[]{Constants.VIEW_NOTE,
-                        Constants.PLAY_NOTE,
-                        Constants.SCREEN_DESIGN,
-                        Constants.VIEW_RELATIONSHIP},
-                new ArrayList<>());
-        rg.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(RadioGroup group, int checkedId) {
-                RadioButton selectedButton = (RadioButton) builder.findViewById(checkedId);
-                if (selectedButton != null) {
-                    switch (selectedButton.getText().toString()) {
-                        case Constants.VIEW_NOTE:
-                            viewNote(value);;
-                            break;
-                        case Constants.PLAY_NOTE:
-                            playNote(value);
-                            break;
-                        case Constants.SCREEN_DESIGN:
-                            designScreen();
-                            break;
-                        case Constants.VIEW_RELATIONSHIP:
-                            startRelationshipActivity();
-                            break;
-                    }
-                    builder.dismiss();
-                }
-            }
-        });
+        selectOption(Constants.SELECT_ACTION_FOR_NOTE, R.string.what_you_want_to_do, R.array.actions_on_note,
+                null, key, value);
+    }
 
-        builder.addContentView(rg, new RelativeLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT));
-        builder.show();
+    @Override
+    protected void processSelectedOption(@NonNull String id, @NonNull String selectedOption, String key, String value) {
+        switch (selectedOption) {
+            case Constants.VIEW_NOTE:
+                viewNote(value);;
+                break;
+            case Constants.PLAY_NOTE:
+                playNote(value);
+                break;
+            case Constants.SCREEN_DESIGN:
+                designScreen();
+                break;
+            case Constants.VIEW_RELATIONSHIP:
+                startRelationshipActivity();
+                break;
+            default:
+                super.processSelectedOption(id, selectedOption, key, value);
+                break;
+        }
     }
 
     private void playNote(String fileName) {
         if (fileName != null && !fileName.isEmpty()) {
-            startActivityForAction(fileName, "PLAY");
+            startActivityForAction(fileName, Constants.PLAY);
         }
     }
 
     private void viewNote(String fileName) {
         if (fileName != null && !fileName.isEmpty()) {
-            startActivityForAction(fileName, "VIEW");
+            startActivityForAction(fileName, Constants.VIEW);
         }
     }
 
     private void startAudioNoteActivity(String title, List<KeyValue> values) {
         Intent intent = new Intent(MainActivityRecyclerView.this, AudioVideoActivity.class);
-        intent.putExtra("userId", userId);
+        intent.putExtra(Constants.USERID, userId);
         intent.putExtra("note", title);
         intent.putExtra("data", (Serializable) values);
         startActivity(intent);
@@ -435,22 +419,13 @@ public class MainActivityRecyclerView extends BaseActivity  {
         }
     }
 
-    public void doSell() {
-        String fileName = valueField.getText().toString();
-        if (!fileName.isEmpty()) {
-            Intent intent = new Intent(MainActivityRecyclerView.this,
-                    SellTeaActivity.class);
-            intent.putExtra("filename", fileName);
-            intent.putExtra("userId", userId);
-            startActivity(intent);
-        }
-    }
-
     public void doSettings() {
+        /*
         Intent intent = new Intent(MainActivityRecyclerView.this,
                 CafeSettingsActivity.class);
-        intent.putExtra("userId", userId);
+        intent.putExtra(Constants.USERID, userId);
         startActivity(intent);
+         */
     }
 
     private void designScreen() {
@@ -462,12 +437,12 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     private void startDesignOrEditActivity(String fileName, Integer requestMode, String screeConfig) {
-        Intent intent = new Intent(this, ScreenDesignActivity.class);
-        intent.putExtra("screenName", fileName);
-        intent.putExtra("requestMode", requestMode);
-        intent.putExtra("userId", userId);
+        Intent intent = new Intent(this, ScreenDesignActivityRecyclerView.class);
+        intent.putExtra(Constants.SCREEN_NAME, fileName);
+        intent.putExtra(Constants.REQUEST_MODE, requestMode);
+        intent.putExtra(Constants.USERID, userId);
         if (requestMode == Constants.REQUEST_CODE_SCREEN_CAPTURE) {
-            intent.putExtra("screenConfig", screeConfig);
+            intent.putExtra(Constants.SCREEN_CONFIG, screeConfig);
         }
         startActivity(intent);
     }
@@ -480,7 +455,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
         if (collectionName != null && !collectionName.isEmpty()) {
             Intent intent = new Intent(MainActivityRecyclerView.this, ShabdaKoshActivity.class);
             intent.putExtra("collectionToAddToShabdaKosh", collectionName);
-            intent.putExtra("userId", userId);
+            intent.putExtra(Constants.USERID, userId);
             startActivity(intent);
         }
     }
@@ -531,9 +506,9 @@ public class MainActivityRecyclerView extends BaseActivity  {
     private void export(DocumentFile dir) {
         // TODO getDataString in dataStorageManager
         selectedDir = dir;
-        String path = StorageUtil.saveAsTextToDocumentFile(this, dir, sharedPreferenceName, dataStorageManager.getDataString());
+        String path = StorageUtil.saveAsTextToDocumentFile(this, dir, databasePathNotes, dataStorageManager.getDataString());
         if (path != null) {
-            Toast.makeText(this, "Saved to " + path,
+            Toast.makeText(this, R.string.save_to + " " + path,
                     Toast.LENGTH_LONG).show();
         }
     }
@@ -544,16 +519,45 @@ public class MainActivityRecyclerView extends BaseActivity  {
 
     private void backup(DocumentFile dir) {
         selectedDir = dir;
-        List<KeyValue> subjects = dataStorageManager.getValues();
-        String path = StorageUtil.saveAsObjectToDocumentFile(this, dir, sharedPreferenceName, gson.toJson(subjects));
+        if (dir != null && dataStorageManager.getValues().size() > 0) {
+            final Data data = new Data.Builder()
+                    .putString(Constants.PARAM_FOLDER, dir.getUri().toString())
+                    .build();
+            Constraints constraints = new Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .setRequiresBatteryNotLow(true)
+                    .build();
+            final OneTimeWorkRequest workRequest = new OneTimeWorkRequest.Builder(BackupWorker.class)
+                    .setConstraints(constraints)
+                    .setInputData(data)
+                    .build();
 
-        if (path != null) {
-            Toast.makeText(this, "Saved to " + path,
-                    Toast.LENGTH_SHORT).show();
+            WorkManager.getInstance(this).enqueue(workRequest);
 
-            for (KeyValue entry : subjects) {
-                String fileName = entry.getValue().trim();
-                startActivityForAction(fileName, "BACKUP");
+            // Get the work status
+            WorkManager.getInstance(getApplicationContext()).getWorkInfoByIdLiveData(workRequest.getId())
+                    .observe(this, new Observer<WorkInfo>() {
+                        @Override
+                        public void onChanged(WorkInfo workInfo) {
+                            showInLongToast("Backup status: " + workInfo.getState().name());
+                        }
+                    });
+
+        }
+    }
+
+    private void backup2(DocumentFile dir) {
+        selectedDir = dir;
+        if (dir != null) {
+            AlarmManager alarmManager = (AlarmManager)getSystemService(ALARM_SERVICE);
+            Intent backupIntent = new Intent(this, BackupBackgroundService.class);
+            backupIntent.putExtra(Constants.PARAM_DATA, gson.toJson(dataStorageManager.getValues()));
+            backupIntent.putExtra(Constants.PARAM_FOLDER, dir.getUri().toString());
+            boolean backupInProgress = (PendingIntent.getBroadcast(this, REQ_CODE, backupIntent, PendingIntent.FLAG_NO_CREATE) != null);
+            if(!backupInProgress) {
+                PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), REQ_CODE, backupIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                alarmManager.set(AlarmManager.RTC_WAKEUP, -1, pendingIntent);
+
             }
         }
     }
@@ -575,12 +579,17 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     private void importFile(String collectionName, String data) {
-        valueField.setText(collectionName);
-        save();
+        Optional<KeyValue> keyValue = dataStorageManager.getValues().stream().filter(x -> x.getValue().equalsIgnoreCase(collectionName)).findFirst();
+        if(!keyValue.isPresent()) {
+            valueField.setText(collectionName);
+            save();
+        } else {
+            showInShortToast(getResources().getString(R.string.note_already_exists_merging_changes));
+        }
         Intent intent = new Intent(MainActivityRecyclerView.this, Main2ActivityRecyclerView.class);
-        intent.putExtra("filename", collectionName);
-        intent.putExtra("userId", userId);
-        intent.putExtra("dataToImport", data);
+        intent.putExtra(Constants.PARAM_FILENAME, collectionName);
+        intent.putExtra(Constants.USERID, userId);
+        intent.putExtra(Constants.PARAM_DATA_TO_IMPORT, data);
         startActivity(intent);
     }
 
@@ -611,8 +620,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     private void startActivityForAction(String collection, String action) {
-        readOnceDataStorage = Factory.getReadOnceDataStorageIntsance(this,
-            getDataStorageType(),
+        readWriteOnceDataStorage = Factory.getReadOnceFireDataStorageInstance(
             (action.equals("EDIT") ? Constants.SCREEN_DESIGN_NOTE_PREFIX : "") + collection,
             new DataStorageListener() {
                 @Override
@@ -622,7 +630,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
                 @Override
                 public void dataLoaded(List<KeyValue> data) {
                     switch (action) {
-                        case "EDIT":
+                        case Constants.EDIT:
                             /*
                             if screen config is found then start ScreenDesignActivity
                             otherwise start normal edit activity
@@ -634,25 +642,56 @@ public class MainActivityRecyclerView extends BaseActivity  {
                                 startEditActivity(collection);
                             }
                             break;
-                        case "VIEW":
+                        case Constants.VIEW:
                             startViewNoteActivity(collection, Converter.getKeyValuesJsonString(data));
                             break;
-                        case "PLAY":
+                        case Constants.PLAY:
                             startAudioNoteActivity(collection, data);
                             break;
-                        case "BACKUP":
+                        case Constants.BACKUP:
                             if (data.size() > 0) {
                                 String path = StorageUtil.saveAsObjectToDocumentFile(getApplicationContext(), selectedDir, collection, gson.toJson(data));
                                 if(path != null ){
-                                    runOnUiThread(()-> showInLongToast("Saved to " + path ));
+                                    runOnUiThread(()-> showInLongToast(getResources().getString(R.string.save_to) + " " + path ));
                                 }
                             }
                             break;
                         default: break;
                     }
-                    readOnceDataStorage.removeDataStorageListeners();
+                    readWriteOnceDataStorage.removeDataStorageListeners();
                 }
             });
     }
 
+    private void selectAndCropPhoto() {
+        CropImage.activity()
+                .setGuidelines(CropImageView.Guidelines.ON)
+                .start(this);
+    }
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != RESULT_OK) {
+            return;
+        }
+        switch (requestCode) {
+            case CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE:
+                CropImage.ActivityResult result = CropImage.getActivityResult(data);
+                if (resultCode == RESULT_OK) {
+                    Uri selectedFile = result.getUri();
+                } else if (resultCode == CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE) {
+                    Exception error = result.getError();
+                }
+                break;
+        }
+    }
+
+    private void saveImage(Uri imageUri) {
+        String key = valueField.getText().toString();
+        if (key != null && imageUri != null) {
+            key = Constants.MEDIA_NOTE_PREFIX + key;
+            Map<String, String> data = new HashMap<>();
+            data.put(key, imageUri.toString());
+            dataStorageManager.save(key, gson.toJson(data));
+        }
+    }
 }

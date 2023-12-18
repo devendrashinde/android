@@ -13,6 +13,7 @@ import androidx.core.text.HtmlCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.common.DataChangeType;
 import com.example.dshinde.myapplication_xmlpref.helper.JsonHelper;
 import com.example.dshinde.myapplication_xmlpref.listners.RecyclerViewKeyValueItemListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
@@ -27,6 +28,7 @@ public class RecyclerViewKeyValueAdapter extends RecyclerView.Adapter<RecyclerVi
     private Context context;
     private int layoutResource;
     private Filter kvFilter;
+    private int lastItemClicked;
 
     public RecyclerViewKeyValueAdapter(List<KeyValue> kvList, Context ctx, int layoutResource) {
         this(kvList, ctx, layoutResource, null);
@@ -40,7 +42,6 @@ public class RecyclerViewKeyValueAdapter extends RecyclerView.Adapter<RecyclerVi
         this.origList = kvList;
         this.recyclerViewKeyValueItemListener = recyclerViewKeyValueItemListener;
     }
-
 
     @Override
     public Filter getFilter() {
@@ -112,14 +113,16 @@ public class RecyclerViewKeyValueAdapter extends RecyclerView.Adapter<RecyclerVi
                     @Override
                     public void onClick(View view) {
                         // send selected contact in callback
-                        recyclerViewKeyValueItemListener.onItemClick(kvList.get(getAdapterPosition()));
+                        lastItemClicked = getBindingAdapterPosition();
+                        recyclerViewKeyValueItemListener.onItemClick(kvList.get(lastItemClicked));
                     }
                 });
 
                 itemView.setOnLongClickListener(new View.OnLongClickListener() {
                     @Override
                     public boolean onLongClick(View view) {
-                        return recyclerViewKeyValueItemListener.onItemLongClick(kvList.get(getAdapterPosition()));
+                        lastItemClicked = getBindingAdapterPosition();
+                        return recyclerViewKeyValueItemListener.onItemLongClick(kvList.get(lastItemClicked));
                     }
                 });
             }
@@ -152,9 +155,16 @@ public class RecyclerViewKeyValueAdapter extends RecyclerView.Adapter<RecyclerVi
         if(JsonHelper.isJSONValid(keyValue.getValue())) {
             viewHolder.valueView.setText(HtmlCompat.fromHtml(JsonHelper.formatAsString(keyValue.getValue(), true),HtmlCompat.FROM_HTML_MODE_LEGACY));
         } else {
-            viewHolder.valueView.setText(keyValue.getValue());
+            viewHolder.valueView.setText(getValue(keyValue));
         }
 
+    }
+
+    private String getValue(KeyValue keyValue) {
+        if(keyValue.getValue() == null || keyValue.getValue().trim().isEmpty()){
+            return keyValue.getKey();
+        }
+        return keyValue.getValue();
     }
 
     // Return the size of your dataset (invoked by the layout manager)
@@ -167,6 +177,10 @@ public class RecyclerViewKeyValueAdapter extends RecyclerView.Adapter<RecyclerVi
         this.kvList = kvList;
         this.origList = kvList;
         notifyDataSetChanged();
+    }
+
+    public List<KeyValue> getData(){
+        return this.kvList;
     }
 
     public int getCount() {

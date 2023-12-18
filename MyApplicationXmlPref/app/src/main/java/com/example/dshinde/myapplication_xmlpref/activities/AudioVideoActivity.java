@@ -1,5 +1,6 @@
 package com.example.dshinde.myapplication_xmlpref.activities;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.media.AudioAttributes;
@@ -16,6 +17,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
@@ -75,7 +77,7 @@ public class AudioVideoActivity extends BaseActivity {
         // get parameters
         Bundle bundle = getIntent().getExtras();
         if (bundle != null) {
-            userId = bundle.getString("userId");
+            userId = bundle.getString(Constants.USERID);
             collectionName = bundle.getString("note");
             key = bundle.getString("key");
             if (key != null && !key.isEmpty()) {
@@ -139,11 +141,13 @@ public class AudioVideoActivity extends BaseActivity {
         }
         if (mp.isPlaying()) {
             mp.pause();
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         } else {
             if (mp.getDuration() == mp.getCurrentPosition()) {
                 seekBar.setProgress(0);
             }
             mp.start();
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             timer.schedule(new ProgressUpdate(), 0, 1000); // using handler/timer task
         }
         setPlayPauseButton();
@@ -210,14 +214,14 @@ public class AudioVideoActivity extends BaseActivity {
     private void initDataStorageAndLoadData(Context context) {
 
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageInstance");
-        dataStorageManager = Factory.getDataStorageIntsance(context,
+        dataStorageManager = Factory.getDataStorageInstance(context,
                 getDataStorageType(),
                 Constants.MEDIA_NOTE_PREFIX + collectionName,
                 false, false, new DataStorageListener() {
                     @Override
                     public void dataChanged(String key, String value) {
                         Log.d(CLASS_TAG, "dataChanged key: " + key + ", value: " + value);
-                        showInShortToast("Saved!");
+                        showInShortToast(getResources().getString(R.string.saved));
                     }
 
                     @Override
@@ -271,15 +275,15 @@ public class AudioVideoActivity extends BaseActivity {
         menu.removeItem(R.id.menu_add_to_shadba_kosh);
         menu.removeItem(R.id.menu_backup);
         menu.removeItem(R.id.menu_remove);
-        menu.removeItem(R.id.menu_sell);
-        menu.removeItem(R.id.menu_settings);
+        menu.removeItem(R.id.menu_daylight);
+        menu.removeItem(R.id.menu_test);
         menu.removeItem(R.id.menu_clear);
         menu.removeItem(R.id.menu_design_screen);
         menu.removeItem(R.id.menu_export);
         menu.removeItem(R.id.menu_copy);
         menu.removeItem(R.id.menu_import);
         menu.removeItem(R.id.menu_edit);
-        menu.removeItem(R.id.menu_pay);
+        menu.removeItem(R.id.menu_nightlight);
         menu.removeItem(R.id.menu_add);
         menu.removeItem(R.id.menu_view);
         menu.removeItem(R.id.menu_share);
@@ -317,13 +321,13 @@ public class AudioVideoActivity extends BaseActivity {
 
     private void selectFile(String fileType, int actionCode) {
         Log.d(CLASS_TAG, "SelectFile");
-        //Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType(fileType);
         startActivityForResult(intent, actionCode);
     }
 
+    @SuppressLint("WrongConstant")
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -335,6 +339,7 @@ public class AudioVideoActivity extends BaseActivity {
             // Check for the freshest data.
             getContentResolver().takePersistableUriPermission(mediaUri, takeFlags);
             editTextFileUri.setText(StorageUtil.getFileName(this, mediaUri));
+            save();
             setMediaPlayerSource();
         }
     }
@@ -360,6 +365,7 @@ public class AudioVideoActivity extends BaseActivity {
             mp.setOnCompletionListener(mediaPlayer -> {
                 setPlayPauseButton();
                 seekBar.setProgress(mp.getDuration());
+                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
                 if(mode == PLAY) {
                     next();
                 }
@@ -383,6 +389,7 @@ public class AudioVideoActivity extends BaseActivity {
     public void onStop() {
         super.onStop();
         Log.d(CLASS_TAG, "onStop");
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         dataStorageManager.removeDataStorageListeners();
         if (mp != null) {
             if (mp.isPlaying()) mp.stop();

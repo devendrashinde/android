@@ -6,24 +6,24 @@ import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 
-import androidx.core.widget.TextViewCompat;
-
 import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.common.ControlType;
 import com.example.dshinde.myapplication_xmlpref.helper.DynamicControls;
 import com.example.dshinde.myapplication_xmlpref.model.ScreenControl;
 
-import org.w3c.dom.Text;
-
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Timer;
@@ -32,11 +32,16 @@ import java.util.TimerTask;
 public class RandomButtonActivity extends BaseActivity {
 
     private static final String TAG = RandomButtonActivity.class.getSimpleName();
+    private static final int REMOVE = 1;
+    private static final int STAY = 2;
     final DisplayMetrics displaymetrics = new DisplayMetrics();
     private Map<Integer, ScreenControl> controls = new HashMap<>();
     private LinearLayout linearLayout;
     private int nextButtonId = 0;
     TextView textView;
+    RadioGroup rgMode;
+    RadioGroup rgTheme;
+    int mode = REMOVE;
     float defaultTextSize = 60;
     int counter=0;
     public static final int SIZE = 10;
@@ -47,10 +52,11 @@ public class RandomButtonActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dynamic_linear_layout);
         linearLayout = findViewById(R.id.linear_layout);
+
         getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
 
         Bundle bundle = getIntent().getExtras();
-        String text = bundle.getString("text");
+        String text = bundle.getString(Constants.NOTE_TEXT);
         text = text.replaceAll("\n"," ");
         text = text.replaceAll("\r","");
         text = text.replaceAll("  ","");
@@ -58,20 +64,39 @@ public class RandomButtonActivity extends BaseActivity {
 
         buildScreenControls(text);
         setButtonTextSize(defaultTextSize);
-        addTextView();
+        addStaticControls();
         addControlsToLayoutRandomly();
+        setTheme(Constants.NIGHT_MODE);
     }
 
-    private void addControlsToLayoutRandomly() {
+    private ArrayList<Integer> getRandomList(){
         ArrayList<Integer> list = new ArrayList<Integer>();
 
         for (int i=0; i<controls.size(); i++) {
             list.add(new Integer(i));
         }
         Collections.shuffle(list);
+        return list;
+    }
 
-        for(Integer i : list){
-            addRandomButton((Button)controls.get(i).getValueControl());
+    private void addControlsToLayoutRandomly() {
+        ArrayList<Integer> list = getRandomList();
+
+        for (Integer i : list) {
+            addRandomButton((Button) controls.get(i).getValueControl());
+        }
+        nextButtonId = 0;
+    }
+
+
+    private void setControlsRandomText() {
+        ArrayList<Integer> list = getRandomList();
+
+        int i = 0;
+        for (Integer control : list) {
+            Button button = (Button) controls.get(i).getValueControl();
+            button.setText(controls.get(control).getTextLabel());
+            i++;
         }
         nextButtonId = 0;
     }
@@ -95,10 +120,56 @@ public class RandomButtonActivity extends BaseActivity {
             }
         }
         textView = DynamicControls.getTextView(this, "");
+        rgMode = getRadioGroupForMode();
+        rgTheme = getRadioGroupForTheme();
     }
 
+    private RadioGroup getRadioGroupForMode() {
+        RadioGroup rg = DynamicControls.getRadioGroupControl(this,
+                new String[]{Constants.REMOVE_BUTTON, Constants.REMOVE_TEXT},
+                Arrays.asList(new String[]{Constants.REMOVE_BUTTON}.clone()));
+        rg.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                RadioButton selectedButton = (RadioButton) linearLayout.findViewById(checkedId);
+                if (selectedButton != null) {
+                    switch (selectedButton.getText().toString()) {
+                        case Constants.REMOVE_BUTTON:
+                            mode = REMOVE;
+                            break;
+                        case Constants.REMOVE_TEXT:
+                            mode = STAY;
+                            break;
+                    }
+                }
+            }
+        });
+        return rg;
+    }
+
+    private RadioGroup getRadioGroupForTheme() {
+        RadioGroup rg = DynamicControls.getRadioGroupControl(this,
+                new String[]{Constants.DAY_MODE, Constants.NIGHT_MODE},
+                Arrays.asList(new String[]{Constants.NIGHT_MODE}.clone()));
+        rg.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                RadioButton selectedButton = (RadioButton) linearLayout.findViewById(checkedId);
+                if (selectedButton != null) {
+                    setTheme(selectedButton.getText().toString());
+                }
+            }
+        });
+        return rg;
+    }
+
+
     private void removeButton(Button button) {
-        linearLayout.removeView(button);
+        if(mode == REMOVE) {
+            linearLayout.removeView(button);
+        } else {
+            button.setText("");
+        }
     }
 
     private void setButtonListener(ScreenControl screenControl) {
@@ -112,14 +183,26 @@ public class RandomButtonActivity extends BaseActivity {
                     if(nextButtonId == controls.size() - 1){
                         counter++;
                         textView.setText(getCounter());
-                        addControlsToLayoutRandomly();
+                        if(mode == REMOVE) {
+                            addControlsToLayoutRandomly();
+                        } else {
+                            setControlsRandomText();
+                        }
                     }
                     else {
                         nextButtonId++;
                     }
+                    enableModeRadioButtons();
                 }
             }
         });
+    }
+
+    private void enableModeRadioButtons(){
+        for(int k = 0; k < rgMode.getChildCount(); k++) {
+            RadioButton rb = (RadioButton) rgMode.getChildAt(k);
+            rb.setEnabled(nextButtonId == 0);
+        }
     }
 
     private String getCounter() {
@@ -151,10 +234,12 @@ public class RandomButtonActivity extends BaseActivity {
         });
     }
 
-    private void addTextView(){
+    private void addStaticControls(){
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                linearLayout.addView(rgTheme);
+                linearLayout.addView(rgMode);
                 linearLayout.addView(textView);
             }
         });
@@ -253,4 +338,7 @@ public class RandomButtonActivity extends BaseActivity {
         }
     }
 
+    public void setTheme(String themeName) {
+        setTheme(linearLayout, themeName);
+    }
 }

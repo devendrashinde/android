@@ -37,7 +37,7 @@ public class BiometricSignIn extends BaseActivity {
             public void onAuthenticationError(int errorCode,
                                               @NonNull CharSequence errString) {
                 super.onAuthenticationError(errorCode, errString);
-                showInShortToast("Authentication error: " + errString);
+                showInShortToast(getResources().getString(R.string.authentication_error) +"\n"+ errString);
                 switch (errorCode){
                     case BiometricPrompt.ERROR_CANCELED:
                     case BiometricPrompt.ERROR_NO_BIOMETRICS:
@@ -54,14 +54,14 @@ public class BiometricSignIn extends BaseActivity {
             public void onAuthenticationSucceeded(
                     @NonNull BiometricPrompt.AuthenticationResult result) {
                 super.onAuthenticationSucceeded(result);
-                showInShortToast("Authentication succeeded!");
+                showInShortToast(getResources().getString(R.string.authentication_succeeded));
                 startSignInActivity();
             }
 
             @Override
             public void onAuthenticationFailed() {
                 super.onAuthenticationFailed();
-                showInShortToast("Authentication failed");
+                showInShortToast(getResources().getString(R.string.authentication_failed));
             }
         });
 
@@ -98,7 +98,7 @@ public class BiometricSignIn extends BaseActivity {
         PackageManager packageManager = this.getPackageManager();
 
         if (!keyguardManager.isKeyguardSecure()) {
-            showInShortToast("Lock screen security not enabled in Settings");
+            showInShortToast(getResources().getString(R.string.Lock_screen_security_not_enableds_in_settings));
             return false;
         }
 
@@ -106,7 +106,7 @@ public class BiometricSignIn extends BaseActivity {
                 Manifest.permission.USE_BIOMETRIC) !=
                 PackageManager.PERMISSION_GRANTED) {
 
-            showInShortToast("Fingerprint authentication permission not enabled");
+            showInShortToast(getResources().getString(R.string.fingerprint_authentication_permission_not_enabled));
             return false;
         }
 

@@ -9,6 +9,8 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.widget.Toast;
 
+import com.example.dshinde.myapplication_xmlpref.R;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -28,7 +30,7 @@ public class BitmapUtil {
                     saveImageToStream(bitmap, context.getContentResolver().openOutputStream(uri));
                     values.put(MediaStore.Images.Media.IS_PENDING, false);
                     context.getContentResolver().update(uri, values, null, null);
-                    Toast.makeText(context, "Successfully Exported to " + values.get(MediaStore.Images.Media.RELATIVE_PATH), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, context.getResources().getString(R.string.successfully_exported_to) + " " + values.get(MediaStore.Images.Media.RELATIVE_PATH), Toast.LENGTH_SHORT).show();
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                 }

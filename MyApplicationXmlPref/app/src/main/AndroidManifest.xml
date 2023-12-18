@@ -15,7 +15,11 @@
     <uses-permission android:name="android.permission.READ_INTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
-
+    <queries>
+    <intent>
+        <action android:name="android.intent.action.TTS_SERVICE" />
+    </intent>
+    </queries>
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
@@ -41,10 +45,13 @@
             android:name=".activities.PdfViewActivity"
             android:exported="true"
             android:configChanges="orientation|screenSize"
-            android:label="@string/title_activity_pdfview"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".activities.DynamicLinearLayoutActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize" />
+        <activity
+            android:name=".activities.DataAnalyticActivity"
             android:exported="true"
             android:configChanges="orientation|screenSize" />
         <activity
@@ -56,9 +63,13 @@
             android:exported="true"
             android:configChanges="orientation|screenSize" />
         <activity
+            android:name=".activities.recyclerviewbased.ScreenDesignActivityRecyclerView"
+            android:exported="true"
+            android:configChanges="orientation|screenSize" />
+        <activity
             android:name=".activities.ScrollingTextViewActivity"
             android:exported="true"
-            android:label="@string/title_scrolling_textview_activity" />
+            android:label="@string/title_scrolling_textview_activity"/>
         <activity
             android:name=".activities.AudioVideoActivity"
             android:exported="true"
@@ -111,14 +122,6 @@
             android:configChanges="orientation|screenSize"
             android:label="@string/title_activity_main2" />
         <activity
-            android:name=".activities.listviewbased.SellTeaActivity"
-            android:exported="true"
-            android:label="@string/sellTea" />
-        <activity
-            android:name=".activities.listviewbased.CafeSettingsActivity"
-            android:exported="true"
-            android:label="@string/cafeSettings" />
-        <activity
             android:name=".activities.listviewbased.ShabdaKoshActivity"
             android:exported="true"
             android:configChanges="orientation|screenSize"
@@ -151,6 +154,11 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <receiver
+            android:name=".services.BackupBackgroundService"
+            android:enabled="true"
+            android:exported="false"></receiver>
     </application>
 
 </manifest>

@@ -7,7 +7,7 @@ import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import java.util.List;
 import java.util.Map;
 
-public interface ReadOnceDataStorage extends DataStorageObservable {
+public interface ReadWriteOnceDataStorage extends DataStorageObservable {
 
     int getKeyIndex(String key);
 

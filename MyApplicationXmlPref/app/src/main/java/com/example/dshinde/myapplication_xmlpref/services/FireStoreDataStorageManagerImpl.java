@@ -3,6 +3,7 @@ package com.example.dshinde.myapplication_xmlpref.services;
 import androidx.annotation.Nullable;
 
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
+import com.example.dshinde.myapplication_xmlpref.common.DataChangeType;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
@@ -99,6 +100,11 @@ public class FireStoreDataStorageManagerImpl extends DataStorageManager {
 
     public void save(List<KeyValue> values) {
         updateDB( values);
+    }
+
+    @Override
+    public DataChangeType getLastDataChangeType() {
+        return null;
     }
 
     private void updateDB(List<KeyValue> values){

@@ -33,6 +33,7 @@ import androidx.documentfile.provider.DocumentFile;
 import com.bumptech.glide.Glide;
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.DataAnalyticActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.DynamicLinearLayoutActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.MediaViewActivity;
 import com.example.dshinde.myapplication_xmlpref.adapters.ListviewKeyValueObjectAdapter;
@@ -56,6 +57,7 @@ import com.google.firebase.storage.StorageReference;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 
@@ -88,7 +90,7 @@ public class ScreenDesignActivity extends BaseActivity {
         // get parameters
         Bundle bundle = getIntent().getExtras();
         collectionName = bundle.getString("screenName");
-        userId = bundle.getString("userId");
+        userId = bundle.getString(Constants.USERID);
         requestMode = bundle.getInt("requestMode", Constants.REQUEST_CODE_SCREEN_DESIGN);
         loadUI(bundle);
         initDataStorageAndLoadData(this);
@@ -164,7 +166,7 @@ public class ScreenDesignActivity extends BaseActivity {
 
     private void initDataStorageAndLoadData(Context context) {
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
-        dataStorageManager = Factory.getDataStorageIntsance(context, getDataStorageType(),
+        dataStorageManager = Factory.getDataStorageInstance(context, getDataStorageType(),
                 (isDesignMode() ? Constants.SCREEN_DESIGN_NOTE_PREFIX : "") + collectionName,
                 false, false, getDataStorageListener());
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->loadData");
@@ -207,11 +209,11 @@ public class ScreenDesignActivity extends BaseActivity {
 
     private void startDyanmicScreenDesignActivity(boolean edit) {
         if (edit && (valueField == null || valueField.length() == 0)) {
-            Toast.makeText(this, "Please select record to Edit it.",
+            Toast.makeText(this, getResources().getString(R.string.please_select_record_to_edit_it),
                     Toast.LENGTH_SHORT).show();
         } else {
             Intent intent = new Intent(this, DynamicLinearLayoutActivity.class);
-            intent.putExtra("userId", userId);
+            intent.putExtra(Constants.USERID, userId);
             intent.putExtra("noteId", collectionName);
             intent.putExtra("screenConfig", screenConfig);
             intent.putExtra("requestMode", requestMode);
@@ -278,13 +280,13 @@ public class ScreenDesignActivity extends BaseActivity {
     private void removeUnwantedMenuItems(Menu menu) {
         menu.removeItem(R.id.menu_add_to_shadba_kosh);
         menu.removeItem(R.id.menu_backup);
-        menu.removeItem(R.id.menu_sell);
-        menu.removeItem(R.id.menu_settings);
+        menu.removeItem(R.id.menu_daylight);
+        menu.removeItem(R.id.menu_test);
         menu.removeItem(R.id.menu_save);
         menu.removeItem(R.id.menu_clear);
         menu.removeItem(R.id.menu_design_screen);
         menu.removeItem(R.id.menu_export);
-        menu.removeItem(R.id.menu_pay);
+        menu.removeItem(R.id.menu_nightlight);
         if (isDesignMode()) {
             menu.removeItem(R.id.menu_add);
             menu.removeItem(R.id.menu_remove);
@@ -315,10 +317,22 @@ public class ScreenDesignActivity extends BaseActivity {
             case R.id.menu_share:
                 share();
                 return true;
+            case R.id.menu_test:
+                startDataAnalyticActivity();
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
+
+    private void startDataAnalyticActivity(){
+        Intent intent = new Intent(getApplicationContext(), DataAnalyticActivity.class);
+        intent.putExtra(Constants.USERID, userId);
+        intent.putExtra("note", collectionName);
+        intent.putExtra("data", (Serializable) listAdapter.getData());
+        startActivity(intent);
+    }
+
 
     private void setEditView(String key, String value) {
         keyField = key;
@@ -360,7 +374,7 @@ public class ScreenDesignActivity extends BaseActivity {
 
     private void startMediaActvity(String mediaFields){
         Intent intent = new Intent(getApplicationContext(), MediaViewActivity.class);
-        intent.putExtra("userId", userId);
+        intent.putExtra(Constants.USERID, userId);
         intent.putExtra("noteId", collectionName);
         intent.putExtra("mediaFields", mediaFields);
         startActivity(intent);
@@ -394,7 +408,7 @@ public class ScreenDesignActivity extends BaseActivity {
     protected  void doExport(DocumentFile dir) {
         String path = StorageUtil.saveAsTextToDocumentFile(this, dir, collectionName, dataStorageManager.getDataString());
         if (path != null) {
-            Toast.makeText(this, "Saved to " + path,
+            Toast.makeText(this, getResources().getString(R.string.save_to) + " " + path,
                     Toast.LENGTH_LONG).show();
         }
     }
@@ -560,11 +574,11 @@ public class ScreenDesignActivity extends BaseActivity {
             }).addOnFailureListener(new OnFailureListener() {
                 @Override
                 public void onFailure(@NonNull Exception exception) {
-                    Toast.makeText(getApplicationContext(), "download failed: " + exception.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(), getResources().getString(R.string.download_failed) + "\n" + exception.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });
         } catch (Throwable throwable) {
-            Toast.makeText(getApplicationContext(), "download failed: " + throwable.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), getResources().getString(R.string.download_failed)+ "\n" + throwable.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 

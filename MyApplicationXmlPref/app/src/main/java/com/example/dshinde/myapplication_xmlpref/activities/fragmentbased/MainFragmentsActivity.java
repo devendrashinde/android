@@ -26,10 +26,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.ScrollingTextViewActivity;
-import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.CafeSettingsActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.Main2Activity;
 import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.ScreenDesignActivity;
-import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.SellTeaActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.ShabdaKoshActivity;
 import com.example.dshinde.myapplication_xmlpref.adapters.MarginItemDecoration;
 import com.example.dshinde.myapplication_xmlpref.adapters.RecyclerViewKeyValueAdapter;
@@ -42,7 +40,7 @@ import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.listners.RecyclerViewKeyValueItemListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
-import com.example.dshinde.myapplication_xmlpref.services.ReadOnceDataStorage;
+import com.example.dshinde.myapplication_xmlpref.services.ReadWriteOnceDataStorage;
 import com.example.dshinde.myapplication_xmlpref.services.SharedPrefManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -61,7 +59,7 @@ public class MainFragmentsActivity extends BaseActivity {
     RecyclerViewKeyValueAdapter listAdapter;
     DataStorage dataStorageManager;
     DocumentFile selectedDir;
-    ReadOnceDataStorage readOnceDataStorage;
+    ReadWriteOnceDataStorage readWriteOnceDataStorage;
     String key;
     String sharedPreferenceName = Constants.DATABASE_PATH_NOTES;
     private static final String CLASS_TAG = "MainActivityRV";
@@ -71,7 +69,7 @@ public class MainFragmentsActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         Log.d(CLASS_TAG, "onCreate");
         Bundle bundle = getIntent().getExtras();
-        userId = bundle.getString("userId");
+        userId = bundle.getString(Constants.USERID);
         // Check if user is signed in (non-null) and update UI accordingly.
         loadUI();
         initDataStorageAndLoadData(this);
@@ -89,7 +87,7 @@ public class MainFragmentsActivity extends BaseActivity {
 
     private void initDataStorageAndLoadData(Context context) {
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
-        dataStorageManager = Factory.getDataStorageIntsance(context,
+        dataStorageManager = Factory.getDataStorageInstance(context,
                 getDataStorageType(),
                 sharedPreferenceName,
                 true,
@@ -200,10 +198,9 @@ public class MainFragmentsActivity extends BaseActivity {
             case R.id.menu_view:
                 viewFile();
                 return true;
-            case R.id.menu_sell:
-                doSell();
+            case R.id.menu_daylight:
                 return true;
-            case R.id.menu_settings:
+            case R.id.menu_test:
                 doSettings();
                 return true;
             case R.id.menu_design_screen:
@@ -256,8 +253,8 @@ public class MainFragmentsActivity extends BaseActivity {
 
     private void startEditActivity(String fileName) {
         Intent intent = new Intent(MainFragmentsActivity.this, Main2Activity.class);
-        intent.putExtra("filename", fileName);
-        intent.putExtra("userId", userId);
+        intent.putExtra(Constants.PARAM_FILENAME, fileName);
+        intent.putExtra(Constants.USERID, userId);
         startActivity(intent);
     }
 
@@ -339,20 +336,7 @@ public class MainFragmentsActivity extends BaseActivity {
         }
     }
 
-    public void doSell() {
-        String fileName = valueField.getText().toString();
-        if (!fileName.isEmpty()) {
-            Intent intent = new Intent(MainFragmentsActivity.this, SellTeaActivity.class);
-            intent.putExtra("filename", fileName);
-            intent.putExtra("userId", userId);
-            startActivity(intent);
-        }
-    }
-
     public void doSettings() {
-        Intent intent = new Intent(MainFragmentsActivity.this, CafeSettingsActivity.class);
-        intent.putExtra("userId", userId);
-        startActivity(intent);
     }
 
     private void doDesignOrCapture() {
@@ -367,7 +351,7 @@ public class MainFragmentsActivity extends BaseActivity {
         Intent intent = new Intent(MainFragmentsActivity.this, ScreenDesignActivity.class);
         intent.putExtra("screenName", fileName);
         intent.putExtra("requestMode", requestMode);
-        intent.putExtra("userId", userId);
+        intent.putExtra(Constants.USERID, userId);
         if (requestMode == Constants.REQUEST_CODE_SCREEN_CAPTURE) {
             intent.putExtra("screenConfig", screeConfig);
         }
@@ -382,7 +366,7 @@ public class MainFragmentsActivity extends BaseActivity {
         if (collectionName != null && !collectionName.isEmpty()) {
             Intent intent = new Intent(MainFragmentsActivity.this, ShabdaKoshActivity.class);
             intent.putExtra("collectionToAddToShabdaKosh", collectionName);
-            intent.putExtra("userId", userId);
+            intent.putExtra(Constants.USERID, userId);
             startActivity(intent);
         }
     }
@@ -510,11 +494,11 @@ public class MainFragmentsActivity extends BaseActivity {
                     if (requestCode == StorageUtil.PICK_FILE_FOR_IMPORT) {
                         if (fileName.substring(fileName.lastIndexOf(".")).equalsIgnoreCase(".json")) {
                             JSONObject fileData = StorageUtil.getObjectFromDocumentFile(this, fileUri);
-                            Toast.makeText(this, "Importing from file " + fileName,
+                            Toast.makeText(this, getResources().getString(R.string.importing_from_file) + " " + fileName,
                                     Toast.LENGTH_LONG).show();
                             importFile(getFileNameWithOutExtension(fileName), fileData);
                         } else {
-                            Toast.makeText(this, "Only JSON files are supported",
+                            Toast.makeText(this, getResources().getString(R.string.only_json_files_are_supported),
                                     Toast.LENGTH_LONG).show();
                         }
                     } else {
@@ -522,7 +506,7 @@ public class MainFragmentsActivity extends BaseActivity {
                         if (text != null) {
                             startViewNoteActivity(fileName, text);
                         } else {
-                            Toast.makeText(this, "Unable to read data from file : " + fileName,
+                            Toast.makeText(this, getResources().getString(R.string.unable_to_read_data_from_file) + " " + fileName,
                                     Toast.LENGTH_LONG).show();
                         }
                     }
@@ -540,8 +524,7 @@ public class MainFragmentsActivity extends BaseActivity {
     }
 
     private void startActivityForAction(String collection, String action) {
-        readOnceDataStorage = Factory.getReadOnceDataStorageIntsance(this,
-            getDataStorageType(),
+        readWriteOnceDataStorage = Factory.getReadOnceFireDataStorageInstance(
             (action.equals("EDIT") ? Constants.SCREEN_DESIGN_NOTE_PREFIX : "") + collection,
             new DataStorageListener() {
                 @Override
@@ -570,13 +553,13 @@ public class MainFragmentsActivity extends BaseActivity {
                             String path = StorageUtil.saveAsObjectToDocumentFile(getApplicationContext(), selectedDir, collection,
                                     dataStorageManager.getDataString(collection));
                             if (path != null) {
-                                Toast.makeText(getApplicationContext(), "Saved to " + path,
+                                Toast.makeText(getApplicationContext(), getResources().getString(R.string.save_to)  + " " + path,
                                         Toast.LENGTH_SHORT).show();
                             }
                             break;
                         default: break;
                     }
-                    readOnceDataStorage.removeDataStorageListeners();
+                    readWriteOnceDataStorage.removeDataStorageListeners();
                 }
             });
     }

@@ -40,15 +40,14 @@ public class PhotoViewActivity extends AppCompatActivity {
         setContentView(R.layout.activity_photoview);
         photoView = findViewById(R.id.photoView);
         photoView.setAdjustViewBounds(true);
-        //photoView.setScaleType(ImageView.ScaleType.FIT_XY);
         setPhotoViewListener();
 
         Bundle bundle = getIntent().getExtras();
-        userId = bundle.getString("userId");
-        noteId = bundle.getString("noteId");
+        userId = bundle.getString(Constants.USERID);
+        noteId = bundle.getString(Constants.NOTE_ID);
         Gson gson = new GsonBuilder().create();
 
-        String mediaValues = bundle.getString("mediaFields");
+        String mediaValues = bundle.getString(Constants.MEDIA_FIELDS);
         mediaFields = gson.fromJson(mediaValues, MediaFields.class);
         mediaFields.init();
         if(mediaFields.hasMedia()) {
@@ -98,11 +97,12 @@ public class PhotoViewActivity extends AppCompatActivity {
             }).addOnFailureListener(new OnFailureListener() {
                 @Override
                 public void onFailure(@NonNull Exception exception) {
-                    Toast.makeText(getApplicationContext(), "download failed: " + exception.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(), getResources().getString(R.string.download_failed) + ": " + exception.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });
         } catch (Throwable throwable) {
-            Toast.makeText(getApplicationContext(), "download failed: " + throwable.getMessage(), Toast.LENGTH_SHORT).show();
+
+            Toast.makeText(getApplicationContext(), getResources().getString(R.string.download_failed) + ": " + throwable.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 }

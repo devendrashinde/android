@@ -39,6 +39,10 @@ public class ListviewKeyValueObjectAdapter extends ArrayAdapter<KeyValue> implem
         notifyDataSetChanged();
     }
 
+    public List<KeyValue> getData(){
+        return origList;
+    }
+
     public int getCount() {
         return kvList.size();
     }

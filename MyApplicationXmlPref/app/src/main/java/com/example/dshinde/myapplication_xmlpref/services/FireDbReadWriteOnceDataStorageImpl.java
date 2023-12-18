@@ -1,5 +1,7 @@
 package com.example.dshinde.myapplication_xmlpref.services;
 
+import androidx.annotation.NonNull;
+
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
@@ -10,23 +12,27 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-public class FireDbReadOnceDataStorageImpl extends ReadOnceDataStorageManager {
+public class FireDbReadWriteOnceDataStorageImpl extends ReadWriteOnceDataStorageManager {
     private DatabaseReference mDatabase;
     private ValueEventListener valueEventListener = null;
     private FirebaseAuth mAuth;
 
-    public FireDbReadOnceDataStorageImpl(String collectionName, DataStorageListener dataStorageListener) {
+    public FireDbReadWriteOnceDataStorageImpl(@NonNull String collectionName, DataStorageListener dataStorageListener) {
         super(collectionName, dataStorageListener);
-        initialiseDBSupport();
+        if(collectionName.equals(Constants.DATABASE_PATH_NOTES)) {
+            initialiseDBSupport(collectionName);
+        } else {
+            initialiseDBSupport(Constants.DATABASE_PATH_NOTE_DETAILS + "/" + collectionName);
+        }
     }
 
-    private void initialiseDBSupport(){
+    private void initialiseDBSupport(String path){
         new Thread() {
             @Override
             public void run() {
                 mAuth = FirebaseAuth.getInstance();
                 mDatabase = FirebaseDatabase.getInstance()
-                        .getReference(Constants.DATABASE_PATH_NOTE_DETAILS + "/" + collectionName + "/" + mAuth.getUid());
+                        .getReference(path + "/" + mAuth.getUid());
                 readDataOnce();
             }
         }.start();
@@ -54,7 +60,7 @@ public class FireDbReadOnceDataStorageImpl extends ReadOnceDataStorageManager {
         //iterating through all the values in database
         for (DataSnapshot postSnapshot : snapshot.getChildren()) {
             String key = postSnapshot.getKey();
-            String value = (String) postSnapshot.getValue();
+            String value = postSnapshot.getValue().toString();
 
             KeyValue upload = new KeyValue(key, value);
             data.add(upload);

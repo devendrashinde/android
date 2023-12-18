@@ -33,6 +33,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.DataAnalyticActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.DynamicLinearLayoutActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.MediaViewActivity;
 import com.example.dshinde.myapplication_xmlpref.adapters.MarginItemDecoration;
@@ -58,6 +59,7 @@ import com.google.firebase.storage.StorageReference;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 
@@ -89,22 +91,22 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
         super.onCreate(savedInstanceState);
         // get parameters
         Bundle bundle = getIntent().getExtras();
-        collectionName = bundle.getString("screenName");
-        userId = bundle.getString("userId");
-        requestMode = bundle.getInt("requestMode", Constants.REQUEST_CODE_SCREEN_DESIGN);
+        collectionName = bundle.getString(Constants.SCREEN_NAME);
+        userId = bundle.getString(Constants.USERID);
+        requestMode = bundle.getInt(Constants.REQUEST_MODE, Constants.REQUEST_CODE_SCREEN_DESIGN);
         loadUI(bundle);
         initDataStorageAndLoadData(this);
     }
 
     private void loadUI(Bundle bundle) {
         if (isDesignMode()) {
-            setContentView(R.layout.screen_design_activity);
+            setContentView(R.layout.screen_design_activity_recycleview);
             setTitle(collectionName + ": Design");
             screenConfig = screenDesign();
         } else {
-            setContentView(R.layout.screen_capture_activity);
+            setContentView(R.layout.screen_capture_activity_recycleview);
             setTitle(collectionName + ": Edit");
-            screenConfig = bundle.getString("screenConfig");
+            screenConfig = bundle.getString(Constants.SCREEN_CONFIG);
         }
         listView = (RecyclerView) findViewById(R.id.list);
         addButton = (Button) findViewById(R.id.btnAdd);
@@ -166,7 +168,7 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
 
     private void initDataStorageAndLoadData(Context context) {
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
-        dataStorageManager = Factory.getDataStorageIntsance(context, getDataStorageType(),
+        dataStorageManager = Factory.getDataStorageInstance(context, getDataStorageType(),
                 (isDesignMode() ? Constants.SCREEN_DESIGN_NOTE_PREFIX : "") + collectionName,
                 false, false, getDataStorageListener());
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->loadData");
@@ -192,7 +194,9 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
 
     private void loadDataInListView(List<KeyValue> data) {
         Log.d(CLASS_TAG, "loadDataInListView");
-        runOnUiThread(() -> listAdapter.setData(data));
+        runOnUiThread(() -> {
+            listAdapter.setData(data);
+        });
     }
 
     private boolean isDesignMode() {
@@ -209,26 +213,26 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
 
     private void startDynamicScreenDesignActivity(boolean edit) {
         if (edit && (valueField == null || valueField.length() == 0)) {
-            Toast.makeText(this, "Please select record to Edit it.",
+            Toast.makeText(this, getResources().getString(R.string.please_select_record_to_edit_it),
                     Toast.LENGTH_SHORT).show();
         } else {
             Intent intent = new Intent(this, DynamicLinearLayoutActivity.class);
-            intent.putExtra("userId", userId);
-            intent.putExtra("noteId", collectionName);
-            intent.putExtra("screenConfig", screenConfig);
-            intent.putExtra("requestMode", requestMode);
+            intent.putExtra(Constants.USERID, userId);
+            intent.putExtra(Constants.NOTE_ID, collectionName);
+            intent.putExtra( Constants.SCREEN_CONFIG, screenConfig);
+            intent.putExtra(Constants.REQUEST_MODE, requestMode);
             if (edit) {
-                intent.putExtra("screenData", valueField);
+                intent.putExtra(Constants.SCREEN_DATA, valueField);
             }
             startActivityForResult(intent, requestMode);
         }
     }
 
-    private void startDynamicsScreenPreviewActivity() {
+    private void startDynamicScreenPreviewActivity() {
         if (dataStorageManager.count() > 0) {
             Intent intent = new Intent(this, DynamicLinearLayoutActivity.class);
-            intent.putExtra("screenConfig", Converter.getValuesJsonString(dataStorageManager.getValues()));
-            intent.putExtra("requestMode", Constants.REQUEST_CODE_SCREEN_PREVIEW);
+            intent.putExtra(Constants.SCREEN_CONFIG, Converter.getValuesJsonString(dataStorageManager.getValues()));
+            intent.putExtra(Constants.REQUEST_MODE, Constants.REQUEST_CODE_SCREEN_PREVIEW);
             startActivityForResult(intent, Constants.REQUEST_CODE_SCREEN_PREVIEW);
         }
     }
@@ -253,7 +257,7 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
         screenPreview = (Button) findViewById(R.id.btnPreview);
         screenPreview.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                startDynamicsScreenPreviewActivity();
+                startDynamicScreenPreviewActivity();
             }
         });
     }
@@ -280,18 +284,22 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
     private void removeUnwantedMenuItems(Menu menu) {
         menu.removeItem(R.id.menu_add_to_shadba_kosh);
         menu.removeItem(R.id.menu_backup);
-        menu.removeItem(R.id.menu_sell);
-        menu.removeItem(R.id.menu_settings);
+        menu.removeItem(R.id.menu_daylight);
         menu.removeItem(R.id.menu_save);
         menu.removeItem(R.id.menu_clear);
         menu.removeItem(R.id.menu_design_screen);
         menu.removeItem(R.id.menu_export);
-        menu.removeItem(R.id.menu_pay);
+        menu.removeItem(R.id.menu_nightlight);
+        menu.removeItem(R.id.menu_import);
         if (isDesignMode()) {
             menu.removeItem(R.id.menu_add);
             menu.removeItem(R.id.menu_remove);
             menu.removeItem(R.id.menu_view);
-        }
+            menu.removeItem(R.id.menu_test);
+        }/* else {
+            MenuItem menuItem = menu.getItem(R.id.menu_settings);
+            menuItem.setTitle(R.string.summary);
+        }*/
     }
 
     @Override
@@ -312,10 +320,13 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
                 remove();
                 return true;
             case R.id.menu_view:
-                startDynamicsScreenPreviewActivity();
+                startDynamicScreenPreviewActivity();
                 return true;
             case R.id.menu_share:
                 share();
+                return true;
+            case R.id.menu_test:
+                startDataAnalyticActivity();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -370,9 +381,7 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
                     MediaFields mediaFields = gson.fromJson(kv.getValue(), MediaFields.class);
                     mediaFields.init();
                     if(mediaFields.hasMedia()){
-                        //mediaFields.setValues(gson.fromJson(kv.getValue(), Map.class));
-                        //showPhotoMedia(mediaFields);
-                        startMediaActvity(kv.getValue());
+                        startMediaActivity(kv.getValue());
                     }
                     return true;
                 }
@@ -382,7 +391,15 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
         return listener;
     }
 
-    private void startMediaActvity(String mediaFields){
+    private void startDataAnalyticActivity(){
+        Intent intent = new Intent(getApplicationContext(), DataAnalyticActivity.class);
+        intent.putExtra("userId", userId);
+        intent.putExtra("note", collectionName);
+        intent.putExtra("data", (Serializable) listAdapter.getData());
+        startActivity(intent);
+    }
+
+    private void startMediaActivity(String mediaFields){
         Intent intent = new Intent(getApplicationContext(), MediaViewActivity.class);
         intent.putExtra("userId", userId);
         intent.putExtra("noteId", collectionName);
@@ -407,6 +424,7 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
 
     public void clear() {
         setEditView("", "");
+        searchText.setText("");
     }
 
     public void share() {
@@ -417,7 +435,7 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
     protected  void doExport(DocumentFile dir) {
         String path = StorageUtil.saveAsTextToDocumentFile(this, dir, collectionName, dataStorageManager.getDataString());
         if (path != null) {
-            Toast.makeText(this, "Saved to " + path,
+            Toast.makeText(this, getResources().getString(R.string.save_to)+ " " + path,
                     Toast.LENGTH_LONG).show();
         }
     }
@@ -583,11 +601,11 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
             }).addOnFailureListener(new OnFailureListener() {
                 @Override
                 public void onFailure(@NonNull Exception exception) {
-                    Toast.makeText(getApplicationContext(), "download failed: " + exception.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(), getResources().getString(R.string.download_failed) + "\n" + exception.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });
         } catch (Throwable throwable) {
-            Toast.makeText(getApplicationContext(), "download failed: " + throwable.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), getResources().getString(R.string.download_failed) + "\n" + throwable.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 

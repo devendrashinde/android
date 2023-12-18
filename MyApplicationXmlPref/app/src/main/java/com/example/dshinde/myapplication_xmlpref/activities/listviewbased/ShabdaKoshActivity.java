@@ -27,7 +27,7 @@ import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.example.dshinde.myapplication_xmlpref.model.ShabdaDetails;
 import com.example.dshinde.myapplication_xmlpref.model.ShabdaUsage;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
-import com.example.dshinde.myapplication_xmlpref.services.ReadOnceDataStorage;
+import com.example.dshinde.myapplication_xmlpref.services.ReadWriteOnceDataStorage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -42,7 +42,7 @@ public class ShabdaKoshActivity extends BaseActivity {
     RecyclerView listView;
     RecyclerViewKeyValueAdapter listAdapter;
     DataStorage dataStorageManager;
-    ReadOnceDataStorage firebaseReadOnceImpl;
+    ReadWriteOnceDataStorage firebaseReadOnceImpl;
     String collectionName = null;
     String collectionToAdd = null;
     boolean addingToShabdKosh = false;
@@ -56,7 +56,7 @@ public class ShabdaKoshActivity extends BaseActivity {
 
         Bundle bundle = getIntent().getExtras();
         collectionName = Constants.SHABDA_KOSH;
-        userId = bundle.getString("userId");
+        userId = bundle.getString(Constants.USERID);
         collectionToAdd = bundle.getString("collectionToAddToShabdaKosh");
         setTitle(collectionName);
         loadUI();
@@ -214,7 +214,7 @@ public class ShabdaKoshActivity extends BaseActivity {
     }
 
     private void initDataStorage() {
-        dataStorageManager = Factory.getDataStorageIntsance(this,
+        dataStorageManager = Factory.getDataStorageInstance(this,
             getDataStorageType(),
             collectionName, false,
             false, new DataStorageListener() {
@@ -268,8 +268,7 @@ public class ShabdaKoshActivity extends BaseActivity {
 
     private void addCollectionToShadaKosh() {
         if (collectionToAdd != null && !collectionToAdd.isEmpty()) {
-            firebaseReadOnceImpl = Factory.getReadOnceDataStorageIntsance(this,
-                getDataStorageType(), collectionToAdd,
+            firebaseReadOnceImpl = Factory.getReadOnceFireDataStorageInstance(collectionToAdd,
                 new DataStorageListener() {
                     @Override
                     public void dataChanged(String key, String value) {

@@ -2,8 +2,9 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorBlack"
     android:orientation="vertical">
 
     <LinearLayout
@@ -13,6 +14,7 @@
         android:layout_alignParentStart="true"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
+        android:background="@color/colorBlack"
         android:orientation="vertical">
 
         <EditText
@@ -24,6 +26,9 @@
             android:focusableInTouchMode="true"
             android:hint="@string/select_audio_file"
             android:inputType="none"
+            android:textColor="@color/colorWhite"
+            android:backgroundTint="@color/colorWhite"
+            android:textColorHint="@color/colorBlue"
             app:autoSizeTextType="uniform" />
         <LinearLayout
             android:id="@+id/buttonsView"
@@ -38,6 +43,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:background="@color/colorBlack"
                 app:srcCompat="@drawable/ic_action_previous" />
 
             <ImageButton
@@ -45,6 +51,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:background="@color/colorBlack"
                 app:srcCompat="@drawable/ic_action_play" />
 
             <ImageButton
@@ -52,6 +59,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:background="@color/colorBlack"
                 app:srcCompat="@drawable/ic_action_next" />
         </LinearLayout>
 
@@ -60,21 +68,30 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
+            android:progressBackgroundTint="@color/colorYellow"
             android:layout_margin="8dp" />
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/textNote"
+    <LinearLayout
+        android:id="@+id/llTextView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_alignParentStart="true"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
         android:background="@color/colorBlack"
-        android:paddingLeft="10dp"
-        android:scrollbars = "vertical"
-        android:text="TextView"
-        android:textColor="@color/colorWhite"
-        android:textSize="25sp" />
+        android:layout_alignParentStart="true"
+        android:orientation="vertical">
+        <TextView
+            android:id="@+id/textNote"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginTop="20dp"
+            android:background="@color/colorBlack"
+            android:paddingLeft="10dp"
+            android:scrollbars = "vertical"
+            android:text="TextView"
+            android:textColor="@color/colorWhite"
+            android:textSize="25sp" />
+    </LinearLayout>
 
 </LinearLayout>

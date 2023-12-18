@@ -6,12 +6,12 @@ import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class ReadOnceDataStorageManager implements ReadOnceDataStorage {
+public abstract class ReadWriteOnceDataStorageManager implements ReadWriteOnceDataStorage {
     protected List<DataStorageListener> listeners = new ArrayList<>();
     String collectionName=null;
     List<KeyValue> data = new ArrayList<>();
 
-    ReadOnceDataStorageManager(String collectionName, DataStorageListener dataStorageListener) {
+    ReadWriteOnceDataStorageManager(String collectionName, DataStorageListener dataStorageListener) {
         this.collectionName = collectionName;
         addDataStorageListener(dataStorageListener);
     }

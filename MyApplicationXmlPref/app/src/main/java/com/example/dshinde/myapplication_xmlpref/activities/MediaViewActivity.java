@@ -32,7 +32,7 @@ public class MediaViewActivity extends AppCompatActivity {
 
         Bundle bundle = getIntent().getExtras();
         collectionName = Constants.STORAGE_PATH_NOTES +
-                bundle.getString("userId") + "/" +
+                bundle.getString(Constants.USERID) + "/" +
                 bundle.getString("noteId");
         Gson gson = new GsonBuilder().create();
 

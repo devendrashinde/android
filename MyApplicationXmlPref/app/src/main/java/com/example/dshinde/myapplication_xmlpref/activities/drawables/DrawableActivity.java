@@ -11,33 +11,29 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.widget.HorizontalScrollView;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
-import android.widget.Toast;
 
 import androidx.documentfile.provider.DocumentFile;
 
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
+import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.Converter;
 import com.example.dshinde.myapplication_xmlpref.helper.DynamicControls;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
-import com.example.dshinde.myapplication_xmlpref.services.ReadOnceDataStorage;
+import com.example.dshinde.myapplication_xmlpref.services.ReadWriteOnceDataStorage;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.theartofdev.edmodo.cropper.CropImage;
 import com.theartofdev.edmodo.cropper.CropImageView;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -55,7 +51,7 @@ public class DrawableActivity extends BaseActivity {
     PhotoView photoView;
     String collectionName;
     private static final String CLASS_TAG = "DrawableActivity";
-    ReadOnceDataStorage readOnceDataStorage;
+    ReadWriteOnceDataStorage readWriteOnceDataStorage;
     Set<String> parent = new HashSet<>();
     Map<String, Set<String>> relationShips;
     String parentNode;
@@ -66,8 +62,8 @@ public class DrawableActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         Bundle bundle = getIntent().getExtras();
-        collectionName = bundle.getString("filename");
-        userId = bundle.getString("userId");
+        collectionName = bundle.getString(Constants.PARAM_FILENAME);
+        userId = bundle.getString(Constants.USERID);
 
         setContentView(R.layout.activity_dynamic_linear_layout);
         lin_layout = findViewById(R.id.linear_layout);
@@ -101,7 +97,7 @@ public class DrawableActivity extends BaseActivity {
         }
         photoView = DynamicControls.getPhotoView(this, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.MATCH_PARENT));
-        customDrawableView = new RelationshipView(this, parentNode, relationShips);
+        customDrawableView = new RelationshipView(this, parentNode, relationShips, 0);
         customDrawableView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.MATCH_PARENT));
         scroll_view.addView(customDrawableView);
@@ -128,8 +124,7 @@ public class DrawableActivity extends BaseActivity {
 
     private void initDataStorageAndLoadData() {
 
-        readOnceDataStorage = Factory.getReadOnceDataStorageIntsance(this,
-            getDataStorageType(),
+        readWriteOnceDataStorage = Factory.getReadOnceFireDataStorageInstance(
             collectionName,
             new DataStorageListener() {
                 @Override
@@ -139,7 +134,7 @@ public class DrawableActivity extends BaseActivity {
                 @Override
                 public void dataLoaded(List<KeyValue> data) {
                     String jsonString = Converter.getValuesJsonString(data);
-                    readOnceDataStorage.removeDataStorageListeners();
+                    readWriteOnceDataStorage.removeDataStorageListeners();
                     parse(data);
                     setView();
                 }
@@ -233,9 +228,9 @@ public class DrawableActivity extends BaseActivity {
         menu.removeItem(R.id.menu_add);
         menu.removeItem(R.id.menu_share);
         menu.removeItem(R.id.menu_clear);
-        menu.removeItem(R.id.menu_settings);
-        menu.removeItem(R.id.menu_sell);
-        menu.removeItem(R.id.menu_pay);
+        menu.removeItem(R.id.menu_test);
+        menu.removeItem(R.id.menu_daylight);
+        menu.removeItem(R.id.menu_nightlight);
         menu.removeItem(R.id.menu_save);
         menu.removeItem(R.id.menu_copy);
         menu.removeItem(R.id.menu_edit);

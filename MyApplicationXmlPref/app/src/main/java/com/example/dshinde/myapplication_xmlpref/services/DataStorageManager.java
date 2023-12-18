@@ -4,6 +4,7 @@ import android.os.Handler;
 import android.os.Looper;
 
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
+import com.example.dshinde.myapplication_xmlpref.common.DataChangeType;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 
@@ -21,6 +22,7 @@ public abstract class DataStorageManager implements DataStorage {
     boolean sortData =true;
     boolean notifyDataChange=true;
     private int lastModifiedIndex=-1;
+    private DataChangeType lastDataChangeType = DataChangeType.ALL_DATA;
 
     public void addDataStorageListener(DataStorageListener listener) {
         if(listener != null) listeners.add(listener);
@@ -66,6 +68,10 @@ public abstract class DataStorageManager implements DataStorage {
         return lastModifiedIndex;
     }
 
+    public DataChangeType getLastDataChangeType() {
+        return lastDataChangeType;
+    }
+
     public void save(String value) {
         save(null, value);
     }
@@ -78,7 +84,8 @@ public abstract class DataStorageManager implements DataStorage {
         int keyIndex = getKeyIndex(key);
         if (keyIndex >= 0) {
             data.remove(keyIndex);
-            lastModifiedIndex = keyIndex - 1;
+            lastModifiedIndex = keyIndex;
+            lastDataChangeType = DataChangeType.DELETED;
         }
     }
 
@@ -86,9 +93,11 @@ public abstract class DataStorageManager implements DataStorage {
         int keyIndex = getKeyIndex(key);
         if (keyIndex >= 0) {
             data.set(keyIndex, new KeyValue(key, value));
+            lastDataChangeType = DataChangeType.MODIFIED;
             lastModifiedIndex = keyIndex;
         } else {
             data.add(new KeyValue(key, value));
+            lastDataChangeType = DataChangeType.ADDED;
             lastModifiedIndex = data.size()-1;
         }
     }
@@ -124,7 +133,11 @@ public abstract class DataStorageManager implements DataStorage {
 
     void notifyDataLoaded() {
         if(notifyDataChange) {
+            KeyValue keyValue = null;
+            if(lastDataChangeType == DataChangeType.ADDED) keyValue = data.get(lastModifiedIndex);
+
             if (sortData) Collections.sort(data, keyValueComparator);
+            if(keyValue != null) lastModifiedIndex = data.indexOf(keyValue);
             for (DataStorageListener listener : listeners) {
                 listener.dataLoaded(data);
             }

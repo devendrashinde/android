@@ -1,5 +1,6 @@
 package com.example.dshinde.myapplication_xmlpref.services;
 
+import com.example.dshinde.myapplication_xmlpref.common.DataChangeType;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageObservable;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
@@ -39,6 +40,8 @@ public interface DataStorage extends DataStorageObservable {
     int getKeyIndex(String key);
 
     int getLastModifiedIndex();
+
+    DataChangeType getLastDataChangeType();
 
     KeyValue getValue(int index);
 

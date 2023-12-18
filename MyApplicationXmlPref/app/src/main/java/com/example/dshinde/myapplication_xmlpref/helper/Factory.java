@@ -8,12 +8,11 @@ import com.example.dshinde.myapplication_xmlpref.listners.FireStorageListener;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
 import com.example.dshinde.myapplication_xmlpref.services.FileStorage;
 import com.example.dshinde.myapplication_xmlpref.services.FireDbDataStorageManagerImpl;
-import com.example.dshinde.myapplication_xmlpref.services.FireDbReadOnceDataStorageImpl;
+import com.example.dshinde.myapplication_xmlpref.services.FireDbReadWriteOnceDataStorageImpl;
 import com.example.dshinde.myapplication_xmlpref.services.FireStorageManager;
 import com.example.dshinde.myapplication_xmlpref.services.FireStoreDataStorageManagerImpl;
-import com.example.dshinde.myapplication_xmlpref.services.ReadOnceDataStorage;
+import com.example.dshinde.myapplication_xmlpref.services.ReadWriteOnceDataStorage;
 import com.example.dshinde.myapplication_xmlpref.services.SharedPrefDataStorageManagerImpl;
-import com.example.dshinde.myapplication_xmlpref.services.SharedPrefReadOnceDataStorageImpl;
 
 public class Factory {
 
@@ -26,7 +25,7 @@ public class Factory {
         return new FireStorageManager(context, collectionName, fireStorageListener);
     }
 
-    public static DataStorage getDataStorageIntsance(Context context, DataStorageType dataStorageType, String name, boolean autoKey, boolean descendingOrder){
+    public static DataStorage getDataStorageInstance(Context context, DataStorageType dataStorageType, String name, boolean autoKey, boolean descendingOrder){
         DataStorage dataStorageManager=null;
         if (dataStorageType == DataStorageType.SHARED_PREFERENCES) {
             dataStorageManager = new SharedPrefDataStorageManagerImpl(context, name, autoKey, descendingOrder);
@@ -38,7 +37,7 @@ public class Factory {
         return dataStorageManager;
     }
 
-    public static DataStorage getDataStorageIntsance(Context context, DataStorageType dataStorageType, String name, boolean autoKey, boolean descendingOrder, DataStorageListener dataStorageListener){
+    public static DataStorage getDataStorageInstance(Context context, DataStorageType dataStorageType, String name, boolean autoKey, boolean descendingOrder, DataStorageListener dataStorageListener){
         DataStorage dataStorageManager=null;
         if (dataStorageType == DataStorageType.SHARED_PREFERENCES) {
             dataStorageManager = new SharedPrefDataStorageManagerImpl(context, name, autoKey, descendingOrder, dataStorageListener);
@@ -50,14 +49,8 @@ public class Factory {
         return dataStorageManager;
     }
 
-    public static ReadOnceDataStorage getReadOnceDataStorageIntsance(Context context, DataStorageType dataStorageType, String name, DataStorageListener dataStorageListener){
-        ReadOnceDataStorage dataStorageManager=null;
-        if (dataStorageType == DataStorageType.SHARED_PREFERENCES) {
-            dataStorageManager = new SharedPrefReadOnceDataStorageImpl(context, name, dataStorageListener);
-        } else if (dataStorageType == DataStorageType.FIREBASE_DB) {
-            dataStorageManager = new FireDbReadOnceDataStorageImpl(name, dataStorageListener);
-        }
-        return dataStorageManager;
+    public static ReadWriteOnceDataStorage getReadOnceFireDataStorageInstance(String name, DataStorageListener dataStorageListener){
+        return new FireDbReadWriteOnceDataStorageImpl(name, dataStorageListener);
     }
 
 }

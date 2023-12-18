@@ -17,6 +17,7 @@ import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.adapters.MarginItemDecoration;
 import com.example.dshinde.myapplication_xmlpref.adapters.RecyclerViewKeyValueAdapter;
+import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.listners.RecyclerViewKeyValueItemListener;
@@ -53,7 +54,7 @@ public class PicklistActivityRecyclerView extends BaseActivity  {
 
     private void getCollectionNameAndDataItemField() {
         Bundle bundle = getIntent().getExtras();
-        String[] data = bundle.getString("filename").split("/");
+        String[] data = bundle.getString(Constants.PARAM_FILENAME).split("/");
         collectionName = data[0];
         if(data.length > 1) {
             dataField = data[1];
@@ -61,7 +62,7 @@ public class PicklistActivityRecyclerView extends BaseActivity  {
         if(data.length > 2) {
             dataItem = data[2];
         }
-        userId = bundle.getString("userId");
+        userId = bundle.getString(Constants.USERID);
     }
 
     private void loadUI() {
@@ -76,7 +77,7 @@ public class PicklistActivityRecyclerView extends BaseActivity  {
 
     private void initDataStorageAndLoadData(Context context) {
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
-        dataStorageManager = Factory.getDataStorageIntsance(context,
+        dataStorageManager = Factory.getDataStorageInstance(context,
                 getDataStorageType(),
                 collectionName,
                 false,

@@ -4,7 +4,6 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,11 +12,9 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RadioButton;
@@ -30,7 +27,6 @@ import androidx.documentfile.provider.DocumentFile;
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.RandomButtonActivity;
-import com.example.dshinde.myapplication_xmlpref.activities.recyclerviewbased.MainActivityRecyclerView;
 import com.example.dshinde.myapplication_xmlpref.adapters.ListviewKeyValueObjectAdapter;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.DynamicControls;
@@ -39,12 +35,8 @@ import com.example.dshinde.myapplication_xmlpref.helper.StorageSelectionResult;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.ListviewActions;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
-import com.example.dshinde.myapplication_xmlpref.model.MediaFields;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
-import com.github.chrisbanes.photoview.OnPhotoTapListener;
-import com.github.chrisbanes.photoview.PhotoView;
-import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -74,8 +66,8 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
 
         // get parameters
         Bundle bundle = getIntent().getExtras();
-        collectionName = bundle.getString("filename");
-        userId = bundle.getString("userId");
+        collectionName = bundle.getString(Constants.PARAM_FILENAME);
+        userId = bundle.getString(Constants.USERID);
         loadUI();
         initDataStorageAndLoadData(this);
     }
@@ -83,7 +75,7 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
     private void initDataStorageAndLoadData(Context context) {
 
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
-        dataStorageManager = Factory.getDataStorageIntsance(context, getDataStorageType(), collectionName, false, false, new DataStorageListener() {
+        dataStorageManager = Factory.getDataStorageInstance(context, getDataStorageType(), collectionName, false, false, new DataStorageListener() {
             @Override
             public void dataChanged(String key, String value) {
                 Log.d(CLASS_TAG, "dataChanged key: " + key + ", value: " + value);
@@ -136,12 +128,12 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
         inflater.inflate(R.menu.navigation, menu);
         myMenu = menu;
         showEditView(false);
-        myMenu.removeItem(R.id.menu_pay);
+        myMenu.removeItem(R.id.menu_nightlight);
         myMenu.removeItem(R.id.menu_add_to_shadba_kosh);
         myMenu.removeItem(R.id.menu_backup);
         myMenu.removeItem(R.id.menu_design_screen);
-        myMenu.removeItem(R.id.menu_sell);
-        myMenu.removeItem(R.id.menu_settings);
+        myMenu.removeItem(R.id.menu_daylight);
+        myMenu.removeItem(R.id.menu_test);
         myMenu.removeItem(R.id.menu_view);
         myMenu.removeItem(R.id.menu_import);
         myMenu.removeItem(R.id.menu_export);
@@ -274,7 +266,7 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
     private void export(DocumentFile dir) {
         String path = StorageUtil.saveAsTextToDocumentFile(this, dir, collectionName, dataStorageManager.getDataString());
         if (path != null) {
-            Toast.makeText(this, "Saved to " + path,
+            Toast.makeText(this, getResources().getString(R.string.save_to) + " " + path,
                     Toast.LENGTH_LONG).show();
         }
     }
