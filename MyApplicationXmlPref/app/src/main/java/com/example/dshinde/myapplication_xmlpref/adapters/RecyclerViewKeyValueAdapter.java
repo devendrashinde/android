@@ -1,6 +1,7 @@
 package com.example.dshinde.myapplication_xmlpref.adapters;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -29,6 +30,7 @@ public class RecyclerViewKeyValueAdapter extends RecyclerView.Adapter<RecyclerVi
     private int layoutResource;
     private Filter kvFilter;
     private int lastItemClicked;
+    private int selectedPosition=-1;
 
     public RecyclerViewKeyValueAdapter(List<KeyValue> kvList, Context ctx, int layoutResource) {
         this(kvList, ctx, layoutResource, null);
@@ -157,7 +159,21 @@ public class RecyclerViewKeyValueAdapter extends RecyclerView.Adapter<RecyclerVi
         } else {
             viewHolder.valueView.setText(getValue(keyValue));
         }
+    }
 
+    private void highlightItem(RecyclerViewKeyValueViewHolder viewHolder, int position) {
+        if(selectedPosition== position)
+            viewHolder.itemView.setBackgroundColor(Color.parseColor("#000000"));
+        else
+            viewHolder.itemView.setBackgroundColor(Color.parseColor("#ffffff"));
+
+        viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectedPosition= viewHolder.getAbsoluteAdapterPosition();
+                notifyDataSetChanged();
+            }
+        });
     }
 
     private String getValue(KeyValue keyValue) {

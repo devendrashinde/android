@@ -12,9 +12,6 @@ import android.os.Message;
 import android.os.ParcelFileDescriptor;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -28,6 +25,7 @@ import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
+import com.example.dshinde.myapplication_xmlpref.listners.OnSwipeTouchListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
 import com.google.gson.Gson;
@@ -67,6 +65,7 @@ public class AudioVideoActivity extends BaseActivity {
     int mode, currentNote, totalNotes;
     List<KeyValue> notes;
     List<KeyValue> audioNotes;
+    boolean playingNoteSubject;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,27 +80,42 @@ public class AudioVideoActivity extends BaseActivity {
             collectionName = bundle.getString("note");
             key = bundle.getString("key");
             if (key != null && !key.isEmpty()) {
-                noteText = bundle.getString("value");
                 mode = SELECT;
-                setTitleDescription();
+                if(collectionName.equals(key)) {
+                    playingNoteSubject = true;
+                    getNoteItems();
+                    initialiseNoteItemToDisplay();
+                } else {
+                    noteText = bundle.getString("value");
+                }
             } else {
                 mode = PLAY;
-                notes = (List<KeyValue>) getIntent().getSerializableExtra("data");
-                totalNotes = notes.size();
-                if (totalNotes > 0) {
-                    currentNote = 0;
-                    key = notes.get(currentNote).getKey();
-                    noteText = notes.get(currentNote).getValue();
-                }
-                setTitleDescription();
+                getNoteItems();
+                initialiseNoteItemToDisplay();
             }
+            setTitleDescription();
             loadUI();
             initDataStorageAndLoadData(this);
         }
     }
 
+    private void initialiseNoteItemToDisplay() {
+        if (totalNotes > 0) {
+            currentNote = 0;
+            if(!playingNoteSubject) {
+                key = notes.get(currentNote).getKey();
+            }
+            noteText = notes.get(currentNote).getValue();
+        }
+    }
+
+    private void getNoteItems() {
+        notes = (List<KeyValue>) getIntent().getSerializableExtra("data");
+        totalNotes = notes.size();
+    }
+
     private void setTitleDescription() {
-        setTitle(key + " - " + collectionName);
+        setTitle((!playingNoteSubject ? key + " - " : "") + collectionName);
     }
 
     private void parseAndDisplayText(String text) {
@@ -117,21 +131,21 @@ public class AudioVideoActivity extends BaseActivity {
         buttonNext.setOnClickListener(v -> next());
     }
 
+    private void setPreviousButtonListener() {
+        buttonPrevious.setOnClickListener(v -> previous());
+    }
+
     private void next() {
         if (currentNote + 1 < totalNotes) {
             loadTextOrAudioNote(notes.get(++currentNote), false);
-            loadAudioNote();
+            if (!playingNoteSubject) loadAudioNote();
         }
-    }
-
-    private void setPreviousButtonListener() {
-        buttonPrevious.setOnClickListener(v -> previous());
     }
 
     private void previous() {
         if (currentNote - 1 >= 0) {
             loadTextOrAudioNote(notes.get(--currentNote),false);
-            loadAudioNote();
+            if (!playingNoteSubject) loadAudioNote();
         }
     }
 
@@ -159,7 +173,7 @@ public class AudioVideoActivity extends BaseActivity {
         setPlayButtonListener();
         buttonNext = findViewById(R.id.buttonNext);
         buttonPrevious = findViewById(R.id.buttonPrevious);
-        if (mode == PLAY) {
+        if (mode == PLAY || playingNoteSubject) {
             setNextButtonListener();
             setPreviousButtonListener();
         } else {
@@ -172,6 +186,25 @@ public class AudioVideoActivity extends BaseActivity {
         parseAndDisplayText(noteText);
         setFileSelectorListener();
         setSeekBarListener();
+        setSwipeListener();
+    }
+
+    private void setSwipeListener() {
+        if(mode == SELECT) {
+            textViewNote.setOnTouchListener(new OnSwipeTouchListener(this) {
+                @Override
+                public void onSwipeLeft() {
+                    super.onSwipeLeft();
+                    next();
+                }
+
+                @Override
+                public void onSwipeRight() {
+                    super.onSwipeRight();
+                    previous();
+                }
+            });
+        }
     }
 
     private void setSeekBarListener() {
@@ -196,9 +229,13 @@ public class AudioVideoActivity extends BaseActivity {
     }
 
     private void setFileSelectorListener() {
+        /*
         if (mode == PLAY) {
+            // remove file select icon
             editTextFileUri.setCompoundDrawablesWithIntrinsicBounds(null, null, null, null);
         } else {
+
+         */
             editTextFileUri.setOnTouchListener((v, event) -> {
                 if (event.getAction() == MotionEvent.ACTION_UP) {
                     if (event.getRawX() >= (editTextFileUri.getRight() - editTextFileUri.getCompoundDrawables()[Constants.DRAWABLE_RIGHT].getBounds().width())) {
@@ -208,15 +245,16 @@ public class AudioVideoActivity extends BaseActivity {
                 }
                 return false;
             });
-        }
+            /*
+        }*/
     }
 
     private void initDataStorageAndLoadData(Context context) {
-
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageInstance");
         dataStorageManager = Factory.getDataStorageInstance(context,
                 getDataStorageType(),
-                Constants.MEDIA_NOTE_PREFIX + collectionName,
+                Constants.MEDIA_NOTE_PREFIX + collectionName +
+                        (mode == SELECT ? "/" + key : ""),
                 false, false, new DataStorageListener() {
                     @Override
                     public void dataChanged(String key, String value) {
@@ -242,10 +280,12 @@ public class AudioVideoActivity extends BaseActivity {
     private void loadTextOrAudioNote(KeyValue keyValue, boolean audioNote) {
         if (keyValue != null) {
             if(audioNote) {
-                Map<String, String> value = gson.fromJson(keyValue.getValue(), Map.class);
-                editTextFileUri.setText(value.get(MEDIA_NAME));
-                mediaUri = Uri.parse(value.get(MEDIA_URI));
-                setMediaPlayerSource();
+                if(keyValue.getValue() != null) {
+                    Map<String, String> value = gson.fromJson(keyValue.getValue(), Map.class);
+                    editTextFileUri.setText(value.get(MEDIA_NAME));
+                    mediaUri = Uri.parse(value.get(MEDIA_URI));
+                    setMediaPlayerSource();
+                }
             } else {
                 key = keyValue.getKey();
                 noteText = keyValue.getValue();
@@ -260,62 +300,24 @@ public class AudioVideoActivity extends BaseActivity {
             setPlayPauseButton();
             seekBar.setProgress(0);
             mediaUri = null;
-            editTextFileUri.setText("no audio note");
-        }
-    }
-
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.navigation, menu);
-        removeUnwantedMenuItems(menu);
-        return true;
-    }
-
-    private void removeUnwantedMenuItems(Menu menu) {
-        menu.removeItem(R.id.menu_add_to_shadba_kosh);
-        menu.removeItem(R.id.menu_backup);
-        menu.removeItem(R.id.menu_remove);
-        menu.removeItem(R.id.menu_daylight);
-        menu.removeItem(R.id.menu_test);
-        menu.removeItem(R.id.menu_clear);
-        menu.removeItem(R.id.menu_design_screen);
-        menu.removeItem(R.id.menu_export);
-        menu.removeItem(R.id.menu_copy);
-        menu.removeItem(R.id.menu_import);
-        menu.removeItem(R.id.menu_edit);
-        menu.removeItem(R.id.menu_nightlight);
-        menu.removeItem(R.id.menu_add);
-        menu.removeItem(R.id.menu_view);
-        menu.removeItem(R.id.menu_share);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle item selection
-        switch (item.getItemId()) {
-            case R.id.menu_save:
-                save();
-                return true;
-            case R.id.menu_remove:
-                remove();
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
+            editTextFileUri.setText(R.string.no_audio_note);
         }
     }
 
     private void save() {
-        if (key != null && mediaUri != null) {
+        String dbKey = (playingNoteSubject ? collectionName : key);
+        if (dbKey != null && mediaUri != null) {
             Map<String, String> data = new HashMap<>();
             data.put(MEDIA_URI, mediaUri.toString());
             data.put(MEDIA_NAME, editTextFileUri.getText().toString());
-            dataStorageManager.save(key, gson.toJson(data));
+            dataStorageManager.save((playingNoteSubject ? collectionName : dbKey), gson.toJson(data));
         }
     }
 
     private void remove() {
-        if (key != null) {
-            dataStorageManager.remove(key);
+        String dbKey = (playingNoteSubject ? collectionName : key);
+        if (dbKey != null) {
+            dataStorageManager.remove(dbKey);
         }
     }
 

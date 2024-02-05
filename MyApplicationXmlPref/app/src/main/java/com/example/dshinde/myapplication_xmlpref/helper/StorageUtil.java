@@ -180,13 +180,14 @@ public class StorageUtil {
 
     public static DocumentFile getDocumentDir(Context context, Uri url) {
         DocumentFile pickedDir = DocumentFile.fromTreeUri(context, url);
+        /*
         DocumentFile dir = pickedDir.findFile(STORAGE_DIR);
         if (dir == null) {
             pickedDir = pickedDir.createDirectory(STORAGE_DIR);
         } else {
             pickedDir = dir;
         }
-
+        */
         return pickedDir;
     }
 
@@ -232,7 +233,6 @@ public class StorageUtil {
         try {
             InputStream input = context.getContentResolver().openInputStream(fileUri);
             BufferedReader streamReader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
-
 
             StringBuilder responseStrBuilder = new StringBuilder();
             String inputStr;

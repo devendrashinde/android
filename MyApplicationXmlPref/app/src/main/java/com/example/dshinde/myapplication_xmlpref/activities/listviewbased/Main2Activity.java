@@ -129,7 +129,7 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
         myMenu = menu;
         showEditView(false);
         myMenu.removeItem(R.id.menu_nightlight);
-        myMenu.removeItem(R.id.menu_add_to_shadba_kosh);
+        myMenu.removeItem(R.id.menu_add_to_dictionary);
         myMenu.removeItem(R.id.menu_backup);
         myMenu.removeItem(R.id.menu_design_screen);
         myMenu.removeItem(R.id.menu_daylight);

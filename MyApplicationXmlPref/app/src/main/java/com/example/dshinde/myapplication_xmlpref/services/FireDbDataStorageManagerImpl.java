@@ -1,9 +1,9 @@
 package com.example.dshinde.myapplication_xmlpref.services;
 
+import android.os.Process;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.common.DataChangeType;
@@ -26,6 +26,7 @@ import java.util.Map;
 
 public class FireDbDataStorageManagerImpl extends DataStorageManager {
     String collectionName = null;
+    String collectionItemId = null; // used to read specific record from collection
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
     private ValueEventListener valueEventListener;
@@ -42,6 +43,10 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
     }
 
     public FireDbDataStorageManagerImpl(String collectionName, boolean autoKey, boolean descendingOrder, DataStorageListener dataStorageListener) {
+        if(collectionName.contains("/")) {
+            this.collectionItemId = collectionName.split("/")[1];
+            collectionName = collectionName.split("/")[0];
+        }
         this.collectionName = collectionName;
         this.autoKey = autoKey;
         this.descendingOrder = descendingOrder;
@@ -57,25 +62,28 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
         }
         if(mDatabase == null || mAuth == null) {
             mAuth = FirebaseAuth.getInstance();
-            mDatabase = firebaseDatabase.getReference(
-                    (autoKey ? "" :
-                            Constants.DATABASE_PATH_NOTE_DETAILS + "/") + collectionName + "/" + mAuth.getUid());
-            mDatabase.keepSynced(true);
+            getDatabaseReference();
         }
+    }
+
+    private void getDatabaseReference() {
+        mDatabase = firebaseDatabase.getReference(
+                (autoKey ? "" :
+                        Constants.DATABASE_PATH_NOTE_DETAILS + "/") +
+                        collectionName + "/" + mAuth.getUid() +
+                        (collectionItemId == null ? "" : "/" + collectionItemId));
+        mDatabase.keepSynced(true);
     }
 
     @Override
     public void loadData() {
         Log.d(CLASS_TAG, "loadData");
-        new Thread() {
-            @Override
-            public void run() {
-                android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
-                addReadDataOnce();
-                //addChangedDataListener();
-                //addAllDataListener();
-            }
-        }.start();
+        new Thread(() -> {
+            Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
+            addReadDataOnce();
+            //addChangedDataListener();
+            //addAllDataListener();
+        }).start();
     }
 
     private void addReadDataOnce(){
@@ -84,10 +92,11 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
             public void onDataChange(DataSnapshot snapshot) {
                 Log.d(CLASS_TAG, "addReadDataOnce->onDataChange");
                 loadAllData(snapshot);
+
             }
             @Override
             public void onCancelled(DatabaseError databaseError) {
-                Log.d(CLASS_TAG, "addReadDataOnce->error occured " + databaseError);
+                Log.d(CLASS_TAG, "addReadDataOnce->error occurred " + databaseError);
             }
         };
         mDatabase.addListenerForSingleValueEvent(valueEventListener);
@@ -118,7 +127,7 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
-                Log.d(CLASS_TAG, "addChangedDataListener->error occured " + databaseError);
+                Log.d(CLASS_TAG, "addChangedDataListener->error occurred " + databaseError);
             }
         };
         //adding an event listener to fetch values
@@ -136,7 +145,7 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
-                Log.d(CLASS_TAG, "addAllDataListener->error occured " + databaseError);
+                Log.d(CLASS_TAG, "addAllDataListener->error occurred " + databaseError);
             }
         };
         //adding an event listener to fetch values
@@ -146,8 +155,14 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
     private void loadAllData(DataSnapshot collection) {
         Log.d(CLASS_TAG, "loadAllData received " + collection.getChildrenCount() + " records");
         data.clear();
-        for (DataSnapshot dataSnapshot : collection.getChildren()) {
-            loadItem(dataSnapshot,DataChangeType.ALL_DATA,false);
+        if(collectionItemId != null && !collectionItemId.isEmpty()){
+            loadItem(collection,DataChangeType.ALL_DATA,false);
+            collectionItemId = null;
+            getDatabaseReference();
+        } else {
+            for (DataSnapshot dataSnapshot : collection.getChildren()) {
+                loadItem(dataSnapshot, DataChangeType.ALL_DATA, false);
+            }
         }
         notifyDataChanged();
     }
@@ -198,8 +213,9 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
                 }
             }
             @Override
+            @NonNull
             public void onCancelled(DatabaseError databaseError) {
-                Log.d(CLASS_TAG, "remove->error occured " + databaseError);
+                Log.d(CLASS_TAG, "remove->error occurred " + databaseError);
 
             }
         });

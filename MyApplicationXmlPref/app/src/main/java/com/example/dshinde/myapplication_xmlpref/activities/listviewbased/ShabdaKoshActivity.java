@@ -24,15 +24,17 @@ import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.listners.RecyclerViewKeyValueItemListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
-import com.example.dshinde.myapplication_xmlpref.model.ShabdaDetails;
-import com.example.dshinde.myapplication_xmlpref.model.ShabdaUsage;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
 import com.example.dshinde.myapplication_xmlpref.services.ReadWriteOnceDataStorage;
+import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ShabdaKoshActivity extends BaseActivity {
 
@@ -46,7 +48,7 @@ public class ShabdaKoshActivity extends BaseActivity {
     String collectionName = null;
     String collectionToAdd = null;
     boolean addingToShabdKosh = false;
-    private static final String CLASS_TAG = "ShabdaKoshActivity";
+    private static final String CLASS_TAG = ShabdaKoshActivity.class.getName();
     LinearLayout editViewLayout;
     Menu myMenu;
 
@@ -66,7 +68,7 @@ public class ShabdaKoshActivity extends BaseActivity {
 
     private void loadUI() {
         Log.d(CLASS_TAG, "loadUI");
-        setContentView(R.layout.activity_main2_recycler_view);
+        setContentView(R.layout.activity_main2_2_recycler_view);
         editViewLayout = (LinearLayout) findViewById(R.id.editView);
         keyField = (EditText) findViewById(R.id.etKey);
         valueField = (EditText) findViewById(R.id.etValue);
@@ -278,38 +280,43 @@ public class ShabdaKoshActivity extends BaseActivity {
                     public void dataLoaded(List<KeyValue> dataOfCollectionToBeAdded) {
                         if (!addingToShabdKosh) {
                             addingToShabdKosh = true;
-                            new Thread(()-> updateShabdKosh(dataOfCollectionToBeAdded)).start();
+                            new Thread(()-> updateShabdaKosh(dataOfCollectionToBeAdded)).start();
                         }
                     }
                 });
         }
     }
 
-    private void updateShabdKosh(List<KeyValue> dataOfCollectionToBeAdded) {
+    private void updateShabdaKosh(List<KeyValue> dataOfCollectionToBeAdded) {
         runOnUiThread(()->keyField.setText("Adding  " + collectionToAdd + " to " + collectionName));
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        Gson gson = new GsonBuilder().create();
         for (KeyValue kv : dataOfCollectionToBeAdded) {
             runOnUiThread(()->setEditView(kv.getKey(), kv.getValue()));
             String[] shabds = kv.getValue().split("\\W+");
 
             for (String shabd : shabds) {
-                ShabdaDetails shabdaDetails = new ShabdaDetails();
+                shabd = shabd.trim();
+                Map<String, List<String>> shabdaDetails = new HashMap<>();
                 int existingValueIndex = dataStorageManager.getKeyIndex(shabd);
                 if (existingValueIndex != -1) {
                     KeyValue keyValue = dataStorageManager.getValue(existingValueIndex);
-                    if (keyValue.getValue() != null && keyValue.getValue().length() > 0) {
-                        shabdaDetails = gson.fromJson(keyValue.getValue(), ShabdaDetails.class);
+                    if (keyValue.getValue() != null && !keyValue.getValue().isEmpty()) {
+                        shabdaDetails = gson.fromJson(keyValue.getValue(), new TypeToken<Map<String,List<String>>>(){}.getType());
                     }
                 }
-                ShabdaUsage shabdaUsage = shabdaDetails.getUsage(collectionToAdd);
-                shabdaUsage.setNote(collectionToAdd);
-                shabdaUsage.addReference(kv.getKey());
-                shabdaDetails.addUsage(shabdaUsage);
+                if(!shabdaDetails.containsKey(collectionToAdd)) {
+                    shabdaDetails.put(collectionToAdd, new ArrayList<>());
+                }
+                List<String> shabdaUsage = shabdaDetails.getOrDefault(collectionToAdd, new ArrayList<>());
+                if(!shabdaUsage.contains(kv.getKey())) {
+                    shabdaUsage.add(kv.getKey());
+                }
+                shabdaDetails.replace(collectionToAdd, shabdaUsage);
                 dataStorageManager.save(shabd, gson.toJson(shabdaDetails));
-                runOnUiThread(()-> valueField.setText("added  " + shabd));
             }
         }
         runOnUiThread(()-> valueField.setText("Successfully added  " + collectionToAdd + " to " + collectionName));
+        runOnUiThread(()-> loadDataInListView(dataStorageManager.getValues()));
     }
 
     @Override

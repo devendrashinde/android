@@ -22,6 +22,7 @@ android {
         targetCompatibility = 1.8
     }
     sourceSets { main { res.srcDirs = ['src/main/res', 'src/main/res/layout-land'] } }
+    namespace 'com.example.dshinde.myapplication_xmlpref'
 }
 
 dependencies {
@@ -81,7 +82,9 @@ dependencies {
     implementation 'com.google.android.gms:play-services-maps:18.1.0'
 
     implementation 'androidx.work:work-runtime:2.7.1'
+
+    // ACRA library for debugging application
+    implementation 'ch.acra:acra:4.9.2'
 }
 
 apply plugin: 'com.google.gms.google-services'  // Google Play services Gradle plugin
-

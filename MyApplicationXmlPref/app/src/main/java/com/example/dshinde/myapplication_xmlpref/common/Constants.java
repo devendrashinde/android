@@ -18,6 +18,8 @@ public class Constants {
     public static final String SCREEN_DESIGN_NOTE_PREFIX = "screenDesign:";
     public static final String MEDIA_NOTE_PREFIX = "mediaNote:";
     public static final String PHOTO_NOTE_PREFIX = "photoNote:";
+    public static final String MEDIA_NOTE_FILE_PREFIX = MEDIA_NOTE_PREFIX.replace(":", "_");
+    public static final String SCREEN_DESIGN_NOTE_FILE_PREFIX = SCREEN_DESIGN_NOTE_PREFIX.replace(":", "_");
     public static final String MEDIA_URI = "mediaUri";
     public static final int DRAWABLE_LEFT = 0;
     public static final int DRAWABLE_TOP = 1;
@@ -33,7 +35,8 @@ public class Constants {
     public static final String PDF_FILE = "application/pdf";
     public static final String AUDIO_FILE="audio/*";
     public static final String VIEW_NOTE = "View Note";
-    public static final String PLAY_NOTE = "Play Audio Note";
+    public static final String PLAY_NOTE = "Play Note Audio";
+    public static final String PLAY_NOTE_ITEMS = "Play Note Items Audio";
     public static final String NAAMASMRAN = "Naamasmaran";
     public static final String AUDIO_NOTE = "Audio Note";
     public static final String SCREEN_DESIGN = "Screen Design";
@@ -52,21 +55,21 @@ public class Constants {
     public static final String WHAT_YOU_WANT_TO_DO = "What you want to do";
     public static final String SELECT_LANGUAGE = "SELECT_LANGUAGE";
     public static final String BACKUP = "BACKUP";
-    public static final String PARAM_FILENAME = "filename";
     public static final String USERID = "userId";
-    public static final String PLAY = "PLAY";
     public static final String VIEW = "VIEW";
     public static final String SCREEN_NAME = "screenName";
     public static final String REQUEST_MODE = "requestMode";
     public static final String SCREEN_CONFIG = "screenConfig";
-    public static final String PARAM_DATA_TO_IMPORT = "dataToImport";
     public static final String EDIT = "EDIT";
-    public static final String PARAM_NOTE = "note";
     public static final String NOTE_ID = "noteId";
     public static final String SCREEN_DATA = "screenData";
     public static final String MEDIA_FIELDS = "mediaFields";
     public static final String PARAM_DATA = "data";
+    public static final String PARAM_DICTIONARY = "dictionaryName";
+    public static final String PARAM_FILENAME = "filename";
     public static final String PARAM_FOLDER = "folder";
+    public static final String PARAM_NOTE = "note";
+    public static final String PARAM_NOTE_DATA = "dataToImport";
     public static final String NOTE_TEXT = "text";
     public static final String SUBJECT = "subject";
 }

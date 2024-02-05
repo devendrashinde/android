@@ -40,6 +40,16 @@ public abstract class DataStorageManager implements DataStorage {
         return data.size();
     }
 
+    @Override
+    public void loadData() {
+
+    }
+
+    @Override
+    public void loadData(String filterPath) {
+
+    }
+
     public String[] getKeys() {
         return new String[]{KEY, VALUE};
     }
@@ -120,6 +130,11 @@ public abstract class DataStorageManager implements DataStorage {
     @Override
     public void enableNotifyDataChange(){
         notifyDataChange = true;
+    }
+
+    @Override
+    public void save(String key, String value) {
+
     }
 
     void notifyDataSetChanged(String key, String value) {

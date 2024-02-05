@@ -10,7 +10,7 @@
     <LinearLayout
         android:id="@+id/selectFileView"
         android:layout_width="match_parent"
-        android:layout_height="150dp"
+        android:layout_height="110dp"
         android:layout_alignParentStart="true"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
@@ -21,15 +21,16 @@
             android:id="@+id/fileUri"
             android:layout_width="match_parent"
             android:layout_height="50dp"
+            android:backgroundTint="@color/colorWhite"
             android:drawableRight="@drawable/ic_action_audio_note"
             android:focusable="false"
             android:focusableInTouchMode="true"
             android:hint="@string/select_audio_file"
             android:inputType="none"
             android:textColor="@color/colorWhite"
-            android:backgroundTint="@color/colorWhite"
             android:textColorHint="@color/colorBlue"
             app:autoSizeTextType="uniform" />
+
         <LinearLayout
             android:id="@+id/buttonsView"
             android:layout_width="match_parent"
@@ -38,10 +39,12 @@
             android:layout_marginTop="0dp"
             android:orientation="horizontal"
             android:weightSum="3">
+
             <ImageButton
                 android:id="@+id/buttonPrevious"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_gravity="left"
                 android:layout_weight="1"
                 android:background="@color/colorBlack"
                 app:srcCompat="@drawable/ic_action_previous" />
@@ -58,6 +61,7 @@
                 android:id="@+id/buttonNext"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_gravity="right"
                 android:layout_weight="1"
                 android:background="@color/colorBlack"
                 app:srcCompat="@drawable/ic_action_next" />
@@ -68,8 +72,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:progressBackgroundTint="@color/colorYellow"
-            android:layout_margin="8dp" />
+            android:layout_margin="8dp"
+            android:progressBackgroundTint="@color/colorYellow" />
     </LinearLayout>
     <LinearLayout
         android:id="@+id/llTextView"

@@ -23,7 +23,8 @@ public class OnSwipeTouchListener implements View.OnTouchListener {
     }
 
     public boolean onTouch(View v, MotionEvent event) {
-        return gestureDetector.onTouchEvent(event);
+        gestureDetector.onTouchEvent(event);
+        return false;
     }
 
     private final class GestureListener extends GestureDetector.SimpleOnGestureListener {

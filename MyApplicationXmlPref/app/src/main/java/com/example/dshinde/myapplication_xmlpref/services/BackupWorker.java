@@ -54,7 +54,14 @@ public class BackupWorker extends Worker {
                             Log.d(TAG, note + " saved");
                         }
                         if(note.equals(Constants.DATABASE_PATH_NOTES)) {
-                            data.forEach(keyValue -> doBackup(context, keyValue.getKey(), backupFolder));
+                            // backup note details
+                            data.forEach(keyValue -> {
+                                doBackup(context, keyValue.getKey(), backupFolder);
+                                // backup screenDesign
+                                doBackup(context, Constants.SCREEN_DESIGN_NOTE_PREFIX + keyValue.getKey(), backupFolder);
+                                // backup mediaNote
+                                doBackup(context, Constants.MEDIA_NOTE_PREFIX + keyValue.getKey(), backupFolder);
+                            });
                         }
                     }
                 }

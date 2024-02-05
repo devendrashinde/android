@@ -172,24 +172,23 @@ public class BaseActivity extends AppCompatActivity {
                     doBackup(dir);
                     break;
                 case StorageUtil.PICK_FILE_FOR_IMPORT:
-                case StorageUtil.PICK_FILE_FOR_VIEW:
                     String fileName = StorageUtil.getFileName(this, fileUri);
-                    if (requestCode == StorageUtil.PICK_FILE_FOR_IMPORT) {
-                        if (fileName.substring(fileName.lastIndexOf(".")).equalsIgnoreCase(".json")) {
-                            String fileData = StorageUtil.getTextFromDocumentFile(this, fileUri);
-                            doImport(StorageUtil.getFileNameWithOutExtension(fileName), fileData);
-                        } else {
-                            Toast.makeText(this, R.string.only_json_files_are_supported,
-                                    Toast.LENGTH_LONG).show();
-                        }
-                    } else {
+                    if (fileName.substring(fileName.lastIndexOf(".")).equalsIgnoreCase(".json")) {
                         String text = StorageUtil.getTextFromDocumentFile(this, fileUri);
-                        if (text != null) {
-                            doView(fileName, text);
-                        } else {
-                            Toast.makeText(this, R.string.unable_to_read_data_from_file + " : " + fileName,
-                                    Toast.LENGTH_LONG).show();
-                        }
+                        doImport(StorageUtil.getFileNameWithOutExtension(fileName), text);
+                    } else {
+                        Toast.makeText(this, R.string.only_json_files_are_supported,
+                                Toast.LENGTH_LONG).show();
+                    }
+                    break;
+                case StorageUtil.PICK_FILE_FOR_VIEW:
+                    String fileToView = StorageUtil.getFileName(this, fileUri);
+                    String text = StorageUtil.getTextFromDocumentFile(this, fileUri);
+                    if (text != null) {
+                        doView(fileToView, text);
+                    } else {
+                        Toast.makeText(this, R.string.unable_to_read_data_from_file + " : " + fileToView,
+                                Toast.LENGTH_LONG).show();
                     }
                     break;
                 default:

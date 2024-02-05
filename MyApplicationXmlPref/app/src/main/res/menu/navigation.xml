@@ -98,7 +98,7 @@
         app:showAsAction="ifRoom"
         />
     <item
-        android:id="@+id/menu_add_to_shadba_kosh"
+        android:id="@+id/menu_add_to_dictionary"
         android:title="@string/add_to_dictionary"
         app:showAsAction="ifRoom"
         />

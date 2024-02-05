@@ -278,7 +278,7 @@ public class ScreenDesignActivity extends BaseActivity {
     }
 
     private void removeUnwantedMenuItems(Menu menu) {
-        menu.removeItem(R.id.menu_add_to_shadba_kosh);
+        menu.removeItem(R.id.menu_add_to_dictionary);
         menu.removeItem(R.id.menu_backup);
         menu.removeItem(R.id.menu_daylight);
         menu.removeItem(R.id.menu_test);

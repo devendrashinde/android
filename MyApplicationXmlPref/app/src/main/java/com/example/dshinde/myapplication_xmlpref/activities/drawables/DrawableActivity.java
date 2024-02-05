@@ -239,7 +239,7 @@ public class DrawableActivity extends BaseActivity {
         menu.removeItem(R.id.menu_import);
         menu.removeItem(R.id.menu_view);
         menu.removeItem(R.id.menu_design_screen);
-        menu.removeItem(R.id.menu_add_to_shadba_kosh);
+        menu.removeItem(R.id.menu_add_to_dictionary);
         return true;
     }
 

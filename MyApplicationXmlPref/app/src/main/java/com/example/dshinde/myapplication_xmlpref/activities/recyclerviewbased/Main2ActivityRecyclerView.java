@@ -70,33 +70,37 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
         collectionName = bundle.getString(Constants.PARAM_FILENAME);
         userId = bundle.getString(Constants.USERID);
         loadUI();
-        initDataStorageAndLoadData(this);
+        initDataStorageAndLoadData(this, collectionName);
     }
 
-    private void initDataStorageAndLoadData(Context context) {
+    private void initDataStorageAndLoadData(Context context, String noteName) {
 
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
-        dataStorageManager = Factory.getDataStorageInstance(context, getDataStorageType(), collectionName, false, false, new DataStorageListener() {
-            @Override
-            public void dataChanged(String key, String value) {
-                Log.d(CLASS_TAG, "dataChanged key: " + key + ", value: " + value);
-                loadDataInListView(dataStorageManager.getValues());
-            }
+        dataStorageManager = Factory.getDataStorageInstance(context,
+                getDataStorageType(),
+                noteName,
+                false, false,
+                new DataStorageListener() {
+                    @Override
+                    public void dataChanged(String key, String value) {
+                        Log.d(CLASS_TAG, "dataChanged key: " + key + ", value: " + value);
+                        loadDataInListView(dataStorageManager.getValues());
+                    }
 
-            @Override
-            public void dataLoaded(List<KeyValue> data) {
-                Log.d(CLASS_TAG, "dataLoaded");
-                loadDataInListView(data);
-                if(data.size() > 0) {
-                    enableTextToSpeech();
-                }
-            }
-        });
+                    @Override
+                    public void dataLoaded(List<KeyValue> data) {
+                        Log.d(CLASS_TAG, "dataLoaded");
+                        loadDataInListView(data);
+                        if (data.size() > 0) {
+                            enableTextToSpeech();
+                        }
+                    }
+                });
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->loadData");
-        String dataToImport = getIntent().getExtras().getString(Constants.PARAM_DATA_TO_IMPORT);
-        if (dataToImport != null && !dataToImport.isEmpty()) {
+        String importData = getIntent().getExtras().getString(Constants.PARAM_NOTE_DATA);
+        if (importData != null && !importData.isEmpty()) {
             dataStorageManager.disableNotifyDataChange();
-            importData(dataToImport);
+            importNoteData(importData);
             dataStorageManager.enableNotifyDataChange();
         }
         dataStorageManager.loadData();
@@ -143,7 +147,7 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
         inflater.inflate(R.menu.navigation, menu);
         myMenu = menu;
         showEditView(false);
-        myMenu.removeItem(R.id.menu_add_to_shadba_kosh);
+        myMenu.removeItem(R.id.menu_add_to_dictionary);
         myMenu.removeItem(R.id.menu_backup);
         myMenu.removeItem(R.id.menu_design_screen);
         myMenu.removeItem(R.id.menu_test);
@@ -352,7 +356,7 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
         dataStorageManager.removeDataStorageListeners();
     }
 
-    private void importData(String data) {
+    private void importNoteData(String data) {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         List<KeyValue> values = gson.fromJson(data, new TypeToken<List<KeyValue>>() {
         }.getType());

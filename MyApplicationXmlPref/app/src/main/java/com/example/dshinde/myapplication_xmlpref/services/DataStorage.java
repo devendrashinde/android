@@ -17,6 +17,8 @@ public interface DataStorage extends DataStorageObservable {
 
     void loadData();
 
+    void loadData(String filterPath);
+
     String[] getKeys();
 
     void remove(String key);

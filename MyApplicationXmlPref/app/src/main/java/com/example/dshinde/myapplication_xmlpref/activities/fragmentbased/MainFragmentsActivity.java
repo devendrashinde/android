@@ -206,7 +206,7 @@ public class MainFragmentsActivity extends BaseActivity {
             case R.id.menu_design_screen:
                 doDesignOrCapture();
                 return true;
-            case R.id.menu_add_to_shadba_kosh:
+            case R.id.menu_add_to_dictionary:
                 addToShadaKosh();
                 return true;
             default:

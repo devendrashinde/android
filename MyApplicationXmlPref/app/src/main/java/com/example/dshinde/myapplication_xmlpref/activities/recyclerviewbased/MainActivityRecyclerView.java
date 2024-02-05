@@ -50,6 +50,7 @@ import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.listners.RecyclerViewKeyValueItemListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
+import com.example.dshinde.myapplication_xmlpref.services.AddNoteToDictionaryWorker;
 import com.example.dshinde.myapplication_xmlpref.services.BackupBackgroundService;
 import com.example.dshinde.myapplication_xmlpref.services.BackupWorker;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
@@ -94,8 +95,8 @@ public class MainActivityRecyclerView extends BaseActivity  {
     private void loadUI() {
         Log.d(CLASS_TAG, "loadUI");
         setContentView(R.layout.activity_main_recycler_view);
-        valueField = (EditText) findViewById(R.id.VALUE_1);
-        listView = (RecyclerView) findViewById(R.id.list);
+        valueField = findViewById(R.id.VALUE_1);
+        listView = findViewById(R.id.list);
         populateListView();
         setValueFieldWatcher();
         setValueFieldClearButtonAction();
@@ -135,7 +136,6 @@ public class MainActivityRecyclerView extends BaseActivity  {
             public boolean onTouch(View v, MotionEvent event) {
                 if (event.getAction() == MotionEvent.ACTION_UP) {
                     if (event.getRawX() >= (valueField.getRight() - valueField.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width())) {
-
                         clear();
                         return true;
                     }
@@ -227,8 +227,8 @@ public class MainActivityRecyclerView extends BaseActivity  {
             case R.id.menu_design_screen:
                 designScreen();
                 return true;
-            case R.id.menu_add_to_shadba_kosh:
-                addToShadaKosh();
+            case R.id.menu_add_to_dictionary:
+                addToDictionary();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -250,7 +250,6 @@ public class MainActivityRecyclerView extends BaseActivity  {
         intent.putExtra(Constants.USERID, userId);
         startActivity(intent);
     }
-
 
     public void remove() {
     }
@@ -353,18 +352,23 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     private void showPopup(String value) {
-        selectOption(Constants.SELECT_ACTION_FOR_NOTE, R.string.what_you_want_to_do, R.array.actions_on_note,
-                null, key, value);
+        if( value != null && !value.isEmpty()) {
+            selectOption(Constants.SELECT_ACTION_FOR_NOTE, R.string.what_you_want_to_do, R.array.actions_on_note,
+                    null, key, value);
+        }
     }
 
     @Override
     protected void processSelectedOption(@NonNull String id, @NonNull String selectedOption, String key, String value) {
         switch (selectedOption) {
             case Constants.VIEW_NOTE:
-                viewNote(value);;
+                viewNote(value);
                 break;
             case Constants.PLAY_NOTE:
                 playNote(value);
+                break;
+            case Constants.PLAY_NOTE_ITEMS:
+                playNoteItems(value);
                 break;
             case Constants.SCREEN_DESIGN:
                 designScreen();
@@ -379,21 +383,24 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     private void playNote(String fileName) {
-        if (fileName != null && !fileName.isEmpty()) {
-            startActivityForAction(fileName, Constants.PLAY);
-        }
+        startActivityForAction(fileName, Constants.PLAY_NOTE);
+    }
+
+    private void playNoteItems(String fileName) {
+        startActivityForAction(fileName, Constants.PLAY_NOTE_ITEMS);
     }
 
     private void viewNote(String fileName) {
-        if (fileName != null && !fileName.isEmpty()) {
-            startActivityForAction(fileName, Constants.VIEW);
-        }
+        startActivityForAction(fileName, Constants.VIEW);
     }
 
-    private void startAudioNoteActivity(String title, List<KeyValue> values) {
+    private void startAudioNoteActivity(String title, List<KeyValue> values, String action) {
         Intent intent = new Intent(MainActivityRecyclerView.this, AudioVideoActivity.class);
         intent.putExtra(Constants.USERID, userId);
         intent.putExtra("note", title);
+        if(action.equals(Constants.PLAY_NOTE)) {
+            intent.putExtra("key", title);
+        }
         intent.putExtra("data", (Serializable) values);
         startActivity(intent);
     }
@@ -429,7 +436,6 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     private void designScreen() {
-
         String fileName = valueField.getText().toString();
         if (!fileName.isEmpty()) {
             startDesignOrEditActivity(fileName, Constants.REQUEST_CODE_SCREEN_DESIGN, null);
@@ -450,13 +456,33 @@ public class MainActivityRecyclerView extends BaseActivity  {
     /*
     this method will extract words from selected note and it will add to Sanskrit ShabdKosh note
      */
-    private void addToShadaKosh() {
+    private void addToDictionary() {
         String collectionName = valueField.getText().toString();
         if (collectionName != null && !collectionName.isEmpty()) {
-            Intent intent = new Intent(MainActivityRecyclerView.this, ShabdaKoshActivity.class);
-            intent.putExtra("collectionToAddToShabdaKosh", collectionName);
-            intent.putExtra(Constants.USERID, userId);
-            startActivity(intent);
+            final Data data = new Data.Builder()
+                    .putString(Constants.PARAM_NOTE, collectionName)
+                    .putString(Constants.PARAM_DICTIONARY, Constants.SHABDA_KOSH)
+                    .build();
+            Constraints constraints = new Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .setRequiresBatteryNotLow(true)
+                    .build();
+            final OneTimeWorkRequest workRequest = new OneTimeWorkRequest.Builder(AddNoteToDictionaryWorker.class)
+                    .setConstraints(constraints)
+                    .setInputData(data)
+                    .build();
+
+            WorkManager.getInstance(this).enqueue(workRequest);
+
+            // Get the work status
+            WorkManager.getInstance(getApplicationContext()).getWorkInfoByIdLiveData(workRequest.getId())
+                    .observe(this, new Observer<WorkInfo>() {
+                        @Override
+                        public void onChanged(WorkInfo workInfo) {
+                            showInLongToast("Request for adding " + collectionName + " is " + workInfo.getState().name());
+                        }
+                    });
+
         }
     }
 
@@ -545,7 +571,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
 
         }
     }
-
+    /*
     private void backup2(DocumentFile dir) {
         selectedDir = dir;
         if (dir != null) {
@@ -561,13 +587,10 @@ public class MainActivityRecyclerView extends BaseActivity  {
             }
         }
     }
+    */
 
     public void restore() {
 
-    }
-
-    private String getFileNameWithOutExtension(String filename) {
-        return filename.replaceFirst("[.][^.]+$", "");
     }
 
     public void viewFile() {
@@ -579,18 +602,32 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     private void importFile(String collectionName, String data) {
-        Optional<KeyValue> keyValue = dataStorageManager.getValues().stream().filter(x -> x.getValue().equalsIgnoreCase(collectionName)).findFirst();
-        if(!keyValue.isPresent()) {
-            valueField.setText(collectionName);
-            save();
-        } else {
-            showInShortToast(getResources().getString(R.string.note_already_exists_merging_changes));
+        String newCollectionName = getSubNoteCollectionName(collectionName);
+        if(newCollectionName.equals(collectionName)) {
+            Optional<KeyValue> keyValue = dataStorageManager.getValues().stream()
+                    .filter(x -> x.getValue().equalsIgnoreCase(collectionName)).findFirst();
+            if (!keyValue.isPresent()) {
+                valueField.setText(collectionName);
+                save();
+            } else {
+                showInShortToast(getResources().getString(R.string.note_already_exists_merging_changes));
+            }
         }
         Intent intent = new Intent(MainActivityRecyclerView.this, Main2ActivityRecyclerView.class);
-        intent.putExtra(Constants.PARAM_FILENAME, collectionName);
+        intent.putExtra(Constants.PARAM_FILENAME, newCollectionName);
         intent.putExtra(Constants.USERID, userId);
-        intent.putExtra(Constants.PARAM_DATA_TO_IMPORT, data);
+        intent.putExtra(Constants.PARAM_NOTE_DATA, data);
         startActivity(intent);
+    }
+
+    private String getSubNoteCollectionName(String collectionName) {
+        if(collectionName.startsWith(Constants.MEDIA_NOTE_FILE_PREFIX)) {
+            return collectionName.replace(Constants.MEDIA_NOTE_FILE_PREFIX, Constants.MEDIA_NOTE_PREFIX);
+        }
+        if(collectionName.startsWith(Constants.SCREEN_DESIGN_NOTE_FILE_PREFIX)) {
+            return collectionName.replace(Constants.SCREEN_DESIGN_NOTE_FILE_PREFIX, Constants.SCREEN_DESIGN_NOTE_PREFIX);
+        }
+        return collectionName;
     }
 
     @Override
@@ -645,8 +682,9 @@ public class MainActivityRecyclerView extends BaseActivity  {
                         case Constants.VIEW:
                             startViewNoteActivity(collection, Converter.getKeyValuesJsonString(data));
                             break;
-                        case Constants.PLAY:
-                            startAudioNoteActivity(collection, data);
+                        case Constants.PLAY_NOTE_ITEMS:
+                        case Constants.PLAY_NOTE:
+                            startAudioNoteActivity(collection, data, action);
                             break;
                         case Constants.BACKUP:
                             if (data.size() > 0) {
@@ -668,6 +706,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
                 .setGuidelines(CropImageView.Guidelines.ON)
                 .start(this);
     }
+
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode != RESULT_OK) {

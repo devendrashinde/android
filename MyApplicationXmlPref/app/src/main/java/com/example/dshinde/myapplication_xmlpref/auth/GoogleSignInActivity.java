@@ -95,7 +95,11 @@ public class GoogleSignInActivity extends BaseActivity implements
         super.onStart();
         // Check if user is signed in (non-null) and update UI accordingly.
         FirebaseUser currentUser = mAuth.getCurrentUser();
-        updateUI(currentUser);
+        if(currentUser != null) {
+            updateUI(currentUser);
+        } else {
+            signIn();
+        }
     }
     // [END on_start_check_user]
 
@@ -125,9 +129,6 @@ public class GoogleSignInActivity extends BaseActivity implements
     // [START auth_with_google]
     private void firebaseAuthWithGoogle(GoogleSignInAccount acct) {
         Log.d(TAG, "firebaseAuthWithGoogle:" + acct.getId());
-        // [START_EXCLUDE silent]
-        showProgressDialog();
-        // [END_EXCLUDE]
 
         AuthCredential credential = GoogleAuthProvider.getCredential(acct.getIdToken(), null);
         mAuth.signInWithCredential(credential)
@@ -146,9 +147,6 @@ public class GoogleSignInActivity extends BaseActivity implements
                             updateUI(null);
                         }
 
-                        // [START_EXCLUDE]
-                        hideProgressDialog();
-                        // [END_EXCLUDE]
                     }
                 });
     }
@@ -190,7 +188,6 @@ public class GoogleSignInActivity extends BaseActivity implements
     }
 
     private void updateUI(FirebaseUser user) {
-        hideProgressDialog();
         if (user != null) {
             mStatusTextView.setText(getString(R.string.google_status_fmt, user.getEmail()));
             mDetailTextView.setText("");

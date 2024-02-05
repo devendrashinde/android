@@ -32,7 +32,8 @@ public class FireDbReadWriteOnceDataStorageImpl extends ReadWriteOnceDataStorage
             public void run() {
                 mAuth = FirebaseAuth.getInstance();
                 mDatabase = FirebaseDatabase.getInstance()
-                        .getReference(path + "/" + mAuth.getUid());
+                        .getReference(path + "/" + mAuth.getUid() +
+                                (pathInCollection == null ? "" : "/" + pathInCollection));
                 readDataOnce();
             }
         }.start();

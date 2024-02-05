@@ -9,9 +9,14 @@ import java.util.List;
 public abstract class ReadWriteOnceDataStorageManager implements ReadWriteOnceDataStorage {
     protected List<DataStorageListener> listeners = new ArrayList<>();
     String collectionName=null;
+    String pathInCollection = null; // used to read specific record from collection
     List<KeyValue> data = new ArrayList<>();
 
     ReadWriteOnceDataStorageManager(String collectionName, DataStorageListener dataStorageListener) {
+        if(collectionName.contains("/")) {
+            this.pathInCollection = collectionName.split("/")[1];
+            collectionName = collectionName.split("/")[0];
+        }
         this.collectionName = collectionName;
         addDataStorageListener(dataStorageListener);
     }

@@ -34,7 +34,7 @@
     <string name="rates">Rates</string>
     <string name="tea_rate">Tea Rate</string>
     <string name="coffe_rate">Coffe Rate</string>
-    <string name="cafeSettings">Cafe Settings</string>
+    <string name="note_settings">Cafe Settings</string>
     <string name="test">Test</string>
     <string name="currency">₹</string>
     <string name="total">Total</string>
@@ -99,14 +99,14 @@
     <string name="audio_note">Audio Note</string>
     <string name="read_aloud">Read aloud</string>
     <string name="view_note">View Note</string>
-    <string name="play_audio_note">Play Audio Note</string>
+    <string name="play_note_audio">Play Audio Note</string>
     <string name="screen_design">Screen Design</string>
     <string name="relationship">Relationship</string>
     <string name="note_already_exists_merging_changes">Note Subject already exists, importing and merging changes</string>
     <string name="taking_back_of">Taking backup of</string>
     <array name="actions_on_note">
         <item>@string/view_note</item>
-        <item>@string/play_audio_note</item>
+        <item>@string/play_note_audio</item>
         <item>@string/screen_design</item>
         <item>@string/relationship</item>
     </array>
@@ -120,4 +120,6 @@
         <item>@string/audio_note</item>
         <item>@string/read_aloud</item>
     </array>
+    <string name="no_audio_note">no audio note</string>
+    <string name="play_note_items_audio">Play Note Items Audio</string>
 </resources>
