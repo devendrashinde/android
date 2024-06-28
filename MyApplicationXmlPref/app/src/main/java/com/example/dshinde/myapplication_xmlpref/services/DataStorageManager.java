@@ -2,17 +2,20 @@ package com.example.dshinde.myapplication_xmlpref.services;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.common.DataChangeType;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 
+import java.security.Key;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public abstract class DataStorageManager implements DataStorage {
     List<DataStorageListener> listeners = new ArrayList<>();
@@ -50,6 +53,12 @@ public abstract class DataStorageManager implements DataStorage {
 
     }
 
+    private Optional< KeyValue> getKeyValue (String key){
+
+        return autoKey ? data.stream().filter(x -> x.getValue().equals(key)).findFirst()
+                : data.stream().filter(x -> x.getKey().equals(key)).findFirst();
+    }
+
     public String[] getKeys() {
         return new String[]{KEY, VALUE};
     }
@@ -63,7 +72,8 @@ public abstract class DataStorageManager implements DataStorage {
     }
 
     public int getKeyIndex(String key) {
-        return data.indexOf(new KeyValue(key, null));
+        Optional<KeyValue> kv = getKeyValue(key);
+        return kv.map(keyValue -> data.indexOf(keyValue)).orElse(-1);
     }
 
     public String getValue(String key) {
@@ -99,7 +109,7 @@ public abstract class DataStorageManager implements DataStorage {
         }
     }
 
-    void updateDataSource(String key, String value) {
+    public void updateDataSource(String key, String value) {
         int keyIndex = getKeyIndex(key);
         if (keyIndex >= 0) {
             data.set(keyIndex, new KeyValue(key, value));
@@ -139,6 +149,7 @@ public abstract class DataStorageManager implements DataStorage {
 
     void notifyDataSetChanged(String key, String value) {
         if(notifyDataChange) {
+            Log.d("DataStorageManager", "notifyDataSetChanged");
             if (sortData) Collections.sort(data, keyValueComparator);
             for (DataStorageListener listener : listeners) {
                 listener.dataChanged(key, value);
@@ -148,6 +159,7 @@ public abstract class DataStorageManager implements DataStorage {
 
     void notifyDataLoaded() {
         if(notifyDataChange) {
+            Log.d("DataStorageManager", "notifyDataLoaded");
             KeyValue keyValue = null;
             if(lastDataChangeType == DataChangeType.ADDED) keyValue = data.get(lastModifiedIndex);
 

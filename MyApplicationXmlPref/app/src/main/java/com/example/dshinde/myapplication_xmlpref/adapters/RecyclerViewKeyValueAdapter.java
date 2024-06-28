@@ -2,7 +2,6 @@ package com.example.dshinde.myapplication_xmlpref.adapters;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,7 +13,6 @@ import androidx.core.text.HtmlCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dshinde.myapplication_xmlpref.R;
-import com.example.dshinde.myapplication_xmlpref.common.DataChangeType;
 import com.example.dshinde.myapplication_xmlpref.helper.JsonHelper;
 import com.example.dshinde.myapplication_xmlpref.listners.RecyclerViewKeyValueItemListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
@@ -23,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RecyclerViewKeyValueAdapter extends RecyclerView.Adapter<RecyclerViewKeyValueAdapter.RecyclerViewKeyValueViewHolder> implements Filterable {
-    private List<KeyValue> kvList = new ArrayList<>();
+    private List<KeyValue> kvList;
     private List<KeyValue> origList = new ArrayList<>();
     RecyclerViewKeyValueItemListener recyclerViewKeyValueItemListener;
     private Context context;

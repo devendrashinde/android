@@ -6,6 +6,7 @@ import android.util.Log;
 
 import com.example.dshinde.myapplication_xmlpref.common.DataChangeType;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
+import com.example.dshinde.myapplication_xmlpref.listners.DataStorageTransactionWorker;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 
 import java.util.Collections;
@@ -66,6 +67,11 @@ public class SharedPrefDataStorageManagerImpl extends DataStorageManager {
 
     public void save(String key, String value) {
         updateDB(Collections.singletonList(new KeyValue(key, value)));
+    }
+
+    @Override
+    public void saveTransaction(String key, String value, DataStorageTransactionWorker dataStorageTransactionWorker) {
+
     }
 
     private void updateDB(List<KeyValue> values) {

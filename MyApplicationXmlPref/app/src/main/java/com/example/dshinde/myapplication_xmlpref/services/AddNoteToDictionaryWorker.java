@@ -11,6 +11,7 @@ import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.common.DataStorageType;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
+import com.example.dshinde.myapplication_xmlpref.listners.DataStorageTransactionWorker;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class AddNoteToDictionaryWorker extends Worker {
 
@@ -29,6 +31,7 @@ public class AddNoteToDictionaryWorker extends Worker {
     String collectionToAdd;
     String dictionaryName;
 
+    String lastWord = null;
     public AddNoteToDictionaryWorker(
             @NonNull Context appContext,
             @NonNull WorkerParameters workerParams) {
@@ -62,7 +65,11 @@ public class AddNoteToDictionaryWorker extends Worker {
                         getDataOfCollectionToBeAdded();
                     }
                 });
-        dictionary.loadData();
+        dictionary.disableSort();
+        dictionary.disableNotifyDataChange();
+        Log.d(TAG, "Adding  " + collectionToAdd + " to " + dictionaryName);
+        getDataOfCollectionToBeAdded();
+        //dictionary.loadData();
     }
 
     private void getDataOfCollectionToBeAdded() {
@@ -89,8 +96,7 @@ public class AddNoteToDictionaryWorker extends Worker {
 
                 @Override
                 public void dataLoaded(List<KeyValue> wordDetails) {
-                    dictionary.getValues().addAll(wordDetails);
-                    addWordToDictionary(reference, word);
+                    addWordToDictionary(reference, word, wordDetails);
                 }
             });
     }
@@ -99,25 +105,62 @@ public class AddNoteToDictionaryWorker extends Worker {
         for (KeyValue kv : dataOfCollectionToBeAdded) {
             String[] words = kv.getValue().split("\\W+");
             for (String word : words) {
-                Log.d(TAG, "Adding word " + word);
-                word = word.trim();
-                int existingValueIndex = dictionary.getKeyIndex(word);
-                if (existingValueIndex != -1) {
+                word = word.trim().replaceAll("[,|\\d]","");
+                if(!word.isEmpty()) {
                     addWordToDictionary(kv.getKey(), word);
-                } else {
-                    getDataOfWordFromDictionary(kv.getKey(), word);
                 }
             }
         }
         Log.d(TAG, "Successfully added  " + collectionToAdd + " to " + dictionaryName);
     }
 
+    private int getKeyIndex(List<KeyValue> wordDetails, String key) {
+        Optional<KeyValue> kv = getKeyValue(wordDetails, key);
+        return kv.map(wordDetails::indexOf).orElse(-1);
+    }
+
+    private Optional< KeyValue> getKeyValue (List<KeyValue> wordDetails, String key){
+        return wordDetails.stream().filter(x -> x.getKey().equals(key)).findFirst();
+    }
+
     private void addWordToDictionary(String reference, String word) {
         Gson gson = new GsonBuilder().create();
         Map<String, List<String>> shabdaDetails = new HashMap<>();
-        int existingValueIndex = dictionary.getKeyIndex(word);
+        dictionary.saveTransaction(word, reference, new DataStorageTransactionWorker() {
+            @Override
+            public void updateTransactionData(KeyValue keyValue) {
+            }
+
+            @Override
+            public String updateTransactionData(String keyValue) {
+                Gson gson = new GsonBuilder().create();
+                Map<String, List<String>> shabdaDetails = new HashMap<>();
+                if (keyValue != null && !keyValue.isEmpty()) {
+
+                    shabdaDetails = gson.fromJson(keyValue, new TypeToken<Map<String, List<String>>>() {
+                    }.getType());
+                }
+                if (!shabdaDetails.containsKey(collectionToAdd)) {
+                    shabdaDetails.put(collectionToAdd, new ArrayList<>());
+                }
+                List<String> wordUsage = shabdaDetails.getOrDefault(collectionToAdd, new ArrayList<>());
+                assert wordUsage != null;
+                if (!wordUsage.contains(reference)) {
+                    wordUsage.add(reference);
+                }
+                shabdaDetails.replace(collectionToAdd, wordUsage);
+                return gson.toJson(shabdaDetails);
+            }
+        });
+    }
+
+    private void addWordToDictionary(String reference, String word, List<KeyValue> wordDetails) {
+        Gson gson = new GsonBuilder().create();
+        Map<String, List<String>> shabdaDetails = new HashMap<>();
+        int existingValueIndex = getKeyIndex(wordDetails, word);
         if (existingValueIndex != -1) {
-            KeyValue keyValue = dictionary.getValue(existingValueIndex);
+            Log.d(TAG, "Adding word " + word);
+            KeyValue keyValue = wordDetails.get(existingValueIndex);
             if (keyValue.getValue() != null && !keyValue.getValue().isEmpty()) {
                 shabdaDetails = gson.fromJson(keyValue.getValue(), new TypeToken<Map<String, List<String>>>() {
                 }.getType());
@@ -127,11 +170,12 @@ public class AddNoteToDictionaryWorker extends Worker {
         if (!shabdaDetails.containsKey(collectionToAdd)) {
             shabdaDetails.put(collectionToAdd, new ArrayList<>());
         }
-        List<String> shabdaUsage = shabdaDetails.getOrDefault(collectionToAdd, new ArrayList<>());
-        if (!shabdaUsage.contains(reference)) {
-            shabdaUsage.add(reference);
+        List<String> wordUsage = shabdaDetails.getOrDefault(collectionToAdd, new ArrayList<>());
+        assert wordUsage != null;
+        if (!wordUsage.contains(reference)) {
+            wordUsage.add(reference);
         }
-        shabdaDetails.replace(collectionToAdd, shabdaUsage);
+        shabdaDetails.replace(collectionToAdd, wordUsage);
         dictionary.save(word, gson.toJson(shabdaDetails));
     }
 }

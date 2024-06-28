@@ -3,6 +3,7 @@ package com.example.dshinde.myapplication_xmlpref.services;
 import com.example.dshinde.myapplication_xmlpref.common.DataChangeType;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageObservable;
+import com.example.dshinde.myapplication_xmlpref.listners.DataStorageTransactionWorker;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 
 import java.util.ArrayList;
@@ -37,6 +38,8 @@ public interface DataStorage extends DataStorageObservable {
 
     void save(String key, String value);
 
+    void saveTransaction(String key, String value, DataStorageTransactionWorker dataStorageTransactionWorker);
+
     void save(List<KeyValue> values);
 
     int getKeyIndex(String key);
@@ -59,4 +62,5 @@ public interface DataStorage extends DataStorageObservable {
 
     void loadData(Map<String, String> data, boolean removeExistingData);
 
+    void updateDataSource(String key, String value);
 }

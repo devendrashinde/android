@@ -72,4 +72,5 @@ public class Constants {
     public static final String PARAM_NOTE_DATA = "dataToImport";
     public static final String NOTE_TEXT = "text";
     public static final String SUBJECT = "subject";
+    public static final String PARAM_URL = "url";
 }

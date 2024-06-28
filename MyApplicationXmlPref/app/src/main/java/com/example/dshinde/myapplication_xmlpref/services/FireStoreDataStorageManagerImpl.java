@@ -4,6 +4,7 @@ import androidx.annotation.Nullable;
 
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.common.DataChangeType;
+import com.example.dshinde.myapplication_xmlpref.listners.DataStorageTransactionWorker;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
@@ -96,6 +97,11 @@ public class FireStoreDataStorageManagerImpl extends DataStorageManager {
             key = getNewKey();
         }
         updateDB(Collections.singletonList(new KeyValue(key, value)));
+    }
+
+    @Override
+    public void saveTransaction(String key, String value, DataStorageTransactionWorker dataStorageTransactionWorker) {
+
     }
 
     public void save(List<KeyValue> values) {

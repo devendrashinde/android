@@ -11,28 +11,22 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.bumptech.glide.Glide;
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
-import com.example.dshinde.myapplication_xmlpref.model.MediaFields;
 import com.github.chrisbanes.photoview.OnPhotoTapListener;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import java.util.Map;
+import java.io.File;
 
 public class PhotoViewActivity extends AppCompatActivity {
 
     PhotoView photoView;
-    StorageReference storageReference;
-    StorageReference storageFileRef;
-    String userId;
-    String noteId;
+    String photoUrl;
     private static final String TAG = PhotoViewActivity.class.getSimpleName();
 
-    MediaFields mediaFields;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,20 +37,13 @@ public class PhotoViewActivity extends AppCompatActivity {
         setPhotoViewListener();
 
         Bundle bundle = getIntent().getExtras();
-        userId = bundle.getString(Constants.USERID);
-        noteId = bundle.getString(Constants.NOTE_ID);
-        Gson gson = new GsonBuilder().create();
-
-        String mediaValues = bundle.getString(Constants.MEDIA_FIELDS);
-        mediaFields = gson.fromJson(mediaValues, MediaFields.class);
-        mediaFields.init();
-        if(mediaFields.hasMedia()) {
-            mediaFields.setValues(gson.fromJson(mediaValues, Map.class));
-            String mediaFieldId = mediaFields.getNextPhotoMediaField();
-            downloadFile(mediaFieldId, mediaFields.getMediaFieldValue(mediaFieldId), photoView);
-        } else {
-            finish();
-        }
+        photoUrl = bundle.getString(Constants.PARAM_URL);
+        photoView.setZoomable(true);
+        //photoView.setImageURI(Uri.parse(photoUrl));
+        Glide.with(getApplicationContext())
+                .load(new File(photoUrl)) // Uri of the picture
+                .into(photoView);
+        //Glide.with(getApplicationContext()).load(Uri.parse(photoUrl)).into(photoView);
     }
     private void setPhotoViewListener(){
         photoView.setOnPhotoTapListener(new OnPhotoTapListener(){
@@ -64,45 +51,11 @@ public class PhotoViewActivity extends AppCompatActivity {
                 float xPercentage = x * 100f;
                 if(xPercentage < 30) {
                     //left side tapped
-                    String mediaFieldId = mediaFields.getNextPhotoMediaField();
-                    if(mediaFieldId != null) {
-                        downloadFile(mediaFieldId, mediaFields.getMediaFieldValue(mediaFieldId), photoView);
-                    }
                 }
                 if(xPercentage > 70) {
                     //right side tapped
-                    String mediaFieldId = mediaFields.getPrevPhotoMediaField();
-                    if(mediaFieldId != null) {
-                        downloadFile(mediaFieldId, mediaFields.getMediaFieldValue(mediaFieldId), photoView);
-                    }
                 }
             }
         });
-
-    }
-
-    private void downloadFile(String mediaFieldId, String mediaFieldValue, PhotoView imageView) {
-        //getting the storage reference
-        try{
-            if(storageReference == null) {
-                storageReference = FirebaseStorage.getInstance().getReference();
-            }
-            storageFileRef = storageReference.child(Constants.STORAGE_PATH_NOTES + userId + "/" + noteId + "/" + mediaFieldId + "/" + mediaFieldValue);
-            //adding the file to reference
-            storageFileRef.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
-                @Override
-                public void onSuccess(Uri uri) {
-                    Glide.with(getApplicationContext()).load(uri).into(imageView);
-                }
-            }).addOnFailureListener(new OnFailureListener() {
-                @Override
-                public void onFailure(@NonNull Exception exception) {
-                    Toast.makeText(getApplicationContext(), getResources().getString(R.string.download_failed) + ": " + exception.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            });
-        } catch (Throwable throwable) {
-
-            Toast.makeText(getApplicationContext(), getResources().getString(R.string.download_failed) + ": " + throwable.getMessage(), Toast.LENGTH_SHORT).show();
-        }
     }
 }

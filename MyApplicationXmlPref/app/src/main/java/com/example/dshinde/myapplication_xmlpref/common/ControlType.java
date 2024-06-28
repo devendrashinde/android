@@ -20,7 +20,9 @@ public enum ControlType {
     BackButton("BackButton"),
     CancelButton("CancelButton"),
     Photo("Photo"),
-    Document("Document");
+    Document("Document"),
+    Video("Video"),
+    Audio("Audio");
 
     private String value;
 

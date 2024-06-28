@@ -2,9 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="28"/>
-    <uses-permission android:name="android.permission.MANAGE_DOCUMENTS"
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+    <uses-permission
+        android:name="android.permission.MANAGE_DOCUMENTS"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
@@ -14,11 +16,13 @@
     <uses-permission android:name="android.permission.READ_INTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
     <queries>
-    <intent>
-        <action android:name="android.intent.action.TTS_SERVICE" />
-    </intent>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
     </queries>
+
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
@@ -26,75 +30,83 @@
     <application
         android:name=".MyNotesApplication"
         android:allowBackup="true"
+        android:fullBackupOnly="true"
+        android:hardwareAccelerated="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:largeHeap="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
-        android:fullBackupOnly="true"
         android:windowSoftInputMode="adjustResize">
-        <activity android:name=".activities.drawables.DrawableActivity"
-            android:configChanges="orientation|screenSize" android:exported="true">
-        </activity>
+        <activity
+            android:name=".activities.PhotoGalleryActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="false"
+            android:label="@string/title_activity_photo_gallary"
+            android:theme="@style/AppTheme.Fullscreen" />
+        <activity
+            android:name=".activities.drawables.DrawableActivity"
+            android:configChanges="orientation|screenSize"
+            android:exported="true"></activity>
         <activity
             android:name=".launcher.SignInActivity"
-            android:exported="true"
-            android:configChanges="orientation|screenSize" />
-
+            android:configChanges="orientation|screenSize"
+            android:exported="true" />
         <activity
             android:name=".activities.PdfViewActivity"
-            android:exported="true"
             android:configChanges="orientation|screenSize"
+            android:exported="true"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".activities.DynamicLinearLayoutActivity"
-            android:exported="true"
-            android:configChanges="orientation|screenSize" />
+            android:configChanges="orientation|screenSize"
+            android:exported="true" />
         <activity
             android:name=".activities.DataAnalyticActivity"
-            android:exported="true"
-            android:configChanges="orientation|screenSize" />
+            android:configChanges="orientation|screenSize"
+            android:exported="true" />
         <activity
             android:name=".activities.RelationshipActivity"
-            android:exported="true"
-            android:configChanges="orientation|screenSize" />
+            android:configChanges="orientation|screenSize"
+            android:exported="true" />
         <activity
             android:name=".activities.listviewbased.ScreenDesignActivity"
-            android:exported="true"
-            android:configChanges="orientation|screenSize" />
+            android:configChanges="orientation|screenSize"
+            android:exported="true" />
         <activity
             android:name=".activities.recyclerviewbased.ScreenDesignActivityRecyclerView"
-            android:exported="true"
-            android:configChanges="orientation|screenSize" />
+            android:configChanges="orientation|screenSize"
+            android:exported="true" />
         <activity
             android:name=".activities.ScrollingTextViewActivity"
             android:exported="true"
-            android:label="@string/title_scrolling_textview_activity"/>
+            android:label="@string/title_scrolling_textview_activity" />
         <activity
             android:name=".activities.AudioVideoActivity"
             android:exported="true"
-            android:label="Audio Note" >
-        </activity>
+            android:label="Audio Note"></activity>
         <activity
             android:name=".activities.GraphViewActivity"
             android:exported="true"
             android:label="Graph" />
-        <activity android:name=".activities.DialogActivity"
-            android:exported="true"/>
-        <!-- Launcher Activity-->
+        <activity
+            android:name=".activities.DialogActivity"
+            android:exported="true" /> <!-- Launcher Activity -->
         <activity
             android:name=".auth.GoogleSignInActivity"
-            android:exported="true"
-            android:configChanges="orientation|screenSize">
+            android:configChanges="orientation|screenSize"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
             android:name=".launcher.BiometricSignIn"
-            android:exported="true"
-            android:configChanges="orientation|screenSize" />
+            android:configChanges="orientation|screenSize"
+            android:exported="true" />
         <!--
         <activity
             android:name=".auth.GoogleSignInActivity"
@@ -102,46 +114,46 @@
         -->
         <activity
             android:name=".activities.listviewbased.MainActivity"
-            android:exported="true"
-            android:configChanges="orientation|screenSize" />
+            android:configChanges="orientation|screenSize"
+            android:exported="true" />
         <activity
             android:name=".activities.recyclerviewbased.PicklistActivityRecyclerView"
-            android:exported="true"
-            android:configChanges="orientation|screenSize" />
+            android:configChanges="orientation|screenSize"
+            android:exported="true" />
         <activity
             android:name=".activities.recyclerviewbased.MainActivityRecyclerView"
-            android:exported="true"
-            android:configChanges="orientation|screenSize" />
+            android:configChanges="orientation|screenSize"
+            android:exported="true" />
         <activity
             android:name=".activities.recyclerviewbased.Main2ActivityRecyclerView"
-            android:exported="true"
-            android:configChanges="orientation|screenSize" />
+            android:configChanges="orientation|screenSize"
+            android:exported="true" />
         <activity
             android:name=".activities.listviewbased.Main2Activity"
-            android:exported="true"
             android:configChanges="orientation|screenSize"
+            android:exported="true"
             android:label="@string/title_activity_main2" />
         <activity
             android:name=".activities.listviewbased.ShabdaKoshActivity"
-            android:exported="true"
             android:configChanges="orientation|screenSize"
+            android:exported="true"
             android:label="@string/shabdaKosh" />
         <activity
             android:name=".activities.MediaViewActivity"
-            android:exported="true"
-            android:configChanges="orientation|screenSize" />
+            android:configChanges="orientation|screenSize"
+            android:exported="true" />
         <activity
             android:name=".activities.PhotoViewActivity"
-            android:exported="true"
-            android:configChanges="orientation|screenSize" />
+            android:configChanges="orientation|screenSize"
+            android:exported="true" />
         <activity
             android:name=".activities.RandomButtonActivity"
-            android:exported="true"
-            android:configChanges="orientation|screenSize" />
+            android:configChanges="orientation|screenSize"
+            android:exported="true" />
         <activity
             android:name="com.theartofdev.edmodo.cropper.CropImageActivity"
-            android:exported="true"
             android:configChanges="orientation|screenSize"
+            android:exported="true"
             android:theme="@style/Base.Theme.AppCompat" />
 
         <provider
@@ -158,7 +170,7 @@
         <receiver
             android:name=".services.BackupBackgroundService"
             android:enabled="true"
-            android:exported="false"></receiver>
+            android:exported="false" />
     </application>
 
 </manifest>

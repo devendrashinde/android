@@ -125,4 +125,7 @@
     <string name="no_audio_note">no audio note</string>
     <string name="play_note_items_audio">Play Note Items Audio</string>
     <string name="crash_text_toast" translatable="false">MyNote Crashed</string>
+    <string name="title_activity_photo_gallary">PhotoGallaryActivity</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
 </resources>

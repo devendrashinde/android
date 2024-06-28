@@ -1,11 +1,11 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 31
+    compileSdkVersion 33
     defaultConfig {
         applicationId "com.example.dshinde.myapplication_xmlpref"
         minSdkVersion 26
-        targetSdkVersion 31
+        targetSdkVersion 33
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -23,6 +23,9 @@ android {
     }
     sourceSets { main { res.srcDirs = ['src/main/res', 'src/main/res/layout-land'] } }
     namespace 'com.example.dshinde.myapplication_xmlpref'
+    buildFeatures {
+        viewBinding true
+    }
 }
 
 dependencies {
@@ -85,6 +88,8 @@ dependencies {
 
     // ACRA library for debugging application
     implementation 'ch.acra:acra:4.9.2'
+
+    implementation 'com.squareup.picasso:picasso:2.71828'
 }
 
 apply plugin: 'com.google.gms.google-services'  // Google Play services Gradle plugin

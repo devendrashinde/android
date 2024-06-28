@@ -34,5 +34,15 @@ public class ExampleUnitTest {
         assertArrayEquals(urls, extractedUrls.toArray(new String[extractedUrls.size()]));
     }
 
+    @Test
+    public void textReplaceAll() throws Exception {
+        String regex = "[,()|\\d]";
+        String target = "ABC Def(n)|,xyz||1||";
+        String expected = "ABC Defnxyz";
+        String result = target.replaceAll(regex,"");
+        assertEquals(expected,result);
+        System.out.print(result);
+    }
+
 
 }

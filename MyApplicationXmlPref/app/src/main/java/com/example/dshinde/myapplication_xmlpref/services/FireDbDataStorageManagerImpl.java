@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.common.DataChangeType;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
+import com.example.dshinde.myapplication_xmlpref.listners.DataStorageTransactionWorker;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
@@ -15,7 +16,9 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.MutableData;
 import com.google.firebase.database.Query;
+import com.google.firebase.database.Transaction;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
@@ -168,28 +171,31 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
     }
 
     private void loadItem(DataSnapshot item, DataChangeType dataChangeType, boolean notify) {
-        String key = autoKey ? (String) item.getValue() : item.getKey();
-        String value = autoKey ? item.getKey() : (String) item.getValue();
-        KeyValue keyValue = new KeyValue(key, value);
-        switch (dataChangeType) {
-            case ADDED:
-            case ALL_DATA:
-                data.add(keyValue);
-                break;
-            case DELETED:
-                data.remove(getKeyIndex(key));
-                break;
-            case MODIFIED:
-                data.set(getKeyIndex(key), keyValue);
-                break;
-            default:
-                break;
+        try {
+            String key = autoKey ? (String) item.getValue() : item.getKey();
+            String value = autoKey ? item.getKey() : (String) item.getValue();
+            KeyValue keyValue = new KeyValue(key, value);
+            switch (dataChangeType) {
+                case ADDED:
+                case ALL_DATA:
+                    data.add(keyValue);
+                    break;
+                case DELETED:
+                    data.remove(getKeyIndex(key));
+                    break;
+                case MODIFIED:
+                    data.set(getKeyIndex(key), keyValue);
+                    break;
+                default:
+                    break;
+            }
+            if (notify) notifyDataChanged();
+        } catch (Exception e) {
+            Log.d(CLASS_TAG, e.getMessage());
         }
-        if (notify) notifyDataChanged();
     }
 
     private void notifyDataChanged() {
-        Log.d(CLASS_TAG, "notifyDataChanged");
         notifyDataLoaded();
     }
 
@@ -235,6 +241,27 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
 
     public void save(String key, String value) {
         updateDB(Collections.singletonList(new KeyValue(key, value)));
+    }
+
+    @Override
+    public void saveTransaction(String key, String value, DataStorageTransactionWorker dataStorageTransactionWorker) {
+        mDatabase.child(key).runTransaction(new Transaction.Handler() {
+            @NonNull
+            @Override
+            public Transaction.Result doTransaction(@NonNull MutableData mutableData) {
+                String value = mutableData.getValue(String.class);
+                // Set value and report transaction success
+                mutableData.setValue(dataStorageTransactionWorker.updateTransactionData(value));
+                return Transaction.success(mutableData);
+            }
+
+            @Override
+            public void onComplete(DatabaseError databaseError, boolean committed,
+                                   DataSnapshot currentData) {
+                // Transaction completed
+                Log.d(CLASS_TAG, "postTransaction:onComplete:" + databaseError);
+            }
+        });
     }
 
     public void save(List<KeyValue> values) {

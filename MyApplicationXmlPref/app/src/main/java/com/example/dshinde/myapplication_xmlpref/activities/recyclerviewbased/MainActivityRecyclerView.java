@@ -38,6 +38,7 @@ import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.AudioVideoActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.GraphViewActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.PhotoGalleryActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.RelationshipActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.ScrollingTextViewActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.ShabdaKoshActivity;
@@ -237,7 +238,8 @@ public class MainActivityRecyclerView extends BaseActivity  {
 
     private void showTestActivity() {
         String fileName = valueField.getText().toString();
-        Intent intent = new Intent(MainActivityRecyclerView.this, GraphViewActivity.class);
+        //Intent intent = new Intent(MainActivityRecyclerView.this, GraphViewActivity.class);
+        Intent intent = new Intent(MainActivityRecyclerView.this, PhotoGalleryActivity.class);
         intent.putExtra(Constants.PARAM_FILENAME, fileName);
         intent.putExtra(Constants.USERID, userId);
         startActivity(intent);
@@ -255,9 +257,14 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     public void save() {
-        String value = valueField.getText().toString().trim();
-        dataStorageManager.save(key, value);
-        clear();
+        String value = valueField.getText().toString();
+        value = value.replaceAll("/", "-");
+        value = value.replaceAll("\\s+"," ").trim();
+        int index = dataStorageManager.getKeyIndex(value);
+        if(index < 0) {
+            dataStorageManager.save(key, value);
+            clear();
+        }
     }
 
     public void share() {
@@ -275,11 +282,16 @@ public class MainActivityRecyclerView extends BaseActivity  {
     public void edit() {
         String fileName = valueField.getText().toString();
         if (!fileName.isEmpty()) {
-            if(fileName.equals(Constants.SHABDA_KOSH)){
+            /*if(fileName.equals(Constants.SHABDA_KOSH)){
                 startShabdaKoshActivity(fileName);
             } else {
+
+             */
                 startActivityForAction(fileName, "EDIT");
+                /*
             }
+
+                 */
         }
     }
 
