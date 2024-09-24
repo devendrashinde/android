@@ -134,6 +134,7 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
         editViewLayout.setVisibility(show ? View.VISIBLE : View.GONE);
         verticalDivider.setVisibility(show ? View.VISIBLE : View.GONE);
         searchViewLayout.setVisibility(show ? View.GONE : View.VISIBLE);
+        listView.setVisibility(show ? View.GONE : View.VISIBLE);
         MenuItem menuItem = myMenu.findItem(R.id.menu_edit);
         Drawable icon = getDrawable(show ? R.drawable.ic_format_line_spacing_black_24dp : R.drawable.ic_action_edit);
         menuItem.setIcon(icon);

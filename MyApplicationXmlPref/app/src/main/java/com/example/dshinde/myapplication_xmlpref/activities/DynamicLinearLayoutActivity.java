@@ -299,9 +299,11 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private void addEditText(ScreenControl screenControl, boolean multiLine) {
         addText(screenControl);
-        EditText editText = DynamicControls.getEditText(this);
+        EditText editText;
         if (multiLine) {
-            addMultiLineEditText(editText);
+            editText = DynamicControls.getMultiLineEditText(this);
+        } else {
+            editText = DynamicControls.getEditText(this);
         }
         screenControl.setValueControl(editText);
         setEditTextListener(screenControl);
@@ -735,14 +737,14 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     }
 
     private String getCommaSeparated(String existingValue, String newValue){
-        if(existingValue != null && !existingValue.isEmpty()){
+        if(existingValue != null && !existingValue.isEmpty() && !existingValue.contains(newValue)){
             return existingValue + "," + newValue;
         }
         return newValue;
     }
 
     private boolean CheckForRequiredValues() {
-        StringBuilder indexValues = new StringBuilder("");
+        StringBuilder indexValues = new StringBuilder();
         boolean requiredValueMissing=false;
         for (ScreenControl screenControl : controls) {
             if (YesNo.YES.getValue().equals(screenControl.getIndexField())) {
@@ -773,7 +775,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     }
 
     private String getIndexValues() {
-        StringBuilder indexValues = new StringBuilder("");
+        StringBuilder indexValues = new StringBuilder();
         for (ScreenControl screenControl : controls) {
             if (YesNo.YES.getValue().equals(screenControl.getIndexField())) {
                 String value = data.get(screenControl.getControlId());
@@ -784,7 +786,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                         value = value.replaceAll(",", " ");
                     }
                     value = value.replaceAll("\\s+"," ").trim();
-                    indexValues.append((indexValues.length() > 0 ? "," : "") + value);
+                    indexValues.append(indexValues.length() > 0 ? "," : "").append(value);
                 }
             }
         }

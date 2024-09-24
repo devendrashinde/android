@@ -52,7 +52,6 @@ public class Main2Activity extends BaseActivity implements ListviewActions {
     EditText keyField;
     EditText valueField;
     ListView listView;
-    Button divider;
     ListviewKeyValueObjectAdapter listAdapter;
     DataStorage dataStorageManager;
     String collectionName = null;

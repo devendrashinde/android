@@ -1,121 +1,159 @@
 package com.example.dshinde.myapplication_xmlpref.activities.listviewbased;
 
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
-import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.annotation.NonNull;
+import androidx.core.text.HtmlCompat;
+import androidx.documentfile.provider.DocumentFile;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.activities.AudioVideoActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
-import com.example.dshinde.myapplication_xmlpref.adapters.MarginItemDecoration;
-import com.example.dshinde.myapplication_xmlpref.adapters.RecyclerViewKeyValueAdapter;
+import com.example.dshinde.myapplication_xmlpref.activities.RandomButtonActivity;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
+import com.example.dshinde.myapplication_xmlpref.common.ControlType;
+import com.example.dshinde.myapplication_xmlpref.helper.DynamicControls;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
+import com.example.dshinde.myapplication_xmlpref.helper.JsonHelper;
+import com.example.dshinde.myapplication_xmlpref.helper.StorageSelectionResult;
+import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
-import com.example.dshinde.myapplication_xmlpref.listners.RecyclerViewKeyValueItemListener;
+import com.example.dshinde.myapplication_xmlpref.listners.ListviewActions;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
+import com.example.dshinde.myapplication_xmlpref.model.ScreenControl;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
-import com.example.dshinde.myapplication_xmlpref.services.ReadWriteOnceDataStorage;
-import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ShabdaKoshActivity extends BaseActivity {
+public class ShabdaKoshActivity extends BaseActivity implements ListviewActions {
 
     EditText keyField;
     EditText valueField;
     EditText searchText;
+    EditText editText;
     RecyclerView listView;
-    RecyclerViewKeyValueAdapter listAdapter;
+    Button divider;
     DataStorage dataStorageManager;
-    ReadWriteOnceDataStorage firebaseReadOnceImpl;
-    String collectionName = null;
-    String collectionToAdd = null;
-    boolean addingToShabdKosh = false;
-    private static final String CLASS_TAG = ShabdaKoshActivity.class.getName();
+    Map<String, Object> data = new HashMap<>();
+    String collectionName = Constants.SHABDA_KOSH;
     LinearLayout editViewLayout;
+    LinearLayout searchViewLayout;
     Menu myMenu;
+    private final Gson gson = new GsonBuilder().create();
+    private static final String CLASS_TAG = "ShabdaKoshActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // get parameters
         Bundle bundle = getIntent().getExtras();
-        collectionName = Constants.SHABDA_KOSH;
         userId = bundle.getString(Constants.USERID);
-        collectionToAdd = bundle.getString("collectionToAddToShabdaKosh");
-        setTitle(collectionName);
         loadUI();
-        initDataStorage();
+    }
 
+    private void initDataStorageAndLoadData(String noteItem) {
+        Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageInstance");
+        dataStorageManager = Factory.getDataStorageInstance(this,
+                getDataStorageType(),
+                collectionName + "/" + noteItem,
+                false, false,
+                new DataStorageListener() {
+                    @Override
+                    public void dataChanged(String key, String value) {
+                        Log.d(CLASS_TAG, "dataChanged key: " + key + ", value: " + value);
+                        loadDataInEditView(dataStorageManager.getValues());
+                    }
+
+                    @Override
+                    public void dataLoaded(List<KeyValue> data) {
+                        Log.d(CLASS_TAG, "dataLoaded");
+                        loadDataInEditView(data);
+                    }
+        });
+        dataStorageManager.loadData();
+    }
+
+    private void loadDataInEditView(List<KeyValue> keyValues) {
+        Log.d(CLASS_TAG, "loadDataInEditView");
+        if(!keyValues.isEmpty() && keyValues.get(0).getValue() != null ){
+            data = gson.fromJson(keyValues.get(0).getValue(), Map.class);
+            editText.setText(HtmlCompat.fromHtml(getShabdaKoshText(),HtmlCompat.FROM_HTML_MODE_LEGACY));
+        } else{
+            showInShortToast("Not found");
+        }
     }
 
     private void loadUI() {
-        Log.d(CLASS_TAG, "loadUI");
-        setContentView(R.layout.activity_main2_2_recycler_view);
+        setContentView(R.layout.shabdkosh_layout);
         editViewLayout = (LinearLayout) findViewById(R.id.editView);
-        keyField = (EditText) findViewById(R.id.etKey);
-        valueField = (EditText) findViewById(R.id.etValue);
+        searchViewLayout = (LinearLayout) findViewById(R.id.searchView);
         searchText = (EditText) findViewById(R.id.searchText);
-        listView = (RecyclerView) findViewById(R.id.list);
-        populateListView();
+        setTitle(collectionName);
+        setFindButtonAction(searchText);
+        editText = DynamicControls.getMultiLineEditText(this);
+        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        layoutParams.setMargins(10, 0, 10, 0);
+        editViewLayout.addView(editText, layoutParams);
+    }
+
+    protected void setFindButtonAction(EditText editTextField) {
+        editTextField.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    if (event.getRawX() >= (editTextField.getRight() - editTextField.getCompoundDrawables()[Constants.DRAWABLE_RIGHT].getBounds().width())) {
+                        initDataStorageAndLoadData(editTextField.getText().toString());
+                        return true;
+                    }
+                }
+                return false;
+            }
+        });
     }
 
     private void showEditView(boolean show) {
         editViewLayout.setVisibility(show ? View.VISIBLE : View.GONE);
+        searchViewLayout.setVisibility(show ? View.GONE : View.VISIBLE);
         MenuItem menuItem = myMenu.findItem(R.id.menu_edit);
-        Drawable icon = getDrawable(show ? R.drawable.ic_format_line_spacing_black_24dp : R.drawable.ic_edit_black);
+        Drawable icon = getDrawable(show ? R.drawable.ic_format_line_spacing_black_24dp : R.drawable.ic_action_edit);
         menuItem.setIcon(icon);
         if (!show) {
             hideKeyboard(editViewLayout);
         }
-    }
-    private void setSearchFieldWatcher() {
-        searchText.addTextChangedListener(new TextWatcher() {
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (count < before) {
-                    // We're deleting char so we need to reset the adapter data
-                    listAdapter.resetData();
-                }
-                listAdapter.getFilter().filter(s.toString());
-            }
-
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count,
-                                          int after) {
-
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-            }
-        });
-
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.navigation, menu);
         myMenu = menu;
-        showEditView(false);
+        myMenu.removeItem(R.id.menu_add_to_dictionary);
+        myMenu.removeItem(R.id.menu_backup);
+        myMenu.removeItem(R.id.menu_design_screen);
+        myMenu.removeItem(R.id.menu_test);
+        myMenu.removeItem(R.id.menu_view);
+        myMenu.removeItem(R.id.menu_import);
+        myMenu.removeItem(R.id.menu_export);
         return true;
     }
 
@@ -144,23 +182,47 @@ public class ShabdaKoshActivity extends BaseActivity {
             case R.id.menu_share:
                 share();
                 return true;
+            case R.id.menu_export:
+                export();
+                return true;
+            case R.id.menu_daylight:
+                setTheme(editViewLayout, Constants.DAY_MODE);
+                setTheme(searchViewLayout, Constants.DAY_MODE);
+                return true;
+            case R.id.menu_nightlight:
+                setTheme(editViewLayout, Constants.NIGHT_MODE);
+                setTheme(searchViewLayout, Constants.NIGHT_MODE);
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
+    private void setEditView(String key, String value) {
+        keyField.setText(key);
+        valueField.setText(value);
+    }
+
+    private void displayRandomButtonActivity(String value) {
+        Intent intent = new Intent(this, RandomButtonActivity.class);
+        intent.putExtra("text", value);
+        startActivity(intent);
+    }
+
+    @Override
     public void save(View view) {
         save();
     }
 
     public void save() {
-        String key = keyField.getText().toString();
-        String value = valueField.getText().toString();
+        String key = keyField.getText().toString().trim();
+        String value = valueField.getText().toString().trim();
         dataStorageManager.save(key, value);
         showEditView(false);
         clear();
     }
 
+    @Override
     public void remove(View view) {
         remove();
     }
@@ -171,158 +233,103 @@ public class ShabdaKoshActivity extends BaseActivity {
         dataStorageManager.remove(key);
     }
 
-    private void populateListView() {
-        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(this);
-        listAdapter = new RecyclerViewKeyValueAdapter(Collections.emptyList(), this,
-                R.layout.list_view_items_flexbox, getOnItemClickListenerToListView());
-        listView.setLayoutManager(mLayoutManager);
-        listView.addItemDecoration(new MarginItemDecoration(8));
-        listView.setAdapter(listAdapter);
-
-        listAdapter.registerAdapterDataObserver( new RecyclerView.AdapterDataObserver() {
-            @Override
-            public void onChanged() {
-                super.onChanged();
-                listView.scrollToPosition(dataStorageManager.getLastModifiedIndex());
-            }
-
-            @Override
-            public void onItemRangeInserted(int positionStart, int itemCount) {
-                super.onItemRangeInserted(positionStart, itemCount);
-                listView.scrollToPosition(dataStorageManager.getLastModifiedIndex());
-            }
-
-            @Override
-            public void onItemRangeRemoved(int positionStart, int itemCount) {
-                super.onItemRangeRemoved(positionStart, itemCount);
-                listView.scrollToPosition(dataStorageManager.getLastModifiedIndex());
-            }
-        });
-    }
-
-    private RecyclerViewKeyValueItemListener getOnItemClickListenerToListView() {
-        RecyclerViewKeyValueItemListener listener = new RecyclerViewKeyValueItemListener() {
-            @Override
-            public void onItemClick(KeyValue kv) {
-                setEditView(kv.getKey(), kv.getValue());
-            }
-
-            @Override
-            public boolean onItemLongClick(KeyValue kv) {
-                return true;
-            }
-        };
-        return listener;
-    }
-
-    private void initDataStorage() {
-        dataStorageManager = Factory.getDataStorageInstance(this,
-            getDataStorageType(),
-            collectionName, false,
-            false, new DataStorageListener() {
-                @Override
-                public void dataChanged(String key, String value) {
-                    Log.d(CLASS_TAG, "dataChanged key: " + key + ", value: " + value);
-                    loadDataInListView(dataStorageManager.getValues());
-                }
-
-                @Override
-                public void dataLoaded(List<KeyValue> data) {
-                    if(collectionToAdd != null && !collectionToAdd.isEmpty()) {
-                        dataStorageManager.disableSort();
-                        dataStorageManager.disableNotifyDataChange();
-                        addCollectionToShadaKosh();
-                    } else {
-                        Log.d(CLASS_TAG, "dataLoaded");
-                        loadDataInListView(data);
-                    }
-                }
-            });
-        dataStorageManager.loadData();
-    }
-
-    private void loadDataInListView(List<KeyValue> data) {
-        Log.d(CLASS_TAG, "loadDataInListView");
-        runOnUiThread(() -> listAdapter.setData(data));
-    }
-
-    private void setEditView(String key, String string) {
-        keyField.setText(key);
-        valueField.setText(string);
-    }
-
     public void clear(View view) {
         clear();
     }
 
     public void clear() {
-        setEditView("", "");
+        String key = keyField.getText().toString(); // keep last key for ease of editing
+        setEditView(key, "");
+        searchText.setText("");
         keyField.requestFocus();
     }
 
     public void share() {
         String key = keyField.getText().toString();
         String value = valueField.getText().toString();
-        if (!value.isEmpty() && !value.isEmpty()) {
-            shareText(key + "\n" + value);
+        if (!key.isEmpty() && !value.isEmpty()) {
+            shareText(key + Constants.CR_LF + value);
         }
     }
 
-    private void addCollectionToShadaKosh() {
-        if (collectionToAdd != null && !collectionToAdd.isEmpty()) {
-            firebaseReadOnceImpl = Factory.getReadOnceFireDataStorageInstance(collectionToAdd,
-                new DataStorageListener() {
-                    @Override
-                    public void dataChanged(String key, String value) {
-                    }
+    public void export() {
+        startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE), StorageUtil.PICK_DOCUMENT_FOLDER_FOR_EXPORT);
+    }
 
-                    @Override
-                    public void dataLoaded(List<KeyValue> dataOfCollectionToBeAdded) {
-                        if (!addingToShabdKosh) {
-                            addingToShabdKosh = true;
-                            new Thread(()-> updateShabdaKosh(dataOfCollectionToBeAdded)).start();
-                        }
-                    }
-                });
+    private void export(DocumentFile dir) {
+        String path = StorageUtil.saveAsTextToDocumentFile(this, dir, collectionName, dataStorageManager.getDataString());
+        if (path != null) {
+            Toast.makeText(this, getResources().getString(R.string.save_to) + " " + path,
+                    Toast.LENGTH_LONG).show();
         }
     }
 
-    private void updateShabdaKosh(List<KeyValue> dataOfCollectionToBeAdded) {
-        runOnUiThread(()->keyField.setText("Adding  " + collectionToAdd + " to " + collectionName));
-        Gson gson = new GsonBuilder().create();
-        for (KeyValue kv : dataOfCollectionToBeAdded) {
-            runOnUiThread(()->setEditView(kv.getKey(), kv.getValue()));
-            String[] shabds = kv.getValue().split("\\W+");
-
-            for (String shabd : shabds) {
-                shabd = shabd.trim();
-                Map<String, List<String>> shabdaDetails = new HashMap<>();
-                int existingValueIndex = dataStorageManager.getKeyIndex(shabd);
-                if (existingValueIndex != -1) {
-                    KeyValue keyValue = dataStorageManager.getValue(existingValueIndex);
-                    if (keyValue.getValue() != null && !keyValue.getValue().isEmpty()) {
-                        shabdaDetails = gson.fromJson(keyValue.getValue(), new TypeToken<Map<String,List<String>>>(){}.getType());
-                    }
-                }
-                if(!shabdaDetails.containsKey(collectionToAdd)) {
-                    shabdaDetails.put(collectionToAdd, new ArrayList<>());
-                }
-                List<String> shabdaUsage = shabdaDetails.getOrDefault(collectionToAdd, new ArrayList<>());
-                if(!shabdaUsage.contains(kv.getKey())) {
-                    shabdaUsage.add(kv.getKey());
-                }
-                shabdaDetails.replace(collectionToAdd, shabdaUsage);
-                dataStorageManager.save(shabd, gson.toJson(shabdaDetails));
-            }
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        StorageSelectionResult result = StorageUtil.getStorageSelectionResult(this, requestCode, resultCode, data);
+        if (result.getRequestCode() == StorageUtil.PICK_DOCUMENT_FOLDER_FOR_EXPORT) {
+            export(result.getDir());
         }
-        runOnUiThread(()-> valueField.setText("Successfully added  " + collectionToAdd + " to " + collectionName));
-        runOnUiThread(()-> loadDataInListView(dataStorageManager.getValues()));
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        if (dataStorageManager != null) dataStorageManager.removeDataStorageListeners();
-        if (firebaseReadOnceImpl != null) firebaseReadOnceImpl.removeDataStorageListeners();
+        dataStorageManager.removeDataStorageListeners();
+    }
+
+
+    private void showPopup(String key, String value) {
+        selectOption(Constants.SELECT_ACTION_FOR_NOTE, R.string.what_you_want_to_do,
+                R.array.actions_on_note_item,
+                null, key, value);
+    }
+
+    @Override
+    protected void processSelectedOption(@NonNull String id, @NonNull String selectedOption, String key, String value) {
+        switch (selectedOption) {
+            case Constants.NAAMASMRAN:
+                displayRandomButtonActivity(value);
+                break;
+            case Constants.AUDIO_NOTE:
+                displayAudioVideoActivity(key, value);
+                break;
+            default:
+                super.processSelectedOption(id, selectedOption, key, value);
+                break;
+        }
+    }
+
+    private void displayAudioVideoActivity(String key, String value) {
+        Intent intent = new Intent(this, AudioVideoActivity.class);
+        intent.putExtra(Constants.USERID, userId);
+        intent.putExtra(Constants.PARAM_NOTE, collectionName);
+        intent.putExtra(Constants.KEY, key);
+        intent.putExtra(Constants.VALUE, value);
+        startActivity(intent);
+    }
+
+    private String getShabdaKoshText()
+    {
+        int index=0;
+        StringBuilder text = new StringBuilder("<html><body>");
+        for (Map.Entry<String, Object> entry : data.entrySet()) {
+            if(entry.getKey() != null) {
+                text.append("<p>").append(entry.getKey()).append(":</p><br>");
+            }
+            if(entry.getValue() != null){
+                if(entry.getValue() instanceof String) {
+                    text.append("<p>").append(entry.getValue()).append("</p><br>");
+                } else if (entry.getValue() instanceof List) {
+                    text.append("<ul>");
+                    for(Object obj : (List) entry.getValue()) {
+                        text.append("<li>").append(obj).append("</li>");
+                    }
+                    text.append("</ul>");
+                }
+            }
+        }
+        return text + "</body></html>";
     }
 }

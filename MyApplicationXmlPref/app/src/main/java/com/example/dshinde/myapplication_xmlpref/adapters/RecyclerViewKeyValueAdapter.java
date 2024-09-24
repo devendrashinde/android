@@ -9,6 +9,7 @@ import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.core.text.HtmlCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -130,8 +131,9 @@ public class RecyclerViewKeyValueAdapter extends RecyclerView.Adapter<RecyclerVi
     }
 
     // Create new views (invoked by the layout manager)
+    @NonNull
     @Override
-    public RecyclerViewKeyValueViewHolder onCreateViewHolder(ViewGroup parent,
+    public RecyclerViewKeyValueViewHolder onCreateViewHolder(@NonNull ViewGroup parent,
                                                              int viewType) {
         LayoutInflater inflater = LayoutInflater.from(context);
 
@@ -139,8 +141,7 @@ public class RecyclerViewKeyValueAdapter extends RecyclerView.Adapter<RecyclerVi
         View kvView = inflater.inflate(layoutResource, parent, false);
 
         // Return a new holder instance
-        RecyclerViewKeyValueViewHolder viewHolder = new RecyclerViewKeyValueViewHolder(kvView);
-        return viewHolder;
+        return new RecyclerViewKeyValueViewHolder(kvView);
     }
 
     // Involves populating data into the item through holder
@@ -161,17 +162,10 @@ public class RecyclerViewKeyValueAdapter extends RecyclerView.Adapter<RecyclerVi
 
     private void highlightItem(RecyclerViewKeyValueViewHolder viewHolder, int position) {
         if(selectedPosition== position)
-            viewHolder.itemView.setBackgroundColor(Color.parseColor("#000000"));
+            viewHolder.itemView.setBackgroundColor(Color.LTGRAY);
         else
-            viewHolder.itemView.setBackgroundColor(Color.parseColor("#ffffff"));
+            viewHolder.itemView.setBackgroundColor(Color.YELLOW);
 
-        viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                selectedPosition= viewHolder.getAbsoluteAdapterPosition();
-                notifyDataSetChanged();
-            }
-        });
     }
 
     private String getValue(KeyValue keyValue) {

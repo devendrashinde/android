@@ -282,22 +282,17 @@ public class MainActivityRecyclerView extends BaseActivity  {
     public void edit() {
         String fileName = valueField.getText().toString();
         if (!fileName.isEmpty()) {
-            /*if(fileName.equals(Constants.SHABDA_KOSH)){
+            if(fileName.equals(Constants.SHABDA_KOSH)){
                 startShabdaKoshActivity(fileName);
             } else {
 
-             */
                 startActivityForAction(fileName, "EDIT");
-                /*
             }
-
-                 */
         }
     }
 
     private void startShabdaKoshActivity(String fileName) {
         Intent intent = new Intent(MainActivityRecyclerView.this, ShabdaKoshActivity.class);
-        intent.putExtra(Constants.PARAM_FILENAME, fileName);
         intent.putExtra(Constants.USERID, userId);
         startActivity(intent);
     }

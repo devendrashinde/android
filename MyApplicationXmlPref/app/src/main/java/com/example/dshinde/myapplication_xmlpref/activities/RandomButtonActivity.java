@@ -229,7 +229,6 @@ public class RandomButtonActivity extends BaseActivity {
             @Override
             public void run() {
                 linearLayout.addView(button);
-                //setRandomPosition(button);
             }
         });
     }
@@ -243,70 +242,6 @@ public class RandomButtonActivity extends BaseActivity {
                 linearLayout.addView(textView);
             }
         });
-    }
-
-    private void setRandomPosition(Button button) {
-        ObjectPosition position = getRandomPosition(button.getWidth(), button.getHeight());
-        button.animate()
-                .x(position.x)
-                .y(position.y)
-                .setDuration(0)
-                .start();
-
-    }
-
-    private ObjectPosition getRandomPosition(int buttonWidth, int buttonHeight){
-        Random R = new Random();
-        int height = displaymetrics.heightPixels - getNavigationBarHeight();
-        int width = displaymetrics.widthPixels - buttonWidth;
-        float dx = 0;
-        float dy = 0;
-        do {
-            dx = R.nextFloat() * width;
-            dy = R.nextFloat() * height;
-        } while (dx + buttonWidth > width && dy + buttonHeight > height && dy < 0);
-
-        return new ObjectPosition(dx, dy);
-    }
-
-    private class ObjectPosition {
-        public float x;
-        public float y;
-
-        public ObjectPosition (float x, float y){
-            this.x = x;
-            this.y = y;
-        }
-    }
-
-    private void animateButtonToRandomPosition(Button button) {
-        final Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Random R = new Random();
-                        int buttonWidth = button.getWidth();
-                        int buttonHeight = button.getHeight();
-                        int height = displaymetrics.heightPixels - getNavigationBarHeight();
-                        int width = displaymetrics.widthPixels - buttonWidth;
-                        float dx = 0;
-                        float dy = 0;
-                        do {
-                            dx = R.nextFloat() * width;
-                            dy = R.nextFloat() * height;
-                        } while (dx + buttonWidth > width && dy + buttonHeight > height && dy < 0);
-                        button.animate()
-                                .x(dx)
-                                .y(dy)
-                                .setDuration(0)
-                                .start();
-                    }
-                });
-            }
-        }, 0, 1000);
     }
 
     public boolean dispatchKeyEvent(KeyEvent event) {

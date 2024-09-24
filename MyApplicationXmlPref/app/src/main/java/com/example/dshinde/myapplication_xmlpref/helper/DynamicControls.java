@@ -1,7 +1,9 @@
 package com.example.dshinde.myapplication_xmlpref.helper;
 
 import android.content.Context;
+import android.text.InputType;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -10,6 +12,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.Scroller;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -33,9 +36,22 @@ public class DynamicControls {
         return editText;
     }
 
+    public static EditText getMultiLineEditText(Context context, String text) {
+        EditText editText = new EditText(context);
+        editText.setId(View.generateViewId());
+        editText.setText(text);
+        addMultiLineEditText(context, editText);
+        return editText;
+    }
+
     public static EditText getEditText(Context context) {
         return getEditText(context, "");
     }
+
+    public static EditText getMultiLineEditText(Context context) {
+        return getMultiLineEditText(context, "");
+    }
+
 
     public static Button getButton(Context context, String label) {
         Button btn = new Button(context);
@@ -102,6 +118,18 @@ public class DynamicControls {
     public static PhotoView getPhotoView(Context context){
         return getPhotoView(context, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    private static void addMultiLineEditText(Context context, EditText editText) {
+        editText.setSingleLine(false);
+        editText.setLines(4);
+        editText.setMinLines(4);
+        editText.setMaxLines(8);
+        editText.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 100 * editText.getMinLines()));
+        editText.setScroller(new Scroller(context));
+        editText.setVerticalScrollBarEnabled(true);
+        editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        editText.setImeOptions(EditorInfo.IME_FLAG_NO_ENTER_ACTION);
     }
 
 }
