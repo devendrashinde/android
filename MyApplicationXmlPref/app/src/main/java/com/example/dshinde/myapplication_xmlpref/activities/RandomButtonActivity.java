@@ -56,10 +56,13 @@ public class RandomButtonActivity extends BaseActivity {
         getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
 
         Bundle bundle = getIntent().getExtras();
+        assert bundle != null;
         String text = bundle.getString(Constants.NOTE_TEXT);
+        assert text != null;
         text = text.replaceAll("\n"," ");
         text = text.replaceAll("\r","");
-        text = text.replaceAll("  ","");
+        text = text.replaceAll(",","");
+        text = text.replaceAll(" {2}","");
         setTitle(text);
 
         buildScreenControls(text);

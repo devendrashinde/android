@@ -16,12 +16,12 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.activities.AudioActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.AudioVideoActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.RandomButtonActivity;
@@ -56,9 +56,8 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
     String collectionName = null;
     LinearLayout editViewLayout;
     LinearLayout searchViewLayout;
-    VerticalResizeTouchHandler verticalResizeTouchHandler;
-    View verticalDivider;
     Menu myMenu;
+    EditText currentEditText;
     private static final String CLASS_TAG = "Main2Activity";
 
     @Override
@@ -119,20 +118,30 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
         editViewLayout = (LinearLayout) findViewById(R.id.editView);
         searchViewLayout = (LinearLayout) findViewById(R.id.searchView);
         searchText = (EditText) findViewById(R.id.searchText);
-        verticalResizeTouchHandler = new VerticalResizeTouchHandler(editViewLayout, listView);
-        verticalDivider = findViewById(R.id.divider);
-        verticalResizeTouchHandler.setDivider(verticalDivider);
         setTitle(collectionName);
         populateListView();
         setSearchFieldWatcher();
         setEditTextClearButtonAction(searchText);
-        setEditTextClearButtonAction(keyField);
-        setEditTextClearButtonAction(valueField);
+        setFocusListener();
+        //setEditTextClearButtonAction(keyField);
+        //setEditTextClearButtonAction(valueField);
+    }
+
+    private void setFocusListener() {
+        keyField.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                currentEditText = keyField;
+            }
+        });
+        valueField.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                currentEditText = valueField;
+            }
+        });
     }
 
     private void showEditView(boolean show) {
         editViewLayout.setVisibility(show ? View.VISIBLE : View.GONE);
-        verticalDivider.setVisibility(show ? View.VISIBLE : View.GONE);
         searchViewLayout.setVisibility(show ? View.GONE : View.VISIBLE);
         listView.setVisibility(show ? View.GONE : View.VISIBLE);
         MenuItem menuItem = myMenu.findItem(R.id.menu_edit);
@@ -148,13 +157,9 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
         inflater.inflate(R.menu.navigation, menu);
         myMenu = menu;
         showEditView(false);
-        myMenu.removeItem(R.id.menu_add_to_dictionary);
-        myMenu.removeItem(R.id.menu_backup);
-        myMenu.removeItem(R.id.menu_design_screen);
-        myMenu.removeItem(R.id.menu_test);
-        myMenu.removeItem(R.id.menu_view);
-        myMenu.removeItem(R.id.menu_import);
-        myMenu.removeItem(R.id.menu_export);
+        removeUnwantedMenuItems(menu, new int[]{R.id.menu_add_to_dictionary,
+                R.id.menu_backup, R.id.menu_design_screen, R.id.menu_test, R
+                .id.menu_view, R.id.menu_import,R.id.menu_export});
         return true;
     }
 
@@ -316,10 +321,10 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
     }
 
     public void clear() {
-        String key = keyField.getText().toString(); // keep last key for ease of editing
-        setEditView(key, "");
-        searchText.setText("");
-        keyField.requestFocus();
+        if(currentEditText != null) {
+            currentEditText.setText("");
+            currentEditText.requestFocus();
+        }
     }
 
     public void share() {
@@ -371,7 +376,7 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
     }
 
     @Override
-    protected void processSelectedOption(@NonNull String id, @NonNull String selectedOption, String key, String value) {
+    protected void processSelectedOption(String id, String selectedOption, String key, String value) {
         switch (selectedOption) {
             case Constants.NAAMASMRAN:
                 displayRandomButtonActivity(value);
@@ -386,7 +391,7 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
     }
 
     private void displayAudioVideoActivity(String key, String value) {
-        Intent intent = new Intent(Main2ActivityRecyclerView.this, AudioVideoActivity.class);
+        Intent intent = new Intent(Main2ActivityRecyclerView.this, AudioActivity.class);
         intent.putExtra(Constants.USERID, userId);
         intent.putExtra(Constants.PARAM_NOTE, collectionName);
         intent.putExtra(Constants.KEY, key);

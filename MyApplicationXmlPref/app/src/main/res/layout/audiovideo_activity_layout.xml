@@ -22,7 +22,7 @@
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:backgroundTint="@color/colorWhite"
-            android:drawableRight="@drawable/ic_action_audio_note"
+            android:drawableEnd="@drawable/ic_action_audio_note"
             android:focusable="false"
             android:focusableInTouchMode="true"
             android:hint="@string/select_audio_file"
@@ -80,13 +80,11 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/colorBlack"
-        android:layout_alignParentStart="true"
         android:orientation="vertical">
         <TextView
             android:id="@+id/textNote"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_alignParentStart="true"
             android:layout_marginStart="8dp"
             android:layout_marginEnd="8dp"
             android:layout_marginTop="20dp"

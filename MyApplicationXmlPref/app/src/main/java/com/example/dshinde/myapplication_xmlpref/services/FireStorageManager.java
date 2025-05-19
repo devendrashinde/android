@@ -14,9 +14,13 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+
+import java.io.File;
+import java.util.Objects;
 
 public class FireStorageManager implements FileStorage {
     Context context;
@@ -78,7 +82,7 @@ public class FireStorageManager implements FileStorage {
             @Override
             public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
                 if (!task.isSuccessful()) {
-                    throw task.getException();
+                    throw Objects.requireNonNull(task.getException());
                 }
                 return storageFileRef.getDownloadUrl();
             }
@@ -115,4 +119,39 @@ public class FireStorageManager implements FileStorage {
         });
     }
 
+    @Override
+    public void downloadImageFile(String mediaId, String mediaName, FireStorageListener fireStorageListener){
+        File file = StorageUtil.createImageFile(context, mediaId + "_" + mediaName);
+        if( file.exists()) {
+            fireStorageListener.downloadUriReceived(Uri.fromFile(file));
+        } else {
+            downloadFile(mediaId, mediaName, file, fireStorageListener);
+        }
+    }
+
+    @Override
+    public void downloadDocumentFile(String mediaId, String mediaName, FireStorageListener fireStorageListener){
+        File file = StorageUtil.createImageFile(context, mediaId + "_" + mediaName);
+        if( file.exists()) {
+            fireStorageListener.downloadUriReceived(Uri.fromFile(file));
+        } else {
+            downloadFile(mediaId, mediaName, file, fireStorageListener);
+        }
+    }
+
+    private void downloadFile(String mediaId, String mediaName, File file, FireStorageListener fireStorageListener){
+        StorageReference storageFileRef = getStorageReference(mediaId, mediaName);
+
+        storageFileRef.getFile(file).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
+            @Override
+            public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                fireStorageListener.downloadUriReceived(Uri.fromFile(file));
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception exception) {
+                Toast.makeText(context, context.getResources().getString(R.string.download_failed) +"\n" + exception.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
 }

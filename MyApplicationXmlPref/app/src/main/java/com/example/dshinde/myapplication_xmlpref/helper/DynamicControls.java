@@ -16,6 +16,7 @@ import android.widget.Scroller;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.example.dshinde.myapplication_xmlpref.R;
 import com.github.chrisbanes.photoview.PhotoView;
 
 import java.util.List;

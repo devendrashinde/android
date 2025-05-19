@@ -11,4 +11,9 @@ public interface FileStorage {
     void uploadMedia(String mediaId, Uri filePath, FireStorageListener fireStorageListener);
     void downloadFileAsBytes(String mediaId, String mediaName);
     void downloadFileAsBytes(String mediaId, String mediaName, FireStorageListener fireStorageListener);
+
+    void downloadImageFile(String mediaId, String mediaName, FireStorageListener fireStorageListener);
+
+    void downloadDocumentFile(String mediaId, String mediaName, FireStorageListener fireStorageListener);
+
 }

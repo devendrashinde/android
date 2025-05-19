@@ -1,14 +1,15 @@
 package com.example.dshinde.myapplication_xmlpref.activities;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.FileProvider;
 import androidx.fragment.app.DialogFragment;
 
-import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
@@ -55,16 +56,11 @@ import com.example.dshinde.myapplication_xmlpref.pickers.TimePickerFragment;
 import com.example.dshinde.myapplication_xmlpref.services.FileStorage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.theartofdev.edmodo.cropper.CropImage;
-import com.theartofdev.edmodo.cropper.CropImageView;
 
 import java.io.File;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -73,7 +69,7 @@ import java.util.Map;
 public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private static final String CLASS_TAG = "DynamicActivity";
-    private String collectionName;
+    private String mediaStoragePath;
     private LinearLayout linearLayout;
     private List<ScreenControl> controls;
     private Map<String, String> data = new HashMap<>();
@@ -82,6 +78,8 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     private ScreenControl currentScreenControl;
     private FileStorage mediaStorage;
     private String userId;
+    // activities started for results
+    ActivityResultLauncher<Intent> imageCropperActivityResultLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,7 +90,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
         Bundle bundle = getIntent().getExtras();
         userId = bundle.getString(Constants.USERID);
-        collectionName = Constants.STORAGE_PATH_NOTES +
+        mediaStoragePath = Constants.STORAGE_PATH_NOTES +
                 userId + "/" +
                 bundle.getString(Constants.NOTE_ID);
         String screenConfig = bundle.getString(Constants.SCREEN_CONFIG);
@@ -114,24 +112,13 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                 break;
         }
         renderUI(screenConfig);
+        registerImageCropperActivityForResults();
+
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.navigation, menu);
-        menu.removeItem(R.id.menu_add);
-        menu.removeItem(R.id.menu_clear);
-        menu.removeItem(R.id.menu_copy);
-        menu.removeItem(R.id.menu_edit);
-        menu.removeItem(R.id.menu_remove);
-        menu.removeItem(R.id.menu_share);
-        menu.removeItem(R.id.menu_export);
-        menu.removeItem(R.id.menu_backup);
-        menu.removeItem(R.id.menu_import);
-        menu.removeItem(R.id.menu_view);
-        menu.removeItem(R.id.menu_test);
-        menu.removeItem(R.id.menu_design_screen);
-        menu.removeItem(R.id.menu_add_to_dictionary);
+        inflater.inflate(R.menu.dynamic_screen, menu);
         return true;
     }
 
@@ -141,8 +128,6 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             case R.id.menu_save:
                 closeActivityWithReturnValues();
-                return true;
-            case R.id.menu_daylight:
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -231,7 +216,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                     break;
                 case Photo:
                     if(mediaStorage == null) {
-                        mediaStorage = Factory.getFileStorageInstance(this, collectionName);
+                        mediaStorage = Factory.getFileStorageInstance(this, mediaStoragePath);
                     }
                     addPhotoControl(screenControl);
                     break;
@@ -418,7 +403,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private void addPhotoControl(ScreenControl screenControl) {
         addText(screenControl);
-        String options[] = {getResources().getString(R.string.take_photo),
+        String[] options = {getResources().getString(R.string.take_photo),
                 getResources().getString(R.string.select_photo)};
         RadioGroup rg = DynamicControls.getRadioGroupControl(this, options, Collections.EMPTY_LIST);
         RadioButton rbTakePhoto = (RadioButton) rg.getChildAt(0);
@@ -430,7 +415,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         setPhotoControlListener(rg, screenControl);
         String photoFileName = getValue(screenControl);
         if(photoFileName != null && !photoFileName.trim().isEmpty()){
-            downloadFile(screenControl.getControlId(), photoFileName,
+            mediaStorage.downloadImageFile(screenControl.getControlId(), photoFileName,
                     new PhotoListener((ImageView)screenControl.getMediaControl(), screenControl));
         }
     }
@@ -446,8 +431,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
         String documentFileName = getValue(screenControl);
         if(documentFileName != null && !documentFileName.trim().isEmpty()){
-            downloadFile(screenControl.getControlId(), documentFileName,
-                    new PdfListener(valueControl, screenControl));
+            valueControl.setText(documentFileName);
         }
     }
 
@@ -455,12 +439,15 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         Button btn = (Button) screenControl.getMediaControl();
         btn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                Uri fileName = screenControl.getMediaUri();
-                if(fileName != null ) {
-                    startPdfViewActivity(fileName.toString());
+                if(screenControl.getMediaUri() == null) {
+                    mediaStorage.downloadDocumentFile(screenControl.getControlId(),
+                            getValue(screenControl), new PdfListener((screenControl)));
+                } else {
+                    startPdfViewActivity(screenControl.getMediaUri().toString());
+                }
                 }
             }
-        });
+        );
     }
 
     private void startPdfViewActivity(String fileName) {
@@ -469,18 +456,17 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    private void startWebViewActivity(String fileName) {
+        Intent intent = new Intent(getApplicationContext(), WebViewActivity.class);
+        intent.putExtra(Constants.PARAM_URL, fileName);
+        startActivity(intent);
+    }
+
     private void startActionViewIntent(String fileName){
-        Uri path = Uri.parse(fileName);
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setDataAndType(path, Constants.PDF_FILE);
-        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        try {
+        Uri webpage = Uri.parse(fileName);
+        Intent intent = new Intent(Intent.ACTION_VIEW, webpage);
+        if (intent.resolveActivity(getPackageManager()) != null) {
             startActivity(intent);
-        }
-        catch (ActivityNotFoundException e) {
-            Toast.makeText(getApplicationContext(),
-                    getResources().getString(R.string.no_application_available_to_view_document),
-                    Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -548,7 +534,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                     if(selectedButton.getText() == getResources().getString(R.string.take_photo)) {
                         takePhoto();
                     }else {
-                        selectAndCropPhoto(Constants.IMAGE_FILE, Constants.SELECT_IMAGE);
+                        selectAndCropPhoto();
                     }
                 }
             });
@@ -561,9 +547,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
             File photoFile = createImageFile();
             if(photoFile != null) {
-                Uri photoURI = FileProvider.getUriForFile(this,
-                        "com.example.dshinde.fileprovider",
-                        photoFile);
+                Uri photoURI = StorageUtil.getUriForFile(this, photoFile);
                 cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
                 currentScreenControl.setMediaUri(photoURI);
             }
@@ -573,21 +557,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     }
 
     private File createImageFile() {
-        // Create an image file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "IMG" + timeStamp + "_";
-
-        try {
-            File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-            File image = File.createTempFile(
-                imageFileName,  /* prefix */
-                ".jpg",   /* suffix */
-                storageDir      /* directory */
-            );
-            return image;
-        } catch(IOException e){
-            return null;
-        }
+        return StorageUtil.createTempImageFile(this);
     }
 
     private void selectFile(String fileType, int actionCode) {
@@ -598,16 +568,10 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         startActivityForResult(intent, actionCode);
     }
 
-    private void selectAndCropPhoto(String fileType, int actionCode) {
-        CropImage.activity()
-                .setGuidelines(CropImageView.Guidelines.ON)
-                .start(this);
-    }
-
     private void cropPhoto(Uri photoUri) {
-        CropImage.activity(photoUri)
-                .setGuidelines(CropImageView.Guidelines.ON)
-                .start(this);
+        Intent intent = new Intent(getApplicationContext(), ImageCropperActivity.class);
+        intent.putExtra(Constants.PARAM_URL, photoUri.toString());
+        startActivity(intent);
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -616,6 +580,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
             return;
         }
         switch (requestCode){
+            /*
             case CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE :
                 CropImage.ActivityResult result = CropImage.getActivityResult(data);
                 if (resultCode == RESULT_OK) {
@@ -627,6 +592,8 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                     Exception error = result.getError();
                 }
                 break;
+
+             */
             case Constants.TAKE_PHOTO:
                 if (currentScreenControl.getMediaUri() != null) {
                     cropPhoto(currentScreenControl.getMediaUri());
@@ -876,7 +843,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     }
 
     private void downloadFile(String mediaFieldId, String mediaFieldValue, FireStorageListener fireStorageListener) {
-        mediaStorage.getDownloadUrl(mediaFieldId, mediaFieldValue, fireStorageListener);
+        mediaStorage.downloadImageFile(mediaFieldId, mediaFieldValue, fireStorageListener);
     }
 
     private class PhotoListener implements FireStorageListener {
@@ -906,17 +873,15 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     }
 
     private class PdfListener implements FireStorageListener {
-        EditText editText;
         ScreenControl screenControl;
-        public PdfListener(EditText valueControl, ScreenControl screenControl) {
-            this.editText = valueControl;
+        public PdfListener(ScreenControl screenControl) {
             this.screenControl = screenControl;
         }
 
         @Override
         public void downloadUriReceived(Uri fileUri) {
-            editText.setText(fileUri.toString());
             screenControl.setMediaUri(fileUri);
+            startPdfViewActivity(fileUri.toString());
         }
 
         @Override
@@ -928,5 +893,31 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         public void uploadedUriReceived(Uri fileUri) {
 
         }
+
     }
+
+    private void selectAndCropPhoto() {
+        Intent intent = new Intent(this, ImageCropperActivity.class);
+        imageCropperActivityResultLauncher.launch(intent);
+    }
+
+    private void registerImageCropperActivityForResults() {
+        imageCropperActivityResultLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                new ActivityResultCallback<ActivityResult>() {
+                    @Override
+                    public void onActivityResult(ActivityResult result) {
+                        if (result.getResultCode() == Constants.RESULT_CODE_OK) {
+                            // There are no request codes
+                            Intent data = result.getData();
+                            assert data != null;
+                            Uri imageUri = data.getData();
+                            currentScreenControl.setMediaUri(imageUri);
+                            ImageView currentView = (ImageView) currentScreenControl.getMediaControl();
+                            currentView.setImageURI(imageUri);
+                        }
+                    }
+                });
+    }
+
 }

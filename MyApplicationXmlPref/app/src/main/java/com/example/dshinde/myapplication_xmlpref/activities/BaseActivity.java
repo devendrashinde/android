@@ -7,7 +7,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -21,6 +23,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.documentfile.provider.DocumentFile;
@@ -32,6 +35,7 @@ import com.example.dshinde.myapplication_xmlpref.helper.DynamicControls;
 import com.example.dshinde.myapplication_xmlpref.helper.ReadAloud;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -307,5 +311,27 @@ public class BaseActivity extends AppCompatActivity {
             readAloud.clearTTS();
         }
         super.onDestroy();
+    }
+
+    @SuppressWarnings({"unchecked", "deprecation"})
+    @Nullable
+    public <T extends Serializable> T getSerializable(@Nullable Bundle bundle, @Nullable String key, @NonNull Class<T> clazz) {
+        if (bundle != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                return bundle.getSerializable(key, clazz);
+            } else {
+                try {
+                    return (T) bundle.getSerializable(key);
+                } catch (Throwable ignored) {
+                }
+            }
+        }
+        return null;
+    }
+
+    public void removeUnwantedMenuItems(Menu menu, int[] menuIds) {
+        for (int menuId : menuIds) {
+            menu.removeItem(menuId);
+        }
     }
 }

@@ -17,24 +17,35 @@
             android:id="@+id/searchText"
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:drawableRight="@drawable/ic_search_black_24dp"
+            android:drawableEnd="@drawable/ic_search_black_24dp"
             android:focusable="true"
             android:focusableInTouchMode="true"
             android:hint="@string/searchText"
             android:inputType="text"
+            android:textSize="25sp"
             app:autoSizeTextType="uniform"/>
     </LinearLayout>
 
-    <ScrollView
+    <LinearLayout
+        android:id="@+id/editView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <LinearLayout
-            android:id="@+id/editView"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:orientation="vertical">
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"
-            android:orientation="vertical"></LinearLayout>
-    </ScrollView>
+            android:layout_height="0dp"
+            android:fillViewport="true"
+            android:layout_weight="1">
+            <TextView
+                android:id="@+id/dictionaryItem"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:textSize="25sp"
+                android:layout_margin="25sp"/>
+        </ScrollView>
+    </LinearLayout>
 </LinearLayout>

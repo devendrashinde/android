@@ -265,7 +265,9 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
     private void showEditView(boolean show) {
         editViewLayout.setVisibility(show ? View.VISIBLE : View.GONE);
         MenuItem menuItem = myMenu.findItem(R.id.menu_edit);
-        Drawable icon = getDrawable(show ? R.drawable.ic_format_line_spacing_black_24dp : R.drawable.ic_edit_black);
+        Drawable icon = getDrawable(
+                show ? R.drawable.ic_format_line_spacing_black_24dp :
+                        R.drawable.ic_action_edit_hold_dark);
         menuItem.setIcon(icon);
         if (!show) {
             hideKeyboard(editViewLayout);
@@ -282,20 +284,16 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
     }
 
     private void removeUnwantedMenuItems(Menu menu) {
-        menu.removeItem(R.id.menu_add_to_dictionary);
-        menu.removeItem(R.id.menu_backup);
-        menu.removeItem(R.id.menu_daylight);
-        menu.removeItem(R.id.menu_save);
-        menu.removeItem(R.id.menu_clear);
-        menu.removeItem(R.id.menu_design_screen);
-        menu.removeItem(R.id.menu_export);
-        menu.removeItem(R.id.menu_nightlight);
-        menu.removeItem(R.id.menu_import);
+        removeUnwantedMenuItems(menu, new int[]{R.id.menu_add_to_dictionary,
+                R.id.menu_backup, R.id.menu_daylight, R.id.menu_save,
+                R.id.menu_clear,
+                R.id.menu_design_screen,
+                R.id.menu_export,
+                R.id.menu_nightlight,
+                R.id.menu_import});
         if (isDesignMode()) {
-            menu.removeItem(R.id.menu_add);
-            menu.removeItem(R.id.menu_remove);
-            menu.removeItem(R.id.menu_view);
-            menu.removeItem(R.id.menu_test);
+            removeUnwantedMenuItems(menu, new int[]{R.id.menu_add,
+                R.id.menu_remove, R.id.menu_view, R.id.menu_test});
         }/* else {
             MenuItem menuItem = menu.getItem(R.id.menu_settings);
             menuItem.setTitle(R.string.summary);

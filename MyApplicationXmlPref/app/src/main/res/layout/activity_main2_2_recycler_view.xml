@@ -10,7 +10,6 @@
         android:id="@+id/editView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_alignParentStart="true"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
         android:orientation="vertical">
@@ -19,13 +18,15 @@
             android:id="@+id/etKey"
             android:layout_width="match_parent"
             android:layout_height="60dp"
+            android:autofillHints=""
             android:ems="10"
             android:focusable="true"
             android:focusableInTouchMode="true"
             android:hint="@string/enter_subject"
             android:inputType="text"
-            android:drawableRight="@drawable/ic_clear_black_24dp"
-            app:autoSizeTextType="uniform" />
+            app:autoSizeTextType="uniform"
+            android:textSize="25sp"/>
+        <!-- android:drawableEnd="@drawable/ic_clear_black_24dp" -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -35,6 +36,7 @@
                 android:id="@+id/etValue"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:autofillHints=""
                 android:ems="10"
                 android:freezesText="false"
                 android:hint="@string/enter_text"
@@ -42,15 +44,15 @@
                 android:minLines="4"
                 android:scrollbars="vertical"
                 android:gravity="top|start"
-                android:drawableRight="@drawable/ic_clear_black_24dp"
-                app:autoSizeTextType="uniform" />
+                app:autoSizeTextType="uniform"
+                android:textSize="25sp"/>
         </ScrollView>
+        <!-- android:drawableEnd="@drawable/ic_clear_black_24dp" -->
     </LinearLayout>
     <LinearLayout
         android:id="@+id/searchView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
         android:orientation="vertical">
@@ -58,18 +60,14 @@
             android:id="@+id/searchText"
             android:layout_width="match_parent"
             android:layout_height="60dp"
-            android:drawableRight="@drawable/ic_clear_black_24dp"
+            android:drawableEnd="@drawable/ic_clear_black_24dp"
             android:focusable="true"
             android:focusableInTouchMode="true"
             android:hint="@string/searchText"
             android:inputType="text"
+            android:textSize="25sp"
             app:autoSizeTextType="uniform"/>
     </LinearLayout>
-    <View
-        android:id="@+id/divider"
-        android:layout_width="match_parent"
-        android:layout_height="8dp"
-        android:background="#CCCCCC" />
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/list"
         android:layout_width="match_parent"

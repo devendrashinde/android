@@ -9,6 +9,7 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.OpenableColumns;
 
+import androidx.core.content.FileProvider;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.loader.content.CursorLoader;
 
@@ -28,6 +29,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
 
 public class StorageUtil {
 
@@ -46,6 +50,7 @@ public class StorageUtil {
     public static final String JPEG_FILE = "image/jpeg";
     public static final String OBJ = ".obj";
     public static final String JSON = ".json";
+    public static final String DSHINDE_FILEPROVIDER = "com.example.dshinde.fileprovider";
 
     public static boolean isExternalStorageWritable() {
         String state = Environment.getExternalStorageState();
@@ -307,6 +312,50 @@ public class StorageUtil {
         return filename.replaceFirst("[.][^.]+$", "");
     }
 
+    public static File createTempImageFile(Context context) {
+        // Create an image file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "IMG" + timeStamp + "_";
+        try {
+            File storageDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+            return File.createTempFile(
+                    imageFileName,  /* prefix */
+                    ".jpg",   /* suffix */
+                    storageDir      /* directory */
+            );
+        } catch(IOException e){
+            return null;
+        }
+    }
 
+    public static File createImageFile(Context context, String fileName) {
+        return new File(context.getFilesDir(), fileName.concat(".jpg"));
+    }
+    public static File createDocumentFile(Context context, String fileName) {
+        return new File(context.getFilesDir(), fileName.concat(".pdf"));
+    }
+
+    public static File createTempDocumentFile(Context context, String fileName) {
+        try {
+            File storageDir = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+            return File.createTempFile(
+                    fileName,       /* prefix */
+                    ".pdf",         /* suffix */
+                    storageDir      /* directory */
+            );
+        } catch(IOException e){
+            return null;
+        }
+    }
+
+    public static Uri createImageFileUri(Context context) {
+        return getUriForFile(context, createTempImageFile(context));
+    }
+
+    public static Uri getUriForFile(Context context, File file) {
+        return FileProvider.getUriForFile(context,
+                DSHINDE_FILEPROVIDER,
+                file);
+    }
 
 }

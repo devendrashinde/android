@@ -3,7 +3,6 @@ package com.example.dshinde.myapplication_xmlpref.activities.drawables;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -29,8 +28,6 @@ import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.example.dshinde.myapplication_xmlpref.services.ReadWriteOnceDataStorage;
 import com.github.chrisbanes.photoview.PhotoView;
-import com.theartofdev.edmodo.cropper.CropImage;
-import com.theartofdev.edmodo.cropper.CropImageView;
 
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
@@ -62,6 +59,7 @@ public class DrawableActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         Bundle bundle = getIntent().getExtras();
+        if (bundle == null) throw new AssertionError();
         collectionName = bundle.getString(Constants.PARAM_FILENAME);
         userId = bundle.getString(Constants.USERID);
 
@@ -106,7 +104,7 @@ public class DrawableActivity extends BaseActivity {
 
     private void setParents() {
         if(parent != null) {
-            String[] arr = parent.stream().toArray(String[] ::new);
+            String[] arr = parent.toArray(new String[0]);
             RadioGroup rg = DynamicControls.getRadioGroupControl(this, arr, Collections.singletonList(parentNode));
             rg.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
                 @Override
@@ -214,12 +212,6 @@ public class DrawableActivity extends BaseActivity {
             }
         }).start();
 
-    }
-
-    private void cropPhoto(Uri photoUri) {
-        CropImage.activity(photoUri)
-                .setGuidelines(CropImageView.Guidelines.ON)
-                .start(this);
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {

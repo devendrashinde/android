@@ -1,15 +1,15 @@
 package com.example.dshinde.myapplication_xmlpref.activities;
 
 import android.annotation.SuppressLint;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.media.AudioAttributes;
-import android.media.MediaPlayer;
+import android.content.ServiceConnection;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
-import android.os.ParcelFileDescriptor;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -24,9 +24,11 @@ import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
+import com.example.dshinde.myapplication_xmlpref.listners.AudioServiceListener;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.listners.OnSwipeTouchListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
+import com.example.dshinde.myapplication_xmlpref.services.AudioService;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -37,12 +39,14 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class AudioVideoActivity extends BaseActivity {
+public class AudioActivity extends BaseActivity implements AudioServiceListener {
     public static final String MEDIA_URI = "mediaUri";
     public static final String MEDIA_NAME = "mediaName";
     static final int PLAYBACK_MODE_SELECT = 1;
     static final int PLAYBACK_MODE_PLAY = 2;
-    private static final String CLASS_TAG = "AudioVideoActivity";
+    private static final String CLASS_TAG = "AudioActivity";
+    public static final String PLAY = "PLAY";
+    public static final String PAUSE = "PAUSE";
     EditText editTextFileUri;
     ImageButton buttonPlay;
     ImageButton buttonPrevious;
@@ -53,15 +57,30 @@ public class AudioVideoActivity extends BaseActivity {
     String key;
     String noteText;
     Uri mediaUri;
-    MediaPlayer mp = new MediaPlayer();
+    private Intent audioServiceIntent;
+    private AudioService audioService;
     Gson gson = new GsonBuilder().create();
     SeekBar seekBar;
-    public final Handler mHandler = new Handler() {
-        public void handleMessage(Message msg) {
-            seekBar.setProgress(msg.arg1);
+    private final Handler handler = new Handler();
+    private boolean isBound = false;
+
+    private final ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            AudioService.LocalBinder binder = (AudioService.LocalBinder) service;
+            audioService = binder.getService();
+            audioService.addListener(AudioActivity.this);
+            isBound = true;
+            updateSeekBar();
         }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            isBound = false;
+        }
+
     };
-    Timer timer;
+
     int mode, currentNote, totalNotes;
     List<KeyValue> notes;
     List<KeyValue> audioNotes;
@@ -72,7 +91,6 @@ public class AudioVideoActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.audiovideo_activity_layout);
-        timer = new Timer();
         // get parameters
         Bundle bundle = getIntent().getExtras();
         if (bundle != null) {
@@ -106,6 +124,13 @@ public class AudioVideoActivity extends BaseActivity {
                 key = notes.get(currentNote).getKey();
             }
             noteText = notes.get(currentNote).getValue();
+        }
+    }
+
+    private void updateSeekBar() {
+        if (isBound) {
+            seekBar.setProgress(audioService.getCurrentPosition());
+            handler.postDelayed(this::updateSeekBar, 1000);
         }
     }
 
@@ -150,24 +175,19 @@ public class AudioVideoActivity extends BaseActivity {
     }
 
     private void playOrPause() {
-        if(mediaUri == null){
+        if(!isBound || mediaUri == null){
             return;
         }
-        if (mp.isPlaying()) {
-            mp.pause();
-            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if (audioService.isPlaying()) {
+            setAudioServiceAction(PAUSE);
         } else {
-            if (mp.getDuration() == mp.getCurrentPosition()) {
-                seekBar.setProgress(0);
-            }
-            mp.start();
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            timer.schedule(new ProgressUpdate(), 0, 1000); // using handler/timer task
+            setAudioServiceAction(PLAY);
         }
         setPlayPauseButton();
     }
 
     private void loadUI() {
+        //startService(audioServiceIntent);
         editTextFileUri = findViewById(R.id.fileUri);
         buttonPlay = findViewById(R.id.buttonPlay);
         setPlayButtonListener();
@@ -216,8 +236,8 @@ public class AudioVideoActivity extends BaseActivity {
 
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromTouch) {
-                if (fromTouch && mp != null) {
-                    mp.seekTo(progress);
+                if (fromTouch && isBound) {
+                    audioService.seekTo(progress);
                 }
             }
 
@@ -293,9 +313,8 @@ public class AudioVideoActivity extends BaseActivity {
                 parseAndDisplayText(noteText);
             }
         } else if(audioNote){
-            if(mp != null && mp.isPlaying()) {
-                mp.stop();
-                mp.reset();
+            if(isBound && audioService.isPlaying()) {
+                setAudioServiceAction("STOP");
             }
             setPlayPauseButton();
             seekBar.setProgress(0);
@@ -347,44 +366,33 @@ public class AudioVideoActivity extends BaseActivity {
     }
 
     private void setMediaPlayerSource() {
-        if (mediaUri == null) return;
-        try {
-            if (mp == null) {
-                mp = new MediaPlayer();
-            }
-            mp.reset();
-            ParcelFileDescriptor parcelFileDescriptor =
-                    getContentResolver().openFileDescriptor(mediaUri, "r");
-            mp.setAudioAttributes(new AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .setUsage(AudioAttributes.USAGE_MEDIA).build());
-            mp.setDataSource(parcelFileDescriptor.getFileDescriptor());
+        if (mediaUri != null) {
+            audioServiceIntent.setAction(PLAY);
+            audioServiceIntent.setData(mediaUri);
             seekBar.setProgress(0);
-            mp.setOnPreparedListener(mediaPlayer -> {
-                seekBar.setMax(mp.getDuration());
-                playOrPause();
-            });
-            mp.setOnCompletionListener(mediaPlayer -> {
-                setPlayPauseButton();
-                seekBar.setProgress(mp.getDuration());
-                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-                if(mode == PLAYBACK_MODE_PLAY) {
-                    next();
-                }
-            });
-            mp.prepareAsync();
-            parcelFileDescriptor.close();
-        } catch (Exception e) {
-            e.printStackTrace();
+            startService(audioServiceIntent);
         }
     }
 
+    private void setAudioServiceAction(String command) {
+        audioServiceIntent.setAction(command);
+        startService(audioServiceIntent);
+    }
+
+
     private void setPlayPauseButton() {
-        if (mp.isPlaying()) {
+        if (audioService.isPlaying()) {
             buttonPlay.setImageResource(R.drawable.ic_action_pause);
         } else {
             buttonPlay.setImageResource(R.drawable.ic_action_play);
         }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        audioServiceIntent = new Intent(this, AudioService.class);
+        bindService(audioServiceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
     }
 
     @Override
@@ -393,33 +401,23 @@ public class AudioVideoActivity extends BaseActivity {
         Log.d(CLASS_TAG, "onStop");
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         dataStorageManager.removeDataStorageListeners();
-        if (mp != null) {
-            if (mp.isPlaying()) mp.stop();
-            mp.release();
-            mp = null;
+        if (isBound) {
+            unbindService(serviceConnection);
+            isBound = false;
         }
     }
 
-    private class ProgressUpdate extends TimerTask {
+    @Override
+    public void playStarted() {
+        seekBar.setMax(audioService.getDuration());
+    }
 
-        public ProgressUpdate() {
-            super();
-        }
-
-        @Override
-        public void run() {
-            runOnUiThread(new Runnable() {
-
-                @Override
-                public void run() {
-                    if (mp != null && mp.isPlaying()) {
-                        int currentPosition = mp.getCurrentPosition();
-                        Message msg = new Message();
-                        msg.arg1 = currentPosition;
-                        mHandler.dispatchMessage(msg);
-                    }
-                }
-            });
+    @Override
+    public void playCompleted() {
+        setPlayPauseButton();
+        seekBar.setProgress(audioService.getDuration());
+        if(mode == PLAYBACK_MODE_PLAY) {
+            next();
         }
     }
 }

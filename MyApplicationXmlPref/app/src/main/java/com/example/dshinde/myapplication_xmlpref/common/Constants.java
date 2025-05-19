@@ -13,6 +13,7 @@ public class Constants {
     public static final int REQUEST_CODE_SCREEN_DESIGN = 501;
     public static final int REQUEST_CODE_SCREEN_PREVIEW = 502;
     public static final int REQUEST_CODE_SCREEN_CAPTURE = 503;
+    public static final int REQUEST_CODE_CROP_IMAGE = 504;
     public static final int RESULT_CODE_OK = 1;
     public static final int RESULT_CODE_CANCEL = -1;
     public static final String SCREEN_DESIGN_NOTE_PREFIX = "screenDesign:";
@@ -73,4 +74,5 @@ public class Constants {
     public static final String NOTE_TEXT = "text";
     public static final String SUBJECT = "subject";
     public static final String PARAM_URL = "url";
+
 }

@@ -2,8 +2,6 @@ package com.example.dshinde.myapplication_xmlpref.activities.recyclerviewbased;
 
 import static com.example.dshinde.myapplication_xmlpref.common.Constants.DRAWABLE_RIGHT;
 
-import android.app.AlarmManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -21,7 +19,10 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.lifecycle.Observer;
@@ -35,9 +36,10 @@ import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 
 import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.activities.AudioActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.AudioVideoActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
-import com.example.dshinde.myapplication_xmlpref.activities.GraphViewActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.ImageCropperActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.PhotoGalleryActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.RelationshipActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.ScrollingTextViewActivity;
@@ -52,15 +54,12 @@ import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.listners.RecyclerViewKeyValueItemListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.example.dshinde.myapplication_xmlpref.services.AddNoteToDictionaryWorker;
-import com.example.dshinde.myapplication_xmlpref.services.BackupBackgroundService;
 import com.example.dshinde.myapplication_xmlpref.services.BackupWorker;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
 import com.example.dshinde.myapplication_xmlpref.services.ReadWriteOnceDataStorage;
 import com.example.dshinde.myapplication_xmlpref.services.SharedPrefManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.theartofdev.edmodo.cropper.CropImage;
-import com.theartofdev.edmodo.cropper.CropImageView;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -82,6 +81,9 @@ public class MainActivityRecyclerView extends BaseActivity  {
     private static final String CLASS_TAG = "MainActivityRV";
     Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
+    // activities started for results
+    ActivityResultLauncher<Intent> imageCropperActivityResultLauncher;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -91,6 +93,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
         // Check if user is signed in (non-null) and update UI accordingly.
         loadUI();
         initDataStorageAndLoadData(this);
+        registerImageCropperActivityForResults();
     }
 
     private void loadUI() {
@@ -176,13 +179,8 @@ public class MainActivityRecyclerView extends BaseActivity  {
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.navigation, menu);
-        menu.removeItem(R.id.menu_add);
-        menu.removeItem(R.id.menu_share);
-        menu.removeItem(R.id.menu_clear);
-        menu.removeItem(R.id.menu_remove);
-        menu.removeItem(R.id.menu_copy);
-        menu.removeItem(R.id.menu_daylight);
-        menu.removeItem(R.id.menu_nightlight);
+        removeUnwantedMenuItems(menu, new int[]{R.id.menu_add, R.id.menu_share,R.id.menu_clear
+                ,R.id.menu_remove,R.id.menu_copy,R.id.menu_daylight,R.id.menu_nightlight});
         return true;
     }
 
@@ -223,7 +221,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
             case R.id.menu_daylight:
                 return true;
             case R.id.menu_test:
-                showTestActivity();
+                selectAndCropPhoto();
                 return true;
             case R.id.menu_design_screen:
                 designScreen();
@@ -236,7 +234,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
         }
     }
 
-    private void showTestActivity() {
+    private void startPhotoGalleryActivity() {
         String fileName = valueField.getText().toString();
         //Intent intent = new Intent(MainActivityRecyclerView.this, GraphViewActivity.class);
         Intent intent = new Intent(MainActivityRecyclerView.this, PhotoGalleryActivity.class);
@@ -244,6 +242,8 @@ public class MainActivityRecyclerView extends BaseActivity  {
         intent.putExtra(Constants.USERID, userId);
         startActivity(intent);
     }
+
+
 
     private void startRelationshipActivity() {
         String fileName = valueField.getText().toString();
@@ -366,7 +366,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     @Override
-    protected void processSelectedOption(@NonNull String id, @NonNull String selectedOption, String key, String value) {
+    protected void processSelectedOption(String id, String selectedOption, String key, String value) {
         switch (selectedOption) {
             case Constants.VIEW_NOTE:
                 viewNote(value);
@@ -404,7 +404,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
     private void startAudioNoteActivity(String title, List<KeyValue> values, String action) {
         Intent intent = new Intent(MainActivityRecyclerView.this, AudioVideoActivity.class);
         intent.putExtra(Constants.USERID, userId);
-        intent.putExtra("note", title);
+        intent.putExtra( "note", title);
         if(action.equals(Constants.PLAY_NOTE)) {
             intent.putExtra("key", title);
         }
@@ -552,7 +552,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
 
     private void backup(DocumentFile dir) {
         selectedDir = dir;
-        if (dir != null && dataStorageManager.getValues().size() > 0) {
+        if (dir != null && !dataStorageManager.getValues().isEmpty()) {
             final Data data = new Data.Builder()
                     .putString(Constants.PARAM_FOLDER, dir.getUri().toString())
                     .build();
@@ -578,23 +578,6 @@ public class MainActivityRecyclerView extends BaseActivity  {
 
         }
     }
-    /*
-    private void backup2(DocumentFile dir) {
-        selectedDir = dir;
-        if (dir != null) {
-            AlarmManager alarmManager = (AlarmManager)getSystemService(ALARM_SERVICE);
-            Intent backupIntent = new Intent(this, BackupBackgroundService.class);
-            backupIntent.putExtra(Constants.PARAM_DATA, gson.toJson(dataStorageManager.getValues()));
-            backupIntent.putExtra(Constants.PARAM_FOLDER, dir.getUri().toString());
-            boolean backupInProgress = (PendingIntent.getBroadcast(this, REQ_CODE, backupIntent, PendingIntent.FLAG_NO_CREATE) != null);
-            if(!backupInProgress) {
-                PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), REQ_CODE, backupIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-                alarmManager.set(AlarmManager.RTC_WAKEUP, -1, pendingIntent);
-
-            }
-        }
-    }
-    */
 
     public void restore() {
 
@@ -709,26 +692,24 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     private void selectAndCropPhoto() {
-        CropImage.activity()
-                .setGuidelines(CropImageView.Guidelines.ON)
-                .start(this);
+        Intent intent = new Intent(this, ImageCropperActivity.class);
+        imageCropperActivityResultLauncher.launch(intent);
     }
 
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode != RESULT_OK) {
-            return;
-        }
-        switch (requestCode) {
-            case CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE:
-                CropImage.ActivityResult result = CropImage.getActivityResult(data);
-                if (resultCode == RESULT_OK) {
-                    Uri selectedFile = result.getUri();
-                } else if (resultCode == CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE) {
-                    Exception error = result.getError();
-                }
-                break;
-        }
+    private void registerImageCropperActivityForResults() {
+        imageCropperActivityResultLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                new ActivityResultCallback<ActivityResult>() {
+                    @Override
+                    public void onActivityResult(ActivityResult result) {
+                        if (result.getResultCode() == Constants.RESULT_CODE_OK) {
+                            // There are no request codes
+                            Intent data = result.getData();
+                            Uri imageUri = data.getData();
+                            //saveImage(imageUri);
+                        }
+                    }
+                });
     }
 
     private void saveImage(Uri imageUri) {

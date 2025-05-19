@@ -17,6 +17,7 @@
         android:focusableInTouchMode="true"
         android:hint="@string/subject"
         android:inputType="text"
+        android:textSize="25sp"
         app:autoSizeTextType="uniform"
         app:layout_constraintHorizontal_chainStyle="spread"
         app:layout_constraintEnd_toEndOf="parent"

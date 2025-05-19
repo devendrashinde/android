@@ -16,6 +16,8 @@
     <uses-permission android:name="android.permission.READ_INTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
     <queries>
         <intent>
@@ -37,66 +39,99 @@
         android:largeHeap="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme"
+        android:theme="@style/Theme.AppCompat"
         android:windowSoftInputMode="adjustResize">
+        <activity
+            android:name=".activities.SettingsActivity"
+            android:exported="false"
+            android:label="@string/title_activity_settings" />
+        <activity
+            android:name=".activities.ImageCropperActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat" />
         <activity
             android:name=".activities.PhotoGalleryActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:exported="false"
             android:label="@string/title_activity_photo_gallary"
-            android:theme="@style/AppTheme.Fullscreen" />
+            android:theme="@style/Theme.AppCompat" />
         <activity
             android:name=".activities.drawables.DrawableActivity"
             android:configChanges="orientation|screenSize"
-            android:exported="true"></activity>
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
         <activity
             android:name=".launcher.SignInActivity"
             android:configChanges="orientation|screenSize"
-            android:exported="true" />
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.DayNight" />
         <activity
             android:name=".activities.PdfViewActivity"
             android:configChanges="orientation|screenSize"
             android:exported="true"
-            android:theme="@style/AppTheme.NoActionBar" />
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
+        <activity
+            android:name=".activities.WebViewActivity"
+            android:configChanges="orientation|screenSize"
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
         <activity
             android:name=".activities.DynamicLinearLayoutActivity"
             android:configChanges="orientation|screenSize"
-            android:exported="true" />
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.DayNight" />
         <activity
             android:name=".activities.DataAnalyticActivity"
             android:configChanges="orientation|screenSize"
-            android:exported="true" />
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.DayNight" />
         <activity
             android:name=".activities.RelationshipActivity"
             android:configChanges="orientation|screenSize"
-            android:exported="true" />
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.DayNight" />
         <activity
             android:name=".activities.listviewbased.ScreenDesignActivity"
             android:configChanges="orientation|screenSize"
-            android:exported="true" />
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.DayNight" />
         <activity
             android:name=".activities.recyclerviewbased.ScreenDesignActivityRecyclerView"
             android:configChanges="orientation|screenSize"
-            android:exported="true" />
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.DayNight" />
         <activity
             android:name=".activities.ScrollingTextViewActivity"
             android:exported="true"
-            android:label="@string/title_scrolling_textview_activity" />
+            android:label="@string/title_scrolling_textview_activity"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
         <activity
             android:name=".activities.AudioVideoActivity"
+            android:configChanges="orientation|screenSize"
             android:exported="true"
-            android:label="Audio Note"></activity>
+            android:label="Audio Video Note"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
+        <activity
+            android:name=".activities.AudioActivity"
+            android:configChanges="orientation|screenSize"
+            android:exported="true"
+            android:label="Audio Note"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
         <activity
             android:name=".activities.GraphViewActivity"
             android:exported="true"
-            android:label="Graph" />
+            android:label="Graph"
+            android:theme="@style/Theme.AppCompat.DayNight" />
         <activity
             android:name=".activities.DialogActivity"
-            android:exported="true" /> <!-- Launcher Activity -->
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.DayNight.Dialog" /> <!-- Launcher Activity -->
         <activity
             android:name=".auth.GoogleSignInActivity"
             android:configChanges="orientation|screenSize"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.DayNight">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -106,28 +141,28 @@
         <activity
             android:name=".launcher.BiometricSignIn"
             android:configChanges="orientation|screenSize"
-            android:exported="true" />
-        <!--
-        <activity
-            android:name=".auth.GoogleSignInActivity"
-            android:configChanges="orientation|screenSize" />
-        -->
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.DayNight" />
         <activity
             android:name=".activities.listviewbased.MainActivity"
             android:configChanges="orientation|screenSize"
-            android:exported="true" />
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.DayNight" />
         <activity
             android:name=".activities.recyclerviewbased.PicklistActivityRecyclerView"
             android:configChanges="orientation|screenSize"
-            android:exported="true" />
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.DayNight" />
         <activity
             android:name=".activities.recyclerviewbased.MainActivityRecyclerView"
             android:configChanges="orientation|screenSize"
-            android:exported="true" />
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat" />
         <activity
             android:name=".activities.recyclerviewbased.Main2ActivityRecyclerView"
             android:configChanges="orientation|screenSize"
-            android:exported="true" />
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat" />
         <activity
             android:name=".activities.listviewbased.Main2Activity"
             android:configChanges="orientation|screenSize"
@@ -137,24 +172,23 @@
             android:name=".activities.listviewbased.ShabdaKoshActivity"
             android:configChanges="orientation|screenSize"
             android:exported="true"
-            android:label="@string/shabdaKosh" />
+            android:label="@string/shabdaKosh"
+            android:theme="@style/Theme.AppCompat" />
         <activity
             android:name=".activities.MediaViewActivity"
             android:configChanges="orientation|screenSize"
-            android:exported="true" />
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.DayNight" />
         <activity
             android:name=".activities.PhotoViewActivity"
             android:configChanges="orientation|screenSize"
-            android:exported="true" />
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.DayNight" />
         <activity
             android:name=".activities.RandomButtonActivity"
             android:configChanges="orientation|screenSize"
-            android:exported="true" />
-        <activity
-            android:name="com.theartofdev.edmodo.cropper.CropImageActivity"
-            android:configChanges="orientation|screenSize"
             android:exported="true"
-            android:theme="@style/Base.Theme.AppCompat" />
+            android:theme="@style/Theme.AppCompat.DayNight" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -166,6 +200,8 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <service android:name="com.example.dshinde.myapplication_xmlpref.services.AudioService" />
 
         <receiver
             android:name=".services.BackupBackgroundService"
