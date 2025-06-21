@@ -1,6 +1,7 @@
 package com.example.dshinde.myapplication_xmlpref.helper;
 
 import android.app.Activity;
+import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -356,6 +357,77 @@ public class StorageUtil {
         return FileProvider.getUriForFile(context,
                 DSHINDE_FILEPROVIDER,
                 file);
+    }
+
+    public static Uri getAudioUriFromDisplayName(Context context, String displayName) {
+        Uri mediaUri = MediaStore.Audio.Media.INTERNAL_CONTENT_URI;
+
+        String[] projection = new String[] {
+                MediaStore.Audio.Media._ID
+        };
+
+        String selection = MediaStore.Audio.Media.DISPLAY_NAME + "=?";
+        String[] selectionArgs = new String[] { displayName };
+
+        Cursor cursor = context.getContentResolver().query(
+                mediaUri,
+                projection,
+                selection,
+                selectionArgs,
+                null
+        );
+
+        if (cursor != null && cursor.moveToFirst()) {
+            long id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID));
+            cursor.close();
+
+            // Build and return the content URI
+            return ContentUris.withAppendedId(mediaUri, id);
+        }
+
+        if (cursor != null) cursor.close();
+        return null;
+    }
+
+    public static byte[] readBytesFromFile(File file) {
+        FileInputStream fis = null;
+        byte[] bytesArray = null;
+
+        try {
+            fis = new FileInputStream(file);
+            bytesArray = new byte[(int) file.length()];
+            fis.read(bytesArray);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (fis != null) {
+                try {
+                    fis.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return bytesArray;
+    }
+    public static void writeBytesToFile(byte[] data, File file) {
+        FileOutputStream fos = null;
+        try {
+            fos = new FileOutputStream(file);
+            fos.write(data);
+            fos.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (fos != null) {
+                try {
+                    fos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
 }

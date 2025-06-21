@@ -105,18 +105,24 @@ public class FireStorageManager implements FileStorage {
         downloadFileAsBytes(mediaId, mediaName, fireStorageListener);
     }
     public void downloadFileAsBytes(String mediaId, String mediaName, FireStorageListener fireStorageListener){
-        StorageReference storageFileRef = getStorageReference(mediaId, mediaName);
-        storageFileRef.getBytes(ONE_MEGABYTE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
-            @Override
-            public void onSuccess(byte[] bytes) {
-                fireStorageListener.downloadFileBytesReceived(bytes);
-            }
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception exception) {
-                Toast.makeText(context, context.getResources().getString(R.string.download_failed) +"\n" + exception.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+        File file = StorageUtil.createDocumentFile(context, mediaId + "_" + mediaName);
+        if( file.exists()) {
+            fireStorageListener.downloadFileBytesReceived(StorageUtil.readBytesFromFile(file));
+        } else {
+            StorageReference storageFileRef = getStorageReference(mediaId, mediaName);
+            storageFileRef.getBytes(ONE_MEGABYTE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
+                @Override
+                public void onSuccess(byte[] bytes) {
+                    StorageUtil.writeBytesToFile(bytes, file);
+                    fireStorageListener.downloadFileBytesReceived(bytes);
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception exception) {
+                    Toast.makeText(context, context.getResources().getString(R.string.download_failed) + "\n" + exception.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
 
     @Override

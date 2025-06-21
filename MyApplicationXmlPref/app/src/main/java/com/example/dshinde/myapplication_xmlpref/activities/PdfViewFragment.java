@@ -26,6 +26,7 @@ import com.github.barteksc.pdfviewer.scroll.DefaultScrollHandle;
 import com.shockwave.pdfium.PdfDocument;
 
 import java.util.List;
+import java.util.Objects;
 
 public class PdfViewFragment extends Fragment implements OnPageChangeListener, OnLoadCompleteListener,
         OnPageErrorListener {
@@ -68,7 +69,7 @@ public class PdfViewFragment extends Fragment implements OnPageChangeListener, O
     @Override
     public void onPageChanged(int page, int pageCount) {
         pageNumber = page;
-        getActivity().setTitle(String.format("%s %s / %s", pdfFileName, page + 1, pageCount));
+        requireActivity().setTitle(String.format("%s %s / %s", pdfFileName, page + 1, pageCount));
     }
 
     private void displayFromUri(Uri uri) {
@@ -159,13 +160,15 @@ public class PdfViewFragment extends Fragment implements OnPageChangeListener, O
     private void loadNext(){
         String mediaFieldId = mediaFields.getNextDocumentMediaField();
         if(mediaFieldId != null) {
-            fileStorage.downloadFileAsBytes(mediaFieldId, mediaFields.getMediaFieldValue(mediaFieldId));
+            pdfFileName = mediaFields.getMediaFieldValue(mediaFieldId);
+            fileStorage.downloadFileAsBytes(mediaFieldId, pdfFileName);
         }
     }
 
     private void loadPrev(){
         String mediaFieldId = mediaFields.getPrevDocumentMediaField();
         if(mediaFieldId != null) {
+            pdfFileName = mediaFields.getMediaFieldValue(mediaFieldId);
             fileStorage.downloadFileAsBytes(mediaFieldId, mediaFields.getMediaFieldValue(mediaFieldId));
         }
     }

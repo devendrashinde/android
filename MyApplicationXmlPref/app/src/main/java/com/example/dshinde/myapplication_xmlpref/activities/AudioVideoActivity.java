@@ -189,6 +189,7 @@ public class AudioVideoActivity extends BaseActivity {
         setSwipeListener();
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private void setSwipeListener() {
         if(mode == PLAYBACK_MODE_SELECT) {
             textViewNote.setOnTouchListener(new OnSwipeTouchListener(this) {
@@ -228,25 +229,17 @@ public class AudioVideoActivity extends BaseActivity {
         });
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private void setFileSelectorListener() {
-        /*
-        if (mode == PLAY) {
-            // remove file select icon
-            editTextFileUri.setCompoundDrawablesWithIntrinsicBounds(null, null, null, null);
-        } else {
-
-         */
-            editTextFileUri.setOnTouchListener((v, event) -> {
-                if (event.getAction() == MotionEvent.ACTION_UP) {
-                    if (event.getRawX() >= (editTextFileUri.getRight() - editTextFileUri.getCompoundDrawables()[Constants.DRAWABLE_RIGHT].getBounds().width())) {
-                        selectFile(Constants.AUDIO_FILE, Constants.SELECT_AUDIO);
-                        return true;
-                    }
+        editTextFileUri.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_UP) {
+                if (event.getRawX() >= (editTextFileUri.getRight() - editTextFileUri.getCompoundDrawables()[Constants.DRAWABLE_RIGHT].getBounds().width())) {
+                    selectFile(Constants.AUDIO_FILE, Constants.SELECT_AUDIO);
+                    return true;
                 }
-                return false;
-            });
-            /*
-        }*/
+            }
+            return false;
+        });
     }
 
     private void initDataStorageAndLoadData(Context context) {
@@ -335,6 +328,8 @@ public class AudioVideoActivity extends BaseActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (data != null && data.getData() != null) {
             mediaUri = data.getData();
+
+            String mediaPath = StorageUtil.getAudioPath(this, mediaUri);
             final int takeFlags = data.getFlags()
                     & (Intent.FLAG_GRANT_READ_URI_PERMISSION
                     | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);

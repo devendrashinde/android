@@ -21,7 +21,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dshinde.myapplication_xmlpref.R;
-import com.example.dshinde.myapplication_xmlpref.activities.AudioActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.AudioVideoActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.RandomButtonActivity;
@@ -391,7 +390,7 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
     }
 
     private void displayAudioVideoActivity(String key, String value) {
-        Intent intent = new Intent(Main2ActivityRecyclerView.this, AudioActivity.class);
+        Intent intent = new Intent(Main2ActivityRecyclerView.this, AudioVideoActivity.class);
         intent.putExtra(Constants.USERID, userId);
         intent.putExtra(Constants.PARAM_NOTE, collectionName);
         intent.putExtra(Constants.KEY, key);

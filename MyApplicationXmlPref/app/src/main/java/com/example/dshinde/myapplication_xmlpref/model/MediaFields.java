@@ -23,44 +23,46 @@ public class MediaFields {
     private String[] documentMedia;
 
     private Map<String, String> values = new HashMap<>();
-    private int counterNext=0;
-    private int counterPrev=0;
+    private int counterNextPhoto =0;
+    private int counterPrevPhoto =0;
+    private int counterNextDoc=0;
+    private int counterPrevDoc=0;
 
     public MediaFields() {
     }
 
     public String getNextPhotoMediaField() {
         String media = null;
-        if (counterNext >= 0 && counterNext < photoMedia.length) {
-            counterPrev = counterNext - 1;
-            media = photoMedia[counterNext++];
+        if (counterNextPhoto >= 0 && counterNextPhoto < photoMedia.length) {
+            counterPrevPhoto = counterNextPhoto - 1;
+            media = photoMedia[counterNextPhoto++];
         }
         return media;
     }
 
     public String getPrevPhotoMediaField() {
         String media = null;
-        if( counterPrev >= 0 ) {
-            counterNext = counterPrev + 1;
-            media = photoMedia[counterPrev--];
+        if( counterPrevPhoto >= 0 ) {
+            counterNextPhoto = counterPrevPhoto + 1;
+            media = photoMedia[counterPrevPhoto--];
         }
         return media;
     }
 
     public String getNextDocumentMediaField() {
         String media = null;
-        if (counterNext >= 0 && counterNext < documentMedia.length) {
-            counterPrev = counterNext - 1;
-            media = documentMedia[counterNext++];
+        if (counterNextDoc >= 0 && counterNextDoc < documentMedia.length) {
+            counterPrevDoc = counterNextDoc - 1;
+            media = documentMedia[counterNextDoc++];
         }
         return media;
     }
 
     public String getPrevDocumentMediaField() {
         String media = null;
-        if( counterPrev >= 0 ) {
-            counterNext = counterPrev + 1;
-            media = documentMedia[counterPrev--];
+        if( counterPrevDoc >= 0 ) {
+            counterNextDoc = counterPrevDoc + 1;
+            media = documentMedia[counterPrevDoc--];
         }
         return media;
     }

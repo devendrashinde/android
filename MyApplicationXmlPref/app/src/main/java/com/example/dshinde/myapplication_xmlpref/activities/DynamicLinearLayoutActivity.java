@@ -7,6 +7,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.DialogFragment;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -65,6 +66,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
@@ -95,7 +97,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                 bundle.getString(Constants.NOTE_ID);
         String screenConfig = bundle.getString(Constants.SCREEN_CONFIG);
         String screenData = bundle.getString(Constants.SCREEN_DATA);
-        if (screenData != null && screenData.length() > 0) {
+        if (screenData != null && !screenData.isEmpty()) {
             data = gson.fromJson(screenData, Map.class);
         }
         requestMode = bundle.getInt(Constants.REQUEST_MODE, Constants.REQUEST_CODE_SCREEN_DESIGN);
@@ -372,6 +374,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         valueControl.setCompoundDrawablesWithIntrinsicBounds(0, 0, p, 0);
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private void setDatePicker(EditText control) {
         control.setOnTouchListener((v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_UP) {
@@ -387,6 +390,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private void setTimePicker(EditText control) {
         control.setOnTouchListener(new View.OnTouchListener() {
+            @SuppressLint("ClickableViewAccessibility")
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 if (event.getAction() == MotionEvent.ACTION_UP) {
@@ -580,20 +584,6 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
             return;
         }
         switch (requestCode){
-            /*
-            case CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE :
-                CropImage.ActivityResult result = CropImage.getActivityResult(data);
-                if (resultCode == RESULT_OK) {
-                    Uri selectedFile = result.getUri();
-                    currentScreenControl.setMediaUri(selectedFile);
-                    ImageView currentView = (ImageView) currentScreenControl.getMediaControl();
-                    currentView.setImageURI(selectedFile);
-                } else if (resultCode == CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE) {
-                    Exception error = result.getError();
-                }
-                break;
-
-             */
             case Constants.TAKE_PHOTO:
                 if (currentScreenControl.getMediaUri() != null) {
                     cropPhoto(currentScreenControl.getMediaUri());
@@ -618,7 +608,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
             case Constants.SELECT_MYNOTE:
                 if( data != null) {
                     EditText editText = (EditText) currentScreenControl.getValueControl();
-                    editText.setText(data.getExtras().getString("data"));
+                    editText.setText(Objects.requireNonNull(data.getExtras()).getString("data"));
                 }
                 break;
             default:
@@ -663,7 +653,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
         for (Map.Entry<String,String> entry : data.entrySet()) {
             String value = entry.getValue();
-            if( value != null && value.trim().length() > 0) {
+            if( value != null && !value.trim().isEmpty()) {
                 map.put(entry.getKey(), value.trim());
             }
         }
@@ -812,11 +802,12 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     }
 
     private void getCheckBoxValues(ScreenControl screenControl) {
-        StringBuilder checked = new StringBuilder("");
+        StringBuilder checked = new StringBuilder();
         for (View view : screenControl.getOptionControls()) {
             CheckBox cb = (CheckBox) view;
             if (cb.isChecked()) {
-                checked.append((checked.length() > 0 ? "\n" : "") + cb.getText().toString());
+                checked.append(checked.length() > 0 ? "\n" : "")
+                        .append(cb.getText().toString());
             }
         }
         data.put(screenControl.getControlId(), checked.toString());
