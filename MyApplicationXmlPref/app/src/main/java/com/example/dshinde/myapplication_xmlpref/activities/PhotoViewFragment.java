@@ -6,7 +6,9 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
@@ -16,6 +18,7 @@ import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.helper.GlideApp;
 import com.example.dshinde.myapplication_xmlpref.listners.FireStorageListener;
 import com.example.dshinde.myapplication_xmlpref.model.MediaFields;
+import com.example.dshinde.myapplication_xmlpref.model.ScreenControl;
 import com.example.dshinde.myapplication_xmlpref.services.FileStorage;
 import com.github.chrisbanes.photoview.PhotoView;
 
@@ -46,14 +49,9 @@ public class PhotoViewFragment extends Fragment {
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         photoView = getActivity().findViewById(R.id.photoView);
         photoView.setAdjustViewBounds(true);
-    }
-
-    @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
         fileStorage = Factory.getFileStorageInstance(getContext(), collectionName, new FireStorageListener() {
             @Override
             public void downloadUriReceived(Uri fileUri) {
@@ -81,17 +79,16 @@ public class PhotoViewFragment extends Fragment {
     private void loadNextPhoto(){
         String mediaFieldId = mediaFields.getNextPhotoMediaField();
         if(mediaFieldId != null) {
-            fileStorage.getDownloadUrl(mediaFieldId, mediaFields.getMediaFieldValue(mediaFieldId));
+            fileStorage.downloadImageFile(mediaFields.getMediaFieldValue(mediaFieldId));
         }
     }
 
     private void loadPrevPhoto(){
         String mediaFieldId = mediaFields.getPrevPhotoMediaField();
         if(mediaFieldId != null) {
-            fileStorage.getDownloadUrl(mediaFieldId, mediaFields.getMediaFieldValue(mediaFieldId));
+            fileStorage.downloadImageFile(mediaFields.getMediaFieldValue(mediaFieldId));
         }
     }
-
     public boolean onOptionsItemSelected(MenuItem item){
         // Handle item selection
         switch (item.getItemId()) {

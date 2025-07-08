@@ -64,12 +64,27 @@ public class PdfViewFragment extends Fragment implements OnPageChangeListener, O
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         pdfView = getActivity().findViewById(R.id.pdfView);
         pdfView.setBackgroundColor(Color.LTGRAY);
+        fileStorage = Factory.getFileStorageInstance(getContext(), collectionName, new FireStorageListener() {
+            @Override
+            public void downloadUriReceived(Uri fileUri) {
+            }
+
+            @Override
+            public void downloadFileBytesReceived(byte[] bytes) {
+                displayFromBytes(bytes, pageNumber);
+            }
+
+            @Override
+            public void uploadedUriReceived(Uri fileUri) {
+
+            }
+        });
+        loadNext();
     }
 
     @Override
     public void onPageChanged(int page, int pageCount) {
         pageNumber = page;
-        requireActivity().setTitle(String.format("%s %s / %s", pdfFileName, page + 1, pageCount));
     }
 
     private void displayFromUri(Uri uri) {
@@ -130,38 +145,12 @@ public class PdfViewFragment extends Fragment implements OnPageChangeListener, O
         Log.e(TAG, "Cannot load page " + page);
     }
 
-    @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-        fileStorage = Factory.getFileStorageInstance(getContext(), collectionName, new FireStorageListener() {
-            @Override
-            public void downloadUriReceived(Uri fileUri) {
-            }
-
-            @Override
-            public void downloadFileBytesReceived(byte[] bytes) {
-                displayFromBytes(bytes, pageNumber);
-            }
-
-            @Override
-            public void uploadedUriReceived(Uri fileUri) {
-
-            }
-        });
-        loadNext();
-    }
-
-    private void load(Uri uri, int pageNumber) {
-        this.pageNumber = pageNumber;
-        displayFromUri(uri);
-        getActivity().setTitle(pdfFileName);
-    }
 
     private void loadNext(){
         String mediaFieldId = mediaFields.getNextDocumentMediaField();
         if(mediaFieldId != null) {
             pdfFileName = mediaFields.getMediaFieldValue(mediaFieldId);
-            fileStorage.downloadFileAsBytes(mediaFieldId, pdfFileName);
+            fileStorage.downloadFileAsBytes(pdfFileName);
         }
     }
 
@@ -169,7 +158,7 @@ public class PdfViewFragment extends Fragment implements OnPageChangeListener, O
         String mediaFieldId = mediaFields.getPrevDocumentMediaField();
         if(mediaFieldId != null) {
             pdfFileName = mediaFields.getMediaFieldValue(mediaFieldId);
-            fileStorage.downloadFileAsBytes(mediaFieldId, mediaFields.getMediaFieldValue(mediaFieldId));
+            fileStorage.downloadFileAsBytes(pdfFileName);
         }
     }
 

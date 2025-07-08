@@ -5,10 +5,13 @@ import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.DialogFragment;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -40,7 +43,6 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.example.dshinde.myapplication_xmlpref.R;
-import com.example.dshinde.myapplication_xmlpref.activities.recyclerviewbased.PicklistActivityRecyclerView;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.common.ControlType;
 import com.example.dshinde.myapplication_xmlpref.common.YesNo;
@@ -78,10 +80,26 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     private final Gson gson = new GsonBuilder().create();
     private Integer requestMode = null;
     private ScreenControl currentScreenControl;
+    // Launcher for camera permission request
+    private final ActivityResultLauncher<String> requestCameraPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted) {
+                    // Permission is granted. Continue the action that requires camera.
+                    Log.d(CLASS_TAG, "Camera permission granted");
+                } else {
+                    // Permission denied. Explain to the user why the feature is unavailable.
+                    Log.w(CLASS_TAG, "Camera permission denied");
+                    Toast.makeText(this, "Camera permission is required to take photos.", Toast.LENGTH_LONG).show();
+                }
+            });
+
+    private ActivityResultLauncher<Intent> takePictureLauncher;
+    private ActivityResultLauncher<String> filePickerLauncher;
+    private ActivityResultLauncher<Intent> imageCropperActivityResultLauncher;
+    private ActivityResultLauncher<Intent> selectMyNoteActivityResultLauncher;
     private FileStorage mediaStorage;
+
     private String userId;
-    // activities started for results
-    ActivityResultLauncher<Intent> imageCropperActivityResultLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,11 +131,88 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                 setTitle(getResources().getString(R.string.screen_design_preview));
                 break;
         }
+
+        initialiseTakePhotoLauncher();
+        initialiseFilePickerLauncher();
         renderUI(screenConfig);
         registerImageCropperActivityForResults();
+        registerPicklistActivityForResults();
 
     }
 
+    private void initialiseFilePickerLauncher() {
+        // Initialize the ActivityResultLauncher
+        // The contract is GetContent(), which takes a String (MIME type) as input
+        // and returns a Uri as output.
+        filePickerLauncher = registerForActivityResult(
+                new ActivityResultContracts.GetContent(),
+                new ActivityResultCallback<Uri>() {
+                    @Override
+                    public void onActivityResult(Uri uri) {
+                        // Handle the returned Uri here
+                        if (uri != null) {
+                            Log.d(CLASS_TAG, "Selected file URI: " + uri.toString());
+                            EditText editText = (EditText) currentScreenControl.getValueControl();
+                            currentScreenControl.setMediaUri(uri);
+                            editText.setText(StorageUtil.getFileName(getApplicationContext(), uri));
+                        } else {
+                            Log.d(CLASS_TAG, "No file selected");
+                        }
+                    }
+                });
+    }
+
+    private void initialiseTakePhotoLauncher() {
+        // Initialize your takePictureLauncher (if not already done)
+        // This example assumes you are using a FileProvider to get a content URI
+        takePictureLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK) {
+                        // Image captured and saved to photoURI
+                        // Process the image: display it, save path, etc.
+                        if (currentScreenControl.getMediaUri() != null) {
+                            Log.d(CLASS_TAG, "Photo taken successfully: " + currentScreenControl.getMediaUri().toString());
+                            cropPhoto(currentScreenControl.getMediaUri());
+                        }
+                    } else {
+                        Log.d(CLASS_TAG, "Photo taking cancelled or failed.");
+                    }
+                });
+    }
+
+    // Method that triggers taking a photo (e.g., called from a button click)
+    private void takePhoto() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            // Permission is already granted
+            dispatchTakePictureIntent();
+        } else if (shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
+            // Explain to the user why you need the permission
+            // Then request the permission
+            // You can show a dialog here
+            Toast.makeText(this, "Camera access is required to take photos.", Toast.LENGTH_LONG).show();
+            requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+        } else {
+            // Directly request the permission
+            requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+        }
+    }
+
+    private void dispatchTakePictureIntent() {
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+            // Create the File where the photo should go
+            File photoFile = createImageFile();
+            if(photoFile != null) {
+                Uri photoURI = StorageUtil.getUriForFile(this, photoFile);
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+                currentScreenControl.setMediaUri(photoURI);
+                takePictureLauncher.launch(takePictureIntent);
+            }
+        } else {
+            Toast.makeText(this, "No camera app found.", Toast.LENGTH_SHORT).show();
+        }
+    }
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.dynamic_screen, menu);
@@ -419,7 +514,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         setPhotoControlListener(rg, screenControl);
         String photoFileName = getValue(screenControl);
         if(photoFileName != null && !photoFileName.trim().isEmpty()){
-            mediaStorage.downloadImageFile(screenControl.getControlId(), photoFileName,
+            mediaStorage.downloadImageFile(photoFileName,
                     new PhotoListener((ImageView)screenControl.getMediaControl(), screenControl));
         }
     }
@@ -444,8 +539,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         btn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 if(screenControl.getMediaUri() == null) {
-                    mediaStorage.downloadDocumentFile(screenControl.getControlId(),
-                            getValue(screenControl), new PdfListener((screenControl)));
+                    mediaStorage.downloadDocumentFile(getValue(screenControl), new PdfListener((screenControl)));
                 } else {
                     startPdfViewActivity(screenControl.getMediaUri().toString());
                 }
@@ -482,20 +576,13 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                 if (event.getAction() == MotionEvent.ACTION_UP) {
                     if (event.getRawX() >= (control.getRight() - control.getCompoundDrawables()[Constants.DRAWABLE_RIGHT].getBounds().width())) {
                         currentScreenControl = screenControl;
-                        pickFromMyNote(screenControl.getOptions(), Constants.SELECT_MYNOTE);
+                        pickFromMyNote(screenControl.getOptions());
                         return true;
                     }
                 }
                 return false;
             }
         });
-    }
-
-    private void pickFromMyNote(String options, int actionCode) {
-        Intent intent = new Intent(this, PicklistActivityRecyclerView.class);
-        intent.putExtra(Constants.PARAM_FILENAME, options.replaceAll("\\n", "/"));
-        intent.putExtra(Constants.USERID, userId);
-        startActivityForResult(intent, actionCode);
     }
 
     private void setDocumentSelector(ScreenControl screenControl) {
@@ -506,7 +593,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                 if (event.getAction() == MotionEvent.ACTION_UP) {
                     if (event.getRawX() >= (control.getRight() - control.getCompoundDrawables()[Constants.DRAWABLE_RIGHT].getBounds().width())) {
                         currentScreenControl = screenControl;
-                        selectFile(Constants.PDF_FILE, Constants.SELECT_DOCUMENT);
+                        selectDocument();
                         return true;
                     }
                 }
@@ -544,38 +631,19 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
             });
     }
 
-    private void takePhoto() {
-        Log.d(CLASS_TAG, "TakePhoto");
-        Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-        if (cameraIntent.resolveActivity(getPackageManager()) != null) {
-
-            File photoFile = createImageFile();
-            if(photoFile != null) {
-                Uri photoURI = StorageUtil.getUriForFile(this, photoFile);
-                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-                currentScreenControl.setMediaUri(photoURI);
-            }
-
-            startActivityForResult(cameraIntent, Constants.TAKE_PHOTO);
-        }
-    }
-
     private File createImageFile() {
         return StorageUtil.createTempImageFile(this);
     }
 
-    private void selectFile(String fileType, int actionCode) {
-        Log.d(CLASS_TAG, "SelectFile");
-        // Pick an file from storage
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType(fileType);
-        startActivityForResult(intent, actionCode);
+    private void selectDocument() {
+        Log.d(CLASS_TAG, "selectDocument");
+        filePickerLauncher.launch(Constants.PDF_FILE);
     }
 
     private void cropPhoto(Uri photoUri) {
-        Intent intent = new Intent(getApplicationContext(), ImageCropperActivity.class);
-        intent.putExtra(Constants.PARAM_URL, photoUri.toString());
-        startActivity(intent);
+            Intent intent = new Intent(this, ImageCropperActivity.class);
+            intent.putExtra(Constants.PARAM_URL, photoUri.toString());
+            imageCropperActivityResultLauncher.launch(intent);
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -822,19 +890,9 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         super.onStop();
     }
 
-    private void galleryAddPhoto() {
-        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        mediaScanIntent.setData(currentScreenControl.getMediaUri());
-        this.sendBroadcast(mediaScanIntent);
-    }
-
     private void uploadFile(ScreenControl screenControl) {
         Uri filePath = screenControl.getMediaUri();
-        mediaStorage.uploadMedia(screenControl.getControlId(), filePath);
-    }
-
-    private void downloadFile(String mediaFieldId, String mediaFieldValue, FireStorageListener fireStorageListener) {
-        mediaStorage.downloadImageFile(mediaFieldId, mediaFieldValue, fireStorageListener);
+        mediaStorage.uploadMedia(filePath);
     }
 
     private class PhotoListener implements FireStorageListener {
@@ -906,6 +964,30 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                             currentScreenControl.setMediaUri(imageUri);
                             ImageView currentView = (ImageView) currentScreenControl.getMediaControl();
                             currentView.setImageURI(imageUri);
+                        }
+                    }
+                });
+    }
+
+    private void pickFromMyNote(String options) {
+        Intent intent = new Intent(this, ImageCropperActivity.class);
+        intent.putExtra(Constants.PARAM_FILENAME, options.replaceAll("\\n", "/"));
+        intent.putExtra(Constants.USERID, userId);
+        selectMyNoteActivityResultLauncher.launch(intent);
+    }
+
+    private void registerPicklistActivityForResults() {
+        selectMyNoteActivityResultLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                new ActivityResultCallback<ActivityResult>() {
+                    @Override
+                    public void onActivityResult(ActivityResult result) {
+                        if (result.getResultCode() == Constants.RESULT_CODE_OK) {
+                            Intent data = result.getData();
+                            if( data != null) {
+                                EditText editText = (EditText) currentScreenControl.getValueControl();
+                                editText.setText(Objects.requireNonNull(data.getExtras()).getString("data"));
+                            }
                         }
                     }
                 });

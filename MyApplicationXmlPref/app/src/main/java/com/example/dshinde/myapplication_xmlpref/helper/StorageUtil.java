@@ -14,6 +14,8 @@ import androidx.core.content.FileProvider;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.loader.content.CursorLoader;
 
+import com.example.dshinde.myapplication_xmlpref.common.Constants;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -313,27 +315,66 @@ public class StorageUtil {
         return filename.replaceFirst("[.][^.]+$", "");
     }
 
-    public static File createTempImageFile(Context context) {
+    public static File createTempFile(Context context, String fileType) {
+        return createTempFile(context, fileType, null);
+    }
+    public static File createTempFile(Context context, String fileType, String fileExtension) {
         // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "IMG" + timeStamp + "_";
+        String fileName = "IMG" + timeStamp;
         try {
-            File storageDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+            String type = null;
+            String extension = null;
+            switch(fileType) {
+                case Constants.IMAGE_FILE:
+                    type = Environment.DIRECTORY_PICTURES;
+                    extension = "jpg";
+                    break;
+                case Constants.AUDIO_FILE:
+                    type = Environment.DIRECTORY_MUSIC;
+                    extension = "mp3";
+                    break;
+                default:
+                    type = Environment.DIRECTORY_DOCUMENTS;
+                    extension = "pdf";
+                    break;
+
+            }
+            if(fileExtension == null || fileExtension.isEmpty()){
+                fileExtension = extension;
+            }
+            File storageDir = context.getExternalFilesDir(type);
             return File.createTempFile(
-                    imageFileName,  /* prefix */
-                    ".jpg",   /* suffix */
-                    storageDir      /* directory */
+                    fileName,                   /* prefix */
+                    "." + fileExtension,        /* suffix */
+                    storageDir                  /* directory */
             );
         } catch(IOException e){
             return null;
         }
     }
+    public static File createTempImageFile(Context context) {
+        return createTempFile(context, Constants.IMAGE_FILE);
+    }
+
+    public static File createTempDocumentFile(Context context) {
+        return createTempFile(context, Constants.PDF_FILE);
+    }
+
+    public static File createTempAudioFile(Context context) {
+        return createTempFile(context, Constants.AUDIO_FILE);
+    }
 
     public static File createImageFile(Context context, String fileName) {
-        return new File(context.getFilesDir(), fileName.concat(".jpg"));
+        return getFile(context, fileName.concat(".jpg"));
     }
+
+    public static File getFile(Context context, String fileName) {
+        return new File(context.getFilesDir(), fileName);
+    }
+
     public static File createDocumentFile(Context context, String fileName) {
-        return new File(context.getFilesDir(), fileName.concat(".pdf"));
+        return getFile(context, fileName.concat(".pdf"));
     }
 
     public static File createTempDocumentFile(Context context, String fileName) {
@@ -429,5 +470,13 @@ public class StorageUtil {
             }
         }
     }
+
+    public static String getFileExtension(String fileName) {
+        if (fileName != null && fileName.contains(".")) {
+        return fileName.substring(fileName.lastIndexOf(".") + 1);
+        }
+        return ""; // No extension found
+    }
+
 
 }

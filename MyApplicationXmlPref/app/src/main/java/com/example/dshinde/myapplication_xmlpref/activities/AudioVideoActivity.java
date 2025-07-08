@@ -8,6 +8,7 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.os.ParcelFileDescriptor;
 import android.text.method.ScrollingMovementMethod;
@@ -20,14 +21,20 @@ import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
+import com.example.dshinde.myapplication_xmlpref.listners.FireStorageListener;
 import com.example.dshinde.myapplication_xmlpref.listners.OnSwipeTouchListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
+import com.example.dshinde.myapplication_xmlpref.services.FileStorage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -49,6 +56,8 @@ public class AudioVideoActivity extends BaseActivity {
     ImageButton buttonNext;
     TextView textViewNote;
     DataStorage dataStorageManager;
+    FileStorage mediaStorage;
+    private String mediaStoragePath;
     String collectionName = null;
     String key;
     String noteText;
@@ -56,16 +65,18 @@ public class AudioVideoActivity extends BaseActivity {
     MediaPlayer mp = new MediaPlayer();
     Gson gson = new GsonBuilder().create();
     SeekBar seekBar;
-    public final Handler mHandler = new Handler() {
-        public void handleMessage(Message msg) {
-            seekBar.setProgress(msg.arg1);
-        }
-    };
+
+    public final Handler mHandler = new Handler(Looper.getMainLooper(), msg -> {
+        seekBar.setProgress(msg.arg1);
+        return true;
+    });
+
     Timer timer;
     int mode, currentNote, totalNotes;
     List<KeyValue> notes;
     List<KeyValue> audioNotes;
     boolean playingNoteSubject;
+    private ActivityResultLauncher<String> filePickerLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,11 +84,15 @@ public class AudioVideoActivity extends BaseActivity {
 
         setContentView(R.layout.audiovideo_activity_layout);
         timer = new Timer();
+
         // get parameters
         Bundle bundle = getIntent().getExtras();
         if (bundle != null) {
             userId = bundle.getString(Constants.USERID);
             collectionName = bundle.getString("note");
+            mediaStoragePath = Constants.STORAGE_PATH_NOTES +
+                    userId + "/" +
+                    collectionName;
             key = bundle.getString("key");
             if (key != null && !key.isEmpty()) {
                 mode = PLAYBACK_MODE_SELECT;
@@ -95,6 +110,7 @@ public class AudioVideoActivity extends BaseActivity {
             }
             setTitleDescription();
             loadUI();
+            initialiseFilePickerLauncher();
             initDataStorageAndLoadData(this);
         }
     }
@@ -234,7 +250,7 @@ public class AudioVideoActivity extends BaseActivity {
         editTextFileUri.setOnTouchListener((v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_UP) {
                 if (event.getRawX() >= (editTextFileUri.getRight() - editTextFileUri.getCompoundDrawables()[Constants.DRAWABLE_RIGHT].getBounds().width())) {
-                    selectFile(Constants.AUDIO_FILE, Constants.SELECT_AUDIO);
+                    selectAudioFile();
                     return true;
                 }
             }
@@ -277,7 +293,7 @@ public class AudioVideoActivity extends BaseActivity {
                     Map<String, String> value = gson.fromJson(keyValue.getValue(), Map.class);
                     editTextFileUri.setText(value.get(MEDIA_NAME));
                     mediaUri = Uri.parse(value.get(MEDIA_URI));
-                    setMediaPlayerSource();
+                    getMediaUri(value.get(MEDIA_NAME));
                 }
             } else {
                 key = keyValue.getKey();
@@ -297,6 +313,35 @@ public class AudioVideoActivity extends BaseActivity {
         }
     }
 
+    private void getMediaUri(String mediaName) {
+        /*
+        if(mediaUri == null) {
+            setMediaPlayerSource();
+            return;
+        }
+         */
+        if(mediaStorage == null) {
+            mediaStorage = Factory.getFileStorageInstance(this, mediaStoragePath, new FireStorageListener() {
+                @Override
+                public void downloadUriReceived(Uri fileUri) {
+                    mediaUri = fileUri;
+                    setMediaPlayerSource();
+                }
+
+                @Override
+                public void downloadFileBytesReceived(byte[] bytes) {
+
+                }
+
+                @Override
+                public void uploadedUriReceived(Uri fileUri) {
+
+                }
+            });
+        }
+        mediaStorage.downloadFile(mediaName);
+    }
+
     private void save() {
         String dbKey = (playingNoteSubject ? collectionName : key);
         if (dbKey != null && mediaUri != null) {
@@ -304,6 +349,7 @@ public class AudioVideoActivity extends BaseActivity {
             data.put(MEDIA_URI, mediaUri.toString());
             data.put(MEDIA_NAME, editTextFileUri.getText().toString());
             dataStorageManager.save((playingNoteSubject ? collectionName : dbKey), gson.toJson(data));
+            mediaStorage.uploadMedia(mediaUri);
         }
     }
 
@@ -311,33 +357,6 @@ public class AudioVideoActivity extends BaseActivity {
         String dbKey = (playingNoteSubject ? collectionName : key);
         if (dbKey != null) {
             dataStorageManager.remove(dbKey);
-        }
-    }
-
-    private void selectFile(String fileType, int actionCode) {
-        Log.d(CLASS_TAG, "SelectFile");
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType(fileType);
-        startActivityForResult(intent, actionCode);
-    }
-
-    @SuppressLint("WrongConstant")
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (data != null && data.getData() != null) {
-            mediaUri = data.getData();
-
-            String mediaPath = StorageUtil.getAudioPath(this, mediaUri);
-            final int takeFlags = data.getFlags()
-                    & (Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            // Check for the freshest data.
-            getContentResolver().takePersistableUriPermission(mediaUri, takeFlags);
-            editTextFileUri.setText(StorageUtil.getFileName(this, mediaUri));
-            save();
-            setMediaPlayerSource();
         }
     }
 
@@ -403,18 +422,46 @@ public class AudioVideoActivity extends BaseActivity {
 
         @Override
         public void run() {
-            runOnUiThread(new Runnable() {
-
-                @Override
-                public void run() {
-                    if (mp != null && mp.isPlaying()) {
-                        int currentPosition = mp.getCurrentPosition();
-                        Message msg = new Message();
-                        msg.arg1 = currentPosition;
-                        mHandler.dispatchMessage(msg);
-                    }
+            runOnUiThread(() -> {
+                if (mp != null && mp.isPlaying()) {
+                    int currentPosition = mp.getCurrentPosition();
+                    Message msg = new Message();
+                    msg.arg1 = currentPosition;
+                    mHandler.dispatchMessage(msg);
                 }
             });
         }
     }
+
+    private void selectAudioFile() {
+        Log.d(CLASS_TAG, "selectAudioFile");
+        filePickerLauncher.launch(Constants.AUDIO_FILE);
+    }
+
+    private void initialiseFilePickerLauncher() {
+        // Initialize the ActivityResultLauncher
+        // The contract is GetContent(), which takes a String (MIME type) as input
+        // and returns a Uri as output.
+        filePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.GetContent(),
+            new ActivityResultCallback<Uri>() {
+                @Override
+                public void onActivityResult(Uri uri) {
+                    // Handle the returned Uri here
+                    if (uri != null) {
+                        mediaUri = uri;
+                        final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+                        // Check for the freshest data.
+                        getContentResolver().takePersistableUriPermission(mediaUri, takeFlags);
+                        editTextFileUri.setText(StorageUtil.getFileName(getApplicationContext(), mediaUri));
+                        save();
+                        setMediaPlayerSource();
+                    } else {
+                        Log.d(CLASS_TAG, "No file selected");
+                    }
+                }
+            });
+    }
+
 }
