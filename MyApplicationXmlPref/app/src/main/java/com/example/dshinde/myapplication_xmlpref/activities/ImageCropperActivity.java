@@ -110,7 +110,7 @@ public class ImageCropperActivity extends AppCompatActivity {
     }
 
     private Uri getOutputUri() {
-        return StorageUtil.createImageFileUri(this);
+        return StorageUtil.createUriForImageFileOnExternalStorage(this);
     }
 
 }

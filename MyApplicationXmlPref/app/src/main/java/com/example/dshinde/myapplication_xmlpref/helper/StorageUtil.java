@@ -1,7 +1,7 @@
 package com.example.dshinde.myapplication_xmlpref.helper;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -10,11 +10,12 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.OpenableColumns;
 
+import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.loader.content.CursorLoader;
 
-import com.example.dshinde.myapplication_xmlpref.common.Constants;
+import com.example.dshinde.myapplication_xmlpref.common.FileType;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -33,7 +34,6 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Date;
 
 public class StorageUtil {
@@ -54,6 +54,8 @@ public class StorageUtil {
     public static final String OBJ = ".obj";
     public static final String JSON = ".json";
     public static final String DSHINDE_FILEPROVIDER = "com.example.dshinde.fileprovider";
+    public static final String PDF = ".pdf";
+    public static final String YYYY_MMDD_HHMMSS = "yyyyMMdd_HHmmss";
 
     public static boolean isExternalStorageWritable() {
         String state = Environment.getExternalStorageState();
@@ -63,7 +65,7 @@ public class StorageUtil {
         return false;
     }
 
-    public static File getFile(String fileName) {
+    public static File getInternalStorageFile(String fileName) {
         if (isExternalStorageWritable()) {
             File dir = getStorage(STORAGE_DIR);
             if (dir != null) {
@@ -91,7 +93,7 @@ public class StorageUtil {
         if (null == data || data.length() == 0) {
             return null;
         }
-        File dst = StorageUtil.getFile(fileName + TXT);
+        File dst = StorageUtil.getInternalStorageFile(fileName + TXT);
         if (dst != null) {
             FileOutputStream output = null;
             try {
@@ -122,7 +124,7 @@ public class StorageUtil {
             return null;
         }
         String filePath = null;
-        File dst = StorageUtil.getFile(fileName + JSON);
+        File dst = StorageUtil.getInternalStorageFile(fileName + JSON);
         if (null != dst) {
             ObjectOutputStream output = null;
             try {
@@ -258,6 +260,7 @@ public class StorageUtil {
     }
 
 
+    @SuppressLint("Range")
     public static String getFileName(Context context, Uri uri) {
         String result = null;
         if (uri.getScheme().equals("content")) {
@@ -315,35 +318,32 @@ public class StorageUtil {
         return filename.replaceFirst("[.][^.]+$", "");
     }
 
-    public static File createTempFile(Context context, String fileType) {
-        return createTempFile(context, fileType, null);
+    public static File createTempImageFileOnExternalStorage(Context context) {
+        return createTempFileOnExternalStorage(context, FileType.PICTURE);
     }
-    public static File createTempFile(Context context, String fileType, String fileExtension) {
-        // Create an image file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String fileName = "IMG" + timeStamp;
-        try {
-            String type = null;
-            String extension = null;
-            switch(fileType) {
-                case Constants.IMAGE_FILE:
-                    type = Environment.DIRECTORY_PICTURES;
-                    extension = "jpg";
-                    break;
-                case Constants.AUDIO_FILE:
-                    type = Environment.DIRECTORY_MUSIC;
-                    extension = "mp3";
-                    break;
-                default:
-                    type = Environment.DIRECTORY_DOCUMENTS;
-                    extension = "pdf";
-                    break;
 
-            }
+    public static File createTempDocumentFileOnExternalStorage(Context context) {
+        return createTempFileOnExternalStorage(context, FileType.DOCUMENT);
+    }
+
+    public static File createTempAudioFileOnExternalStorage(Context context) {
+        return createTempFileOnExternalStorage(context, FileType.MUSIC);
+    }
+
+    public static File createTempFileOnExternalStorage(Context context, FileType fileType) {
+        return createTempFileOnExternalStorage(context, fileType, null);
+    }
+    public static File createTempFileOnExternalStorage(Context context, FileType fileType, String fileExtension) {
+        // Create an image file name
+        String timeStamp = new SimpleDateFormat(YYYY_MMDD_HHMMSS).format(new Date());
+        FileStorageTypeExtension result = getFileStorageTypeExtension(fileType);
+        String fileName = result.prefix + timeStamp;
+
+        try {
             if(fileExtension == null || fileExtension.isEmpty()){
-                fileExtension = extension;
+                fileExtension = result.extension;
             }
-            File storageDir = context.getExternalFilesDir(type);
+            File storageDir = context.getExternalFilesDir(result.type);
             return File.createTempFile(
                     fileName,                   /* prefix */
                     "." + fileExtension,        /* suffix */
@@ -353,81 +353,64 @@ public class StorageUtil {
             return null;
         }
     }
-    public static File createTempImageFile(Context context) {
-        return createTempFile(context, Constants.IMAGE_FILE);
+
+    private static @NonNull FileStorageTypeExtension getFileStorageTypeExtension(FileType fileType) {
+        String type = null;
+        String extension = null;
+        String prefix = null;
+        switch(fileType) {
+            case PICTURE:
+                type = Environment.DIRECTORY_PICTURES;
+                extension = "jpg";
+                prefix = "IMG";
+                break;
+            case MUSIC:
+                type = Environment.DIRECTORY_MUSIC;
+                extension = "mp3";
+                prefix = "AUD";
+                break;
+            default:
+                type = Environment.DIRECTORY_DOCUMENTS;
+                extension = "pdf";
+                prefix = "DOC";
+                break;
+
+        }
+        return new FileStorageTypeExtension(type, extension, prefix);
     }
 
-    public static File createTempDocumentFile(Context context) {
-        return createTempFile(context, Constants.PDF_FILE);
-    }
+    private static class FileStorageTypeExtension {
+        public final String type;
+        public final String extension;
+        public final String prefix;
 
-    public static File createTempAudioFile(Context context) {
-        return createTempFile(context, Constants.AUDIO_FILE);
-    }
-
-    public static File createImageFile(Context context, String fileName) {
-        return getFile(context, fileName.concat(".jpg"));
-    }
-
-    public static File getFile(Context context, String fileName) {
-        return new File(context.getFilesDir(), fileName);
-    }
-
-    public static File createDocumentFile(Context context, String fileName) {
-        return getFile(context, fileName.concat(".pdf"));
-    }
-
-    public static File createTempDocumentFile(Context context, String fileName) {
-        try {
-            File storageDir = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
-            return File.createTempFile(
-                    fileName,       /* prefix */
-                    ".pdf",         /* suffix */
-                    storageDir      /* directory */
-            );
-        } catch(IOException e){
-            return null;
+        public FileStorageTypeExtension(String type, String extension, String prefix) {
+            this.type = type;
+            this.extension = extension;
+            this.prefix = prefix;
         }
     }
 
-    public static Uri createImageFileUri(Context context) {
-        return getUriForFile(context, createTempImageFile(context));
+    public static File getInternalStorageFile(Context context, String fileName) {
+        return new File(context.getFilesDir(), fileName);
+    }
+
+    public static File getExternalStorageFile(Context context, String fileName, FileType fileType) {
+        if (!isExternalStorageWritable()) {
+            return null;
+        }
+        FileStorageTypeExtension result = getFileStorageTypeExtension(fileType);
+        return new File(context.getExternalFilesDir(result.type), fileName);
+    }
+
+    public static Uri createUriForImageFileOnExternalStorage(Context context) {
+        return getUriForFile(context, createTempImageFileOnExternalStorage(context));
     }
 
     public static Uri getUriForFile(Context context, File file) {
         return FileProvider.getUriForFile(context,
                 DSHINDE_FILEPROVIDER,
                 file);
-    }
-
-    public static Uri getAudioUriFromDisplayName(Context context, String displayName) {
-        Uri mediaUri = MediaStore.Audio.Media.INTERNAL_CONTENT_URI;
-
-        String[] projection = new String[] {
-                MediaStore.Audio.Media._ID
-        };
-
-        String selection = MediaStore.Audio.Media.DISPLAY_NAME + "=?";
-        String[] selectionArgs = new String[] { displayName };
-
-        Cursor cursor = context.getContentResolver().query(
-                mediaUri,
-                projection,
-                selection,
-                selectionArgs,
-                null
-        );
-
-        if (cursor != null && cursor.moveToFirst()) {
-            long id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID));
-            cursor.close();
-
-            // Build and return the content URI
-            return ContentUris.withAppendedId(mediaUri, id);
-        }
-
-        if (cursor != null) cursor.close();
-        return null;
     }
 
     public static byte[] readBytesFromFile(File file) {

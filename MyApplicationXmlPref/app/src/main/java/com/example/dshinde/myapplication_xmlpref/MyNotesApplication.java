@@ -18,6 +18,8 @@ import org.acra.config.ConfigurationBuilder;
 import org.acra.sender.HttpSender;
 
 public class MyNotesApplication extends Application {
+    private String userId;
+
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
@@ -39,4 +41,13 @@ public class MyNotesApplication extends Application {
         }
          */
     }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String id) {
+        this.userId = id;
+    }
+
 }

@@ -24,6 +24,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
+import com.example.dshinde.myapplication_xmlpref.MyNotesApplication;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.recyclerviewbased.MainActivityRecyclerView;
 import com.example.dshinde.myapplication_xmlpref.R;
@@ -195,6 +196,10 @@ public class GoogleSignInActivity extends BaseActivity implements
             findViewById(R.id.signInButton).setVisibility(View.GONE);
             findViewById(R.id.signOutAndDisconnect).setVisibility(View.VISIBLE);
             Snackbar.make(findViewById(R.id.main_layout), "Successful Sign In", Snackbar.LENGTH_SHORT).show();
+
+            // Store in global Application class
+            MyNotesApplication app = (MyNotesApplication) getApplicationContext();
+            app.setUserId(user.getUid());
             startMainActivity(user.getUid());
 
         } else {

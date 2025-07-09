@@ -38,6 +38,7 @@ import com.example.dshinde.myapplication_xmlpref.services.FileStorage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,8 +57,7 @@ public class AudioVideoActivity extends BaseActivity {
     ImageButton buttonNext;
     TextView textViewNote;
     DataStorage dataStorageManager;
-    FileStorage mediaStorage;
-    private String mediaStoragePath;
+    FileStorage fileStorage;
     String collectionName = null;
     String key;
     String noteText;
@@ -90,9 +90,6 @@ public class AudioVideoActivity extends BaseActivity {
         if (bundle != null) {
             userId = bundle.getString(Constants.USERID);
             collectionName = bundle.getString("note");
-            mediaStoragePath = Constants.STORAGE_PATH_NOTES +
-                    userId + "/" +
-                    collectionName;
             key = bundle.getString("key");
             if (key != null && !key.isEmpty()) {
                 mode = PLAYBACK_MODE_SELECT;
@@ -264,21 +261,25 @@ public class AudioVideoActivity extends BaseActivity {
                 getDataStorageType(),
                 Constants.MEDIA_NOTE_PREFIX + collectionName +
                         (mode == PLAYBACK_MODE_SELECT ? "/" + key : ""),
-                false, false, new DataStorageListener() {
-                    @Override
-                    public void dataChanged(String key, String value) {
-                        Log.d(CLASS_TAG, "dataChanged key: " + key + ", value: " + value);
-                        showInShortToast(getResources().getString(R.string.saved));
-                    }
-
-                    @Override
-                    public void dataLoaded(List<KeyValue> data) {
-                        Log.d(CLASS_TAG, "dataLoaded");
-                        audioNotes = data;
-                        loadAudioNote();
-                    }
-                });
+                false, false, getDataStorageListener());
         dataStorageManager.loadData();
+    }
+
+    private DataStorageListener getDataStorageListener() {
+        return new DataStorageListener() {
+            @Override
+            public void dataChanged(String key, String value) {
+                Log.d(CLASS_TAG, "dataChanged key: " + key + ", value: " + value);
+                showInShortToast(getResources().getString(R.string.saved));
+            }
+
+            @Override
+            public void dataLoaded(List<KeyValue> data) {
+                Log.d(CLASS_TAG, "dataLoaded");
+                audioNotes = data;
+                loadAudioNote();
+            }
+        };
     }
 
     private void loadAudioNote() {
@@ -314,32 +315,30 @@ public class AudioVideoActivity extends BaseActivity {
     }
 
     private void getMediaUri(String mediaName) {
-        /*
-        if(mediaUri == null) {
-            setMediaPlayerSource();
-            return;
+        if(fileStorage == null) {
+            initialiseMediaStore();
         }
-         */
-        if(mediaStorage == null) {
-            mediaStorage = Factory.getFileStorageInstance(this, mediaStoragePath, new FireStorageListener() {
-                @Override
-                public void downloadUriReceived(Uri fileUri) {
-                    mediaUri = fileUri;
-                    setMediaPlayerSource();
-                }
+        fileStorage.downloadAudioFile(mediaName);
+    }
 
-                @Override
-                public void downloadFileBytesReceived(byte[] bytes) {
+    private void initialiseMediaStore() {
+        fileStorage = Factory.getFileStorageInstance(getApplicationContext(), new FireStorageListener() {
+            @Override
+            public void downloadUriReceived(Uri fileUri) {
+                mediaUri = fileUri;
+                setMediaPlayerSource();
+            }
 
-                }
+            @Override
+            public void downloadFileBytesReceived(byte[] bytes) {
 
-                @Override
-                public void uploadedUriReceived(Uri fileUri) {
+            }
 
-                }
-            });
-        }
-        mediaStorage.downloadFile(mediaName);
+            @Override
+            public void uploadedUriReceived(Uri fileUri) {
+
+            }
+        });
     }
 
     private void save() {
@@ -349,7 +348,7 @@ public class AudioVideoActivity extends BaseActivity {
             data.put(MEDIA_URI, mediaUri.toString());
             data.put(MEDIA_NAME, editTextFileUri.getText().toString());
             dataStorageManager.save((playingNoteSubject ? collectionName : dbKey), gson.toJson(data));
-            mediaStorage.uploadMedia(mediaUri);
+            fileStorage.uploadMedia(mediaUri);
         }
     }
 
@@ -363,33 +362,41 @@ public class AudioVideoActivity extends BaseActivity {
     private void setMediaPlayerSource() {
         if (mediaUri == null) return;
         try {
-            if (mp == null) {
-                mp = new MediaPlayer();
-            }
-            mp.reset();
-            ParcelFileDescriptor parcelFileDescriptor =
-                    getContentResolver().openFileDescriptor(mediaUri, "r");
-            mp.setAudioAttributes(new AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .setUsage(AudioAttributes.USAGE_MEDIA).build());
-            mp.setDataSource(parcelFileDescriptor.getFileDescriptor());
-            seekBar.setProgress(0);
-            mp.setOnPreparedListener(mediaPlayer -> {
-                seekBar.setMax(mp.getDuration());
-                playOrPause();
-            });
-            mp.setOnCompletionListener(mediaPlayer -> {
-                setPlayPauseButton();
-                seekBar.setProgress(mp.getDuration());
-                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-                if(mode == PLAYBACK_MODE_PLAY) {
-                    next();
-                }
-            });
-            mp.prepareAsync();
-            parcelFileDescriptor.close();
+            initialiseMediaPlayerAndPlayMedia();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private void initialiseMediaPlayerAndPlayMedia() throws IOException {
+        if (mp == null) {
+            mp = new MediaPlayer();
+        }
+        mp.reset();
+        ParcelFileDescriptor parcelFileDescriptor =
+                getContentResolver().openFileDescriptor(mediaUri, "r");
+        mp.setAudioAttributes(new AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .setUsage(AudioAttributes.USAGE_MEDIA).build());
+        mp.setDataSource(parcelFileDescriptor.getFileDescriptor());
+        seekBar.setProgress(0);
+        mp.setOnPreparedListener(mediaPlayer -> {
+            seekBar.setMax(mp.getDuration());
+            playOrPause();
+        });
+        mp.setOnCompletionListener(mediaPlayer -> {
+            setMediaPlayerOnCompletionAction();
+        });
+        mp.prepareAsync();
+        parcelFileDescriptor.close();
+    }
+
+    private void setMediaPlayerOnCompletionAction() {
+        setPlayPauseButton();
+        seekBar.setProgress(mp.getDuration());
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if(mode == PLAYBACK_MODE_PLAY) {
+            next();
         }
     }
 
@@ -422,14 +429,16 @@ public class AudioVideoActivity extends BaseActivity {
 
         @Override
         public void run() {
-            runOnUiThread(() -> {
-                if (mp != null && mp.isPlaying()) {
-                    int currentPosition = mp.getCurrentPosition();
-                    Message msg = new Message();
-                    msg.arg1 = currentPosition;
-                    mHandler.dispatchMessage(msg);
-                }
-            });
+            runOnUiThread(AudioVideoActivity.this::notifyProgressBarWithCurrentPosition);
+        }
+    }
+
+    private void notifyProgressBarWithCurrentPosition() {
+        if (mp != null && mp.isPlaying()) {
+            int currentPosition = mp.getCurrentPosition();
+            Message msg = new Message();
+            msg.arg1 = currentPosition;
+            mHandler.dispatchMessage(msg);
         }
     }
 
@@ -447,21 +456,25 @@ public class AudioVideoActivity extends BaseActivity {
             new ActivityResultCallback<Uri>() {
                 @Override
                 public void onActivityResult(Uri uri) {
-                    // Handle the returned Uri here
-                    if (uri != null) {
-                        mediaUri = uri;
-                        final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
-                        // Check for the freshest data.
-                        getContentResolver().takePersistableUriPermission(mediaUri, takeFlags);
-                        editTextFileUri.setText(StorageUtil.getFileName(getApplicationContext(), mediaUri));
-                        save();
-                        setMediaPlayerSource();
-                    } else {
-                        Log.d(CLASS_TAG, "No file selected");
-                    }
+                    saveSelectedMediaAndPlayMedia(uri);
                 }
             });
+    }
+
+    private void saveSelectedMediaAndPlayMedia(Uri uri) {
+        // Handle the returned Uri here
+        if (uri != null) {
+            mediaUri = uri;
+            final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+            // Check for the freshest data.
+            getContentResolver().takePersistableUriPermission(mediaUri, takeFlags);
+            editTextFileUri.setText(StorageUtil.getFileName(getApplicationContext(), mediaUri));
+            save();
+            setMediaPlayerSource();
+        } else {
+            Log.d(CLASS_TAG, "No file selected");
+        }
     }
 
 }

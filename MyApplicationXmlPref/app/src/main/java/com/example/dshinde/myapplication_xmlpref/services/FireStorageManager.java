@@ -7,12 +7,14 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 
 import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.common.FileType;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.FireStorageListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageException;
 import com.google.firebase.storage.StorageReference;
 
 import java.io.File;
@@ -45,6 +47,10 @@ public class FireStorageManager implements FileStorage {
     @Override
     public void getDownloadUrl(String mediaName, FireStorageListener fireStorageListener) {
         StorageReference storageFileRef = getStorageReference(mediaName);
+        getDownloadUrl(fireStorageListener, storageFileRef);
+    }
+
+    private void getDownloadUrl(FireStorageListener fireStorageListener, StorageReference storageFileRef) {
         //adding the file to reference
         storageFileRef.getDownloadUrl().addOnSuccessListener(uri -> {
             if(fireStorageListener != null) {
@@ -64,7 +70,26 @@ public class FireStorageManager implements FileStorage {
     @Override
     public void uploadMedia(Uri filePath, FireStorageListener fireStorageListener) {
         StorageReference storageFileRef = getStorageReference(StorageUtil.getFileName(context, filePath));
-        //adding the file to reference
+        storageFileRef.getMetadata()
+            .addOnSuccessListener(storageMetadata -> {
+                // File exists
+                getDownloadUrl(fireStorageListener, storageFileRef);
+            })
+            .addOnFailureListener(exception -> {
+                if (exception instanceof StorageException &&
+                        ((StorageException) exception).getErrorCode() == StorageException.ERROR_OBJECT_NOT_FOUND) {
+                    // File does not exist, safe to upload
+                    uploadFile(filePath, fireStorageListener, storageFileRef);
+
+                } else {
+                    // Some other error occurred
+                    Toast.makeText(context, "Error checking file existence" +"\n" + exception.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+
+    }
+
+    private void uploadFile(Uri filePath, FireStorageListener fireStorageListener, StorageReference storageFileRef) {
         storageFileRef
                 .putFile(filePath).continueWithTask(task -> {
                     if (!task.isSuccessful()) {
@@ -83,11 +108,11 @@ public class FireStorageManager implements FileStorage {
                 });
     }
 
-    public void downloadFileAsBytes(String mediaName){
-        downloadFileAsBytes(mediaName, fireStorageListener);
+    public void downloadDocumentFileAsBytes(String mediaName){
+        downloadFileAsBytes(mediaName, FileType.DOCUMENT, fireStorageListener);
     }
-    public void downloadFileAsBytes(String mediaName, FireStorageListener fireStorageListener){
-        File file = StorageUtil.getFile(context, mediaName);
+    public void downloadFileAsBytes(String mediaName, FileType fileType, FireStorageListener fireStorageListener){
+        File file = StorageUtil.getExternalStorageFile(context, mediaName, fileType);
         if( file.exists()) {
             fireStorageListener.downloadFileBytesReceived(StorageUtil.readBytesFromFile(file));
         } else {
@@ -108,30 +133,37 @@ public class FireStorageManager implements FileStorage {
 
     @Override
     public void downloadImageFile(String mediaName){
-        downloadFile(mediaName, fireStorageListener);
+        downloadImageFile(mediaName, fireStorageListener);
     }
 
     @Override
     public void downloadImageFile(String mediaName, FireStorageListener fireStorageListener){
-        downloadFile(mediaName, fireStorageListener);
+        downloadFile(mediaName, FileType.PICTURE, fireStorageListener);
     }
 
     @Override
     public void downloadDocumentFile(String mediaName){
-        downloadFile(mediaName, fireStorageListener);
+        downloadDocumentFile(mediaName, fireStorageListener);
     }
 
     @Override
     public void downloadDocumentFile(String mediaName, FireStorageListener fireStorageListener){
-        downloadFile(mediaName, fireStorageListener);
+        downloadFile(mediaName, FileType.DOCUMENT, fireStorageListener);
     }
+
     @Override
-    public void downloadFile(String mediaName){
-        downloadFile(mediaName, fireStorageListener);
+    public void downloadAudioFile(String mediaName){
+        downloadAudioFile(mediaName, fireStorageListener);
     }
+
     @Override
-    public void downloadFile(String mediaName, FireStorageListener fireStorageListener){
-        File file = StorageUtil.getFile(context, mediaName);
+    public void downloadAudioFile(String mediaName, FireStorageListener fireStorageListener){
+        downloadFile(mediaName, FileType.MUSIC, fireStorageListener);
+    }
+
+    @Override
+    public void downloadFile(String mediaName, FileType fileType, FireStorageListener fireStorageListener){
+        File file = StorageUtil.getExternalStorageFile(context, mediaName, fileType);
         if( file.exists()) {
             if(fireStorageListener != null) {
                 fireStorageListener.downloadUriReceived(Uri.fromFile(file));

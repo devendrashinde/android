@@ -73,7 +73,6 @@ import java.util.Objects;
 public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private static final String CLASS_TAG = "DynamicActivity";
-    private String mediaStoragePath;
     private LinearLayout linearLayout;
     private List<ScreenControl> controls;
     private Map<String, String> data = new HashMap<>();
@@ -110,9 +109,6 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
         Bundle bundle = getIntent().getExtras();
         userId = bundle.getString(Constants.USERID);
-        mediaStoragePath = Constants.STORAGE_PATH_NOTES +
-                userId + "/" +
-                bundle.getString(Constants.NOTE_ID);
         String screenConfig = bundle.getString(Constants.SCREEN_CONFIG);
         String screenData = bundle.getString(Constants.SCREEN_DATA);
         if (screenData != null && !screenData.isEmpty()) {
@@ -313,7 +309,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                     break;
                 case Photo:
                     if(mediaStorage == null) {
-                        mediaStorage = Factory.getFileStorageInstance(this, mediaStoragePath);
+                        mediaStorage = Factory.getFileStorageInstance(this);
                     }
                     addPhotoControl(screenControl);
                     break;
@@ -570,35 +566,29 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private void setPicklistListener(ScreenControl screenControl) {
         EditText control = (EditText) screenControl.getValueControl();
-        control.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_UP) {
-                    if (event.getRawX() >= (control.getRight() - control.getCompoundDrawables()[Constants.DRAWABLE_RIGHT].getBounds().width())) {
-                        currentScreenControl = screenControl;
-                        pickFromMyNote(screenControl.getOptions());
-                        return true;
-                    }
+        control.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_UP) {
+                if (event.getRawX() >= (control.getRight() - control.getCompoundDrawables()[Constants.DRAWABLE_RIGHT].getBounds().width())) {
+                    currentScreenControl = screenControl;
+                    pickFromMyNote(screenControl.getOptions());
+                    return true;
                 }
-                return false;
             }
+            return false;
         });
     }
 
     private void setDocumentSelector(ScreenControl screenControl) {
         EditText control = (EditText) screenControl.getValueControl();
-        control.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_UP) {
-                    if (event.getRawX() >= (control.getRight() - control.getCompoundDrawables()[Constants.DRAWABLE_RIGHT].getBounds().width())) {
-                        currentScreenControl = screenControl;
-                        selectDocument();
-                        return true;
-                    }
+        control.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_UP) {
+                if (event.getRawX() >= (control.getRight() - control.getCompoundDrawables()[Constants.DRAWABLE_RIGHT].getBounds().width())) {
+                    currentScreenControl = screenControl;
+                    selectDocument();
+                    return true;
                 }
-                return false;
             }
+            return false;
         });
     }
 
@@ -632,7 +622,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     }
 
     private File createImageFile() {
-        return StorageUtil.createTempImageFile(this);
+        return StorageUtil.createTempImageFileOnExternalStorage(this);
     }
 
     private void selectDocument() {
@@ -756,7 +746,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                     default:
                         break;
                 }
-                uploadFile(screenControl);
+                saveFile(screenControl);
             }
         }
     }
@@ -890,7 +880,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         super.onStop();
     }
 
-    private void uploadFile(ScreenControl screenControl) {
+    private void saveFile(ScreenControl screenControl) {
         Uri filePath = screenControl.getMediaUri();
         mediaStorage.uploadMedia(filePath);
     }
@@ -905,8 +895,8 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
         @Override
         public void downloadUriReceived(Uri fileUri) {
+            //screenControl.setMediaUri(fileUri);
             Glide.with(getApplicationContext()).load(fileUri).into(imageView);
-            screenControl.setMediaUri(fileUri);
         }
 
         @Override
@@ -929,7 +919,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
         @Override
         public void downloadUriReceived(Uri fileUri) {
-            screenControl.setMediaUri(fileUri);
+            //screenControl.setMediaUri(fileUri);
             startPdfViewActivity(fileUri.toString());
         }
 

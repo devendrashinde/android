@@ -2,6 +2,8 @@ package com.example.dshinde.myapplication_xmlpref.helper;
 
 import android.content.Context;
 
+import com.example.dshinde.myapplication_xmlpref.MyNotesApplication;
+import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.common.DataStorageType;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.listners.FireStorageListener;
@@ -17,12 +19,14 @@ import com.example.dshinde.myapplication_xmlpref.services.SharedPrefDataStorageM
 public class Factory {
 
 
-    public static FireStorageManager getFileStorageInstance(Context context, String collectionName){
-        return new FireStorageManager(context, collectionName);
+    public static FileStorage getFileStorageInstance(Context context){
+        return getFileStorageInstance(context, null);
     }
 
-    public static FileStorage getFileStorageInstance(Context context, String collectionName, FireStorageListener fireStorageListener){
-        return new FireStorageManager(context, collectionName, fireStorageListener);
+    public static FileStorage getFileStorageInstance(Context context, FireStorageListener fireStorageListener){
+        MyNotesApplication app = (MyNotesApplication) context.getApplicationContext();
+        String storagePath = Constants.STORAGE_PATH_NOTES + "/" + app.getUserId();
+        return new FireStorageManager(context, storagePath, fireStorageListener);
     }
 
     public static DataStorage getDataStorageInstance(Context context, DataStorageType dataStorageType, String name, boolean autoKey, boolean descendingOrder){

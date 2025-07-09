@@ -26,7 +26,6 @@ import com.github.barteksc.pdfviewer.scroll.DefaultScrollHandle;
 import com.shockwave.pdfium.PdfDocument;
 
 import java.util.List;
-import java.util.Objects;
 
 public class PdfViewFragment extends Fragment implements OnPageChangeListener, OnLoadCompleteListener,
         OnPageErrorListener {
@@ -64,7 +63,7 @@ public class PdfViewFragment extends Fragment implements OnPageChangeListener, O
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         pdfView = getActivity().findViewById(R.id.pdfView);
         pdfView.setBackgroundColor(Color.LTGRAY);
-        fileStorage = Factory.getFileStorageInstance(getContext(), collectionName, new FireStorageListener() {
+        fileStorage = Factory.getFileStorageInstance(getActivity().getApplicationContext(), new FireStorageListener() {
             @Override
             public void downloadUriReceived(Uri fileUri) {
             }
@@ -150,7 +149,7 @@ public class PdfViewFragment extends Fragment implements OnPageChangeListener, O
         String mediaFieldId = mediaFields.getNextDocumentMediaField();
         if(mediaFieldId != null) {
             pdfFileName = mediaFields.getMediaFieldValue(mediaFieldId);
-            fileStorage.downloadFileAsBytes(pdfFileName);
+            fileStorage.downloadDocumentFileAsBytes(pdfFileName);
         }
     }
 
@@ -158,7 +157,7 @@ public class PdfViewFragment extends Fragment implements OnPageChangeListener, O
         String mediaFieldId = mediaFields.getPrevDocumentMediaField();
         if(mediaFieldId != null) {
             pdfFileName = mediaFields.getMediaFieldValue(mediaFieldId);
-            fileStorage.downloadFileAsBytes(pdfFileName);
+            fileStorage.downloadDocumentFileAsBytes(pdfFileName);
         }
     }
 
