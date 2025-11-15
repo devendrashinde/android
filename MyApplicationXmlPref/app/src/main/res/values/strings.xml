@@ -98,6 +98,7 @@
     <string name="naamasmaran">Naamasmaran</string>
     <string name="audio_note">Audio Note</string>
     <string name="read_aloud">Read aloud</string>
+    <string name="edit_note">Edit Note</string>
     <string name="view_note">View Note</string>
     <string name="play_note_audio">Play Note Audio</string>
     <string name="screen_design">Screen Design</string>
@@ -111,6 +112,7 @@
     <string name="ic_flip_24_horizontally">Flip horizontally</string>
     <string name="ic_flip_24_vertically">Flip vertically</string>
     <array name="actions_on_note">
+        <item>@string/edit_note</item>
         <item>@string/view_note</item>
         <item>@string/play_note_audio</item>
         <item>@string/play_note_items_audio</item>
@@ -124,6 +126,7 @@
         <item>@string/english</item>
     </array>
     <array name="actions_on_note_item">
+        <item>@string/share</item>
         <item>@string/naamasmaran</item>
         <item>@string/audio_note</item>
         <item>@string/read_aloud</item>

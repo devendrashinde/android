@@ -7,15 +7,16 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
-import android.provider.MediaStore;
 import android.provider.OpenableColumns;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
 import androidx.documentfile.provider.DocumentFile;
-import androidx.loader.content.CursorLoader;
 
 import com.example.dshinde.myapplication_xmlpref.common.FileType;
+import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -26,15 +27,21 @@ import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class StorageUtil {
 
@@ -42,9 +49,6 @@ public class StorageUtil {
     public static final int NOT_AVAILABLE = 0;
     public static final int PICK_FILE_FOR_IMPORT = 30;
     public static final int PICK_FILE_FOR_VIEW = 31;
-    public static final int CREATE_REQUEST_CODE = 40;
-    public static final int OPEN_REQUEST_CODE = 41;
-    public static final int SAVE_REQUEST_CODE = 42;
     public static final int PICK_DOCUMENT_FOLDER_FOR_EXPORT = 43;
     public static final int PICK_DOCUMENT_FOLDER_FOR_BACKUP = 53;
     public static final String TXT = ".txt";
@@ -56,13 +60,15 @@ public class StorageUtil {
     public static final String DSHINDE_FILEPROVIDER = "com.example.dshinde.fileprovider";
     public static final String PDF = ".pdf";
     public static final String YYYY_MMDD_HHMMSS = "yyyyMMdd_HHmmss";
+    public static final String JPG = "jpg";
+    public static final String MP3 = "mp3";
+    public static final String IMG = "IMG";
+    public static final String AUD = "AUD";
+    public static final String DOC = "DOC";
 
     public static boolean isExternalStorageWritable() {
         String state = Environment.getExternalStorageState();
-        if (Environment.MEDIA_MOUNTED.equals(state)) {
-            return true;
-        }
-        return false;
+        return Environment.MEDIA_MOUNTED.equals(state);
     }
 
     public static File getInternalStorageFile(String fileName) {
@@ -77,7 +83,8 @@ public class StorageUtil {
 
     public static File getStorage(String fileName) {
 
-        File externalStorage = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
+        File externalStorage = Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_DOCUMENTS);
         File mStorage = new File(externalStorage, fileName);
 
         if (!mStorage.exists()) {
@@ -90,7 +97,7 @@ public class StorageUtil {
 
     public static String saveAsTextToFile(String fileName, String data) {
         String filePath = null;
-        if (null == data || data.length() == 0) {
+        if (null == data || data.isEmpty()) {
             return null;
         }
         File dst = StorageUtil.getInternalStorageFile(fileName + TXT);
@@ -98,10 +105,8 @@ public class StorageUtil {
             FileOutputStream output = null;
             try {
                 output = new FileOutputStream(dst);
-                output.write(data.toString().getBytes());
+                output.write(data.getBytes());
                 filePath = dst.getAbsolutePath();
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {
@@ -131,8 +136,6 @@ public class StorageUtil {
                 output = new ObjectOutputStream(new FileOutputStream(dst));
                 output.writeObject(object);
                 filePath = dst.getAbsolutePath();
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {
@@ -150,16 +153,13 @@ public class StorageUtil {
     }
 
     public static Object getObjectFromFile(File src) {
-        boolean res = false;
         ObjectInputStream input = null;
         try {
             input = new ObjectInputStream(new FileInputStream(src));
             return input.readObject();
-        } catch (FileNotFoundException e) {
+        } catch (FileNotFoundException | ClassNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
             e.printStackTrace();
         } finally {
             try {
@@ -189,27 +189,15 @@ public class StorageUtil {
 
 
     public static DocumentFile getDocumentDir(Context context, Uri url) {
-        DocumentFile pickedDir = DocumentFile.fromTreeUri(context, url);
-        /*
-        DocumentFile dir = pickedDir.findFile(STORAGE_DIR);
-        if (dir == null) {
-            pickedDir = pickedDir.createDirectory(STORAGE_DIR);
-        } else {
-            pickedDir = dir;
-        }
-        */
-        return pickedDir;
+        return DocumentFile.fromTreeUri(context, url);
     }
 
     public static String saveAsTextToDocumentFile(Context context, DocumentFile dir, String fileName, String data) {
         try {
             DocumentFile file = dir.createFile(TEXT_FILE, fileName + TXT);
-            OutputStream out = context.getContentResolver().openOutputStream(file.getUri());
-            try {
+            try (OutputStream out = context.getContentResolver().openOutputStream(file.getUri())) {
                 out.write(data.getBytes());
                 return file.getUri().getPath();
-            } finally {
-                out.close();
             }
         } catch (IOException e) {
             return null;
@@ -219,12 +207,9 @@ public class StorageUtil {
     public static String saveAsObjectToDocumentFile(Context context, DocumentFile dir, String fileName, String data) {
         try {
             DocumentFile file = dir.createFile(JSON_FILE, fileName + JSON);
-            OutputStream out = context.getContentResolver().openOutputStream(file.getUri());
-            try {
+            try (OutputStream out = context.getContentResolver().openOutputStream(file.getUri())) {
                 out.write(data.getBytes());
                 return file.getUri().getPath();
-            } finally {
-                out.close();
             }
         } catch (IOException e) {
             return null;
@@ -280,17 +265,6 @@ public class StorageUtil {
                 result = result.substring(cut + 1);
             }
         }
-        return result;
-    }
-
-    public static String getAudioPath(Context context, Uri uri) {
-        String[] proj = { MediaStore.Images.Media.DATA };
-        CursorLoader loader = new CursorLoader(context, uri, proj, null, null, null);
-        Cursor cursor = loader.loadInBackground();
-        int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-        cursor.moveToFirst();
-        String result = cursor.getString(column_index);
-        cursor.close();
         return result;
     }
 
@@ -361,18 +335,18 @@ public class StorageUtil {
         switch(fileType) {
             case PICTURE:
                 type = Environment.DIRECTORY_PICTURES;
-                extension = "jpg";
-                prefix = "IMG";
+                extension = JPG;
+                prefix = IMG;
                 break;
             case MUSIC:
                 type = Environment.DIRECTORY_MUSIC;
-                extension = "mp3";
-                prefix = "AUD";
+                extension = MP3;
+                prefix = AUD;
                 break;
             default:
                 type = Environment.DIRECTORY_DOCUMENTS;
-                extension = "pdf";
-                prefix = "DOC";
+                extension = PDF;
+                prefix = DOC;
                 break;
 
         }
@@ -395,12 +369,13 @@ public class StorageUtil {
         return new File(context.getFilesDir(), fileName);
     }
 
-    public static File getExternalStorageFile(Context context, String fileName, FileType fileType) {
+    public static File getExternalStorageFile(Context context, String fileName, FileType fileType, String folder) {
         if (!isExternalStorageWritable()) {
             return null;
         }
         FileStorageTypeExtension result = getFileStorageTypeExtension(fileType);
-        return new File(context.getExternalFilesDir(result.type), fileName);
+        String dir = folder != null ?result.type + "/" + folder : result.type;
+        return new File(context.getExternalFilesDir(dir), fileName);
     }
 
     public static Uri createUriForImageFileOnExternalStorage(Context context) {
@@ -461,5 +436,52 @@ public class StorageUtil {
         return ""; // No extension found
     }
 
+    public static void copyFileToExternalStorage(Context context, Uri uri, FileType fileType, String folder) {
+        File destinationFile = getExternalStorageFile(context, getFileName(context, uri), fileType, folder);
+        assert destinationFile != null;
+        if (!destinationFile.exists()) {
+            try (InputStream inputStream = context.getContentResolver().openInputStream(uri);
+                 OutputStream outputStream = Files.newOutputStream(destinationFile.toPath())) {
 
+                byte[] buffer = new byte[1024];
+                int length;
+                while ((length = inputStream.read(buffer)) > 0) {
+                    outputStream.write(buffer, 0, length);
+                }
+                outputStream.close();
+                getUriForFile(context, destinationFile);
+                return;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return;
+        }
+        getUriForFile(context, destinationFile);
+    }
+
+    public static void writeKeyValueListToCacheDir(Context context, List<KeyValue> keyValues) {
+        // Write to cache
+        try {
+            File cacheFile = new File(context.getCacheDir(), "keyValues.json");
+            FileWriter writer = new FileWriter(cacheFile, false);
+            new Gson().toJson(keyValues, writer);
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static List<KeyValue> getKeyValueListFromCacheDir(Context context) {
+        try {
+            File cacheFile = new File(context.getCacheDir(), "keyValues.json");
+            FileReader reader = new FileReader(cacheFile);
+            Type listType = new TypeToken<List<KeyValue>>() {
+            }.getType();
+            List<KeyValue> keyValues = new Gson().fromJson(reader, listType);
+            reader.close();
+            return keyValues;
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
+    }
 }

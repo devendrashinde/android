@@ -20,7 +20,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 
-import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.MainActivity;
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.recyclerviewbased.MainActivityRecyclerView;

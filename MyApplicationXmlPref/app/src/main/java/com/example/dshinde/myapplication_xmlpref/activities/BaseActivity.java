@@ -1,5 +1,6 @@
 package com.example.dshinde.myapplication_xmlpref.activities;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -78,7 +79,7 @@ public class BaseActivity extends AppCompatActivity {
         final InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         if (imm != null) {
             view.requestFocus();
-            imm.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.SHOW_IMPLICIT);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_IMPLICIT_ONLY);
         }
     }
 
@@ -152,7 +153,7 @@ public class BaseActivity extends AppCompatActivity {
 
     }
 
-    protected void doView(String collectionName, String data){
+    protected void doView(String fileName, Uri fileUri){
 
     }
 
@@ -189,7 +190,7 @@ public class BaseActivity extends AppCompatActivity {
                     String fileToView = StorageUtil.getFileName(this, fileUri);
                     String text = StorageUtil.getTextFromDocumentFile(this, fileUri);
                     if (text != null) {
-                        doView(fileToView, text);
+                        doView(fileToView, fileUri);
                     } else {
                         Toast.makeText(this, R.string.unable_to_read_data_from_file + " : " + fileToView,
                                 Toast.LENGTH_LONG).show();
@@ -283,6 +284,7 @@ public class BaseActivity extends AppCompatActivity {
         readAloud.readNoteText(language, key, value);
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     protected void setEditTextClearButtonAction(EditText editText) {
         editText.setOnTouchListener(new View.OnTouchListener() {
             @Override

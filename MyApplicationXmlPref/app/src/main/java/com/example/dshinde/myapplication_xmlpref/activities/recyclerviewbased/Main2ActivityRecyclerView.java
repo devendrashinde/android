@@ -16,6 +16,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -57,7 +58,7 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
     LinearLayout searchViewLayout;
     Menu myMenu;
     EditText currentEditText;
-    private static final String CLASS_TAG = "Main2Activity";
+    private static final String CLASS_TAG = "Main2ActivityRV";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,8 +123,6 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
         setSearchFieldWatcher();
         setEditTextClearButtonAction(searchText);
         setFocusListener();
-        //setEditTextClearButtonAction(keyField);
-        //setEditTextClearButtonAction(valueField);
     }
 
     private void setFocusListener() {
@@ -327,8 +326,10 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
     }
 
     public void share() {
-        String key = keyField.getText().toString();
-        String value = valueField.getText().toString();
+        shareIt(keyField.getText().toString(), valueField.getText().toString());
+    }
+
+    public void shareIt(String key, String value) {
         if (!key.isEmpty() && !value.isEmpty()) {
             shareText(key + Constants.CR_LF + value);
         }
@@ -375,8 +376,11 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
     }
 
     @Override
-    protected void processSelectedOption(String id, String selectedOption, String key, String value) {
+    protected void processSelectedOption(@NonNull String id, @NonNull String selectedOption, String key, String value) {
         switch (selectedOption) {
+            case Constants.SHARE:
+                shareIt(key, value);
+                break;
             case Constants.NAAMASMRAN:
                 displayRandomButtonActivity(value);
                 break;

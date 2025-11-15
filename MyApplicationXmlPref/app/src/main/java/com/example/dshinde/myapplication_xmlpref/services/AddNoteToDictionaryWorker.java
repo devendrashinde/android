@@ -31,7 +31,6 @@ public class AddNoteToDictionaryWorker extends Worker {
     String collectionToAdd;
     String dictionaryName;
 
-    String lastWord = null;
     public AddNoteToDictionaryWorker(
             @NonNull Context appContext,
             @NonNull WorkerParameters workerParams) {
@@ -81,7 +80,7 @@ public class AddNoteToDictionaryWorker extends Worker {
 
                 @Override
                 public void dataLoaded(List<KeyValue> dataOfCollectionToBeAdded) {
-                    updateShabdaKosh(dataOfCollectionToBeAdded);
+                    updateDictionary(dataOfCollectionToBeAdded);
                 }
             });
     }
@@ -101,7 +100,7 @@ public class AddNoteToDictionaryWorker extends Worker {
             });
     }
 
-    private void updateShabdaKosh(List<KeyValue> dataOfCollectionToBeAdded) {
+    private void updateDictionary(List<KeyValue> dataOfCollectionToBeAdded) {
         for (KeyValue kv : dataOfCollectionToBeAdded) {
             String[] words = kv.getValue().split("\\W+");
             for (String word : words) {
@@ -124,8 +123,6 @@ public class AddNoteToDictionaryWorker extends Worker {
     }
 
     private void addWordToDictionary(String reference, String word) {
-        Gson gson = new GsonBuilder().create();
-        Map<String, List<String>> shabdaDetails = new HashMap<>();
         dictionary.saveTransaction(word, reference, new DataStorageTransactionWorker() {
             @Override
             public void updateTransactionData(KeyValue keyValue) {

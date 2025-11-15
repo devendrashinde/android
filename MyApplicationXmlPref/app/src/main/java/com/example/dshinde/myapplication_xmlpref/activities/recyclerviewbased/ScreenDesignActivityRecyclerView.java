@@ -393,7 +393,7 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
         Intent intent = new Intent(getApplicationContext(), DataAnalyticActivity.class);
         intent.putExtra("userId", userId);
         intent.putExtra("note", collectionName);
-        intent.putExtra("data", (Serializable) listAdapter.getData());
+        StorageUtil.writeKeyValueListToCacheDir(getApplicationContext(), listAdapter.getData());
         startActivity(intent);
     }
 

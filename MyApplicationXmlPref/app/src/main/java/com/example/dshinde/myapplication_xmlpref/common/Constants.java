@@ -35,9 +35,11 @@ public class Constants {
     public static final String IMAGE_FILE="image/*";
     public static final String PDF_FILE = "application/pdf";
     public static final String AUDIO_FILE="audio/*";
+    public static final String EDIT_NOTE = "Edit Note";
     public static final String VIEW_NOTE = "View Note";
     public static final String PLAY_NOTE = "Play Note Audio";
     public static final String PLAY_NOTE_ITEMS = "Play Note Items Audio";
+    public static final String SHARE = "Share";
     public static final String NAAMASMRAN = "Naamasmaran";
     public static final String AUDIO_NOTE = "Audio Note";
     public static final String SCREEN_DESIGN = "Screen Design";
@@ -75,4 +77,5 @@ public class Constants {
     public static final String SUBJECT = "subject";
     public static final String PARAM_URL = "url";
 
+    public static final String BLOCK_CHARACTERS = "/\"\\";
 }

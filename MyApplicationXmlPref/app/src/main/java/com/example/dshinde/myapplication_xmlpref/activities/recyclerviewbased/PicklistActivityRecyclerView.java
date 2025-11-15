@@ -183,7 +183,7 @@ public class PicklistActivityRecyclerView extends BaseActivity  {
                 String value = getSelectedItemsValue(kv);
                 Intent intent = new Intent();
                 intent.putExtra("data", value);
-                setResult(RESULT_OK, intent);
+                setResult(Constants.RESULT_CODE_OK, intent);
                 finish();
             }
 

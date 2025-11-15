@@ -1,7 +1,9 @@
 package com.example.dshinde.myapplication_xmlpref.helper;
 
 import android.content.Context;
+import android.text.InputFilter;
 import android.text.InputType;
+import android.text.Spanned;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
@@ -131,6 +133,25 @@ public class DynamicControls {
         editText.setVerticalScrollBarEnabled(true);
         editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         editText.setImeOptions(EditorInfo.IME_FLAG_NO_ENTER_ACTION);
+    }
+
+    public static void setInputFilterOnValueField(EditText editText, String blockCharacters) {
+
+        InputFilter filter = new InputFilter() {
+            @Override
+            public CharSequence filter(CharSequence source, int start, int end,
+                                       Spanned dest, int dstart, int dend) {
+                if (source != null && source.length() > 0 && !blockCharacters.isEmpty()) {
+                    for (int i = start; i < end; i++) {
+                        if (blockCharacters.contains(String.valueOf(source.charAt(i)))) {
+                            return "";
+                        }
+                    }
+                }
+                return null;
+            }
+        };
+        editText.setFilters(new InputFilter[] { filter });
     }
 
 }

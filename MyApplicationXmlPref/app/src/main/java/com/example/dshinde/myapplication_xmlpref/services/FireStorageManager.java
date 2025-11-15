@@ -6,7 +6,9 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
+import com.example.dshinde.myapplication_xmlpref.MyNotesApplication;
 import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.common.FileType;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.FireStorageListener;
@@ -24,33 +26,30 @@ public class FireStorageManager implements FileStorage {
     Context context;
     StorageReference storageReference;
     FireStorageListener fireStorageListener = null;
-    String collectionName;
+    String collectionName = null;
+    String storagePath;
     final static long SIZE = 1024 * 4;
 
     public FireStorageManager(Context context, String collectionName) {
         this.context = context;
         this.collectionName = collectionName;
+        setStoragePath();
         storageReference = FirebaseStorage.getInstance().getReference();
     }
     public FireStorageManager(Context context, String collectionName, FireStorageListener fireStorageListener) {
         this.context = context;
         this.collectionName = collectionName;
+        setStoragePath();
         this.fireStorageListener = fireStorageListener;
         storageReference = FirebaseStorage.getInstance().getReference();
     }
 
-    @Override
-    public void getDownloadUrl(String mediaName) {
-        getDownloadUrl(mediaName, fireStorageListener);
+    private void setStoragePath(){
+        MyNotesApplication app = (MyNotesApplication) context.getApplicationContext();
+        storagePath = Constants.STORAGE_PATH_NOTES + "/" + app.getUserId();
     }
 
-    @Override
-    public void getDownloadUrl(String mediaName, FireStorageListener fireStorageListener) {
-        StorageReference storageFileRef = getStorageReference(mediaName);
-        getDownloadUrl(fireStorageListener, storageFileRef);
-    }
-
-    private void getDownloadUrl(FireStorageListener fireStorageListener, StorageReference storageFileRef) {
+    private void getDownloadUri(FireStorageListener fireStorageListener, StorageReference storageFileRef) {
         //adding the file to reference
         storageFileRef.getDownloadUrl().addOnSuccessListener(uri -> {
             if(fireStorageListener != null) {
@@ -60,27 +59,29 @@ public class FireStorageManager implements FileStorage {
     }
 
     private StorageReference getStorageReference(String mediaName){
-        return storageReference.child(collectionName + "/" + mediaName);
+        return storageReference.child(storagePath + "/" + mediaName);
     }
 
-    public void uploadMedia(Uri filePath) {
-        uploadMedia(filePath, fireStorageListener);
+    public void uploadMedia(Uri fileUri, FileType fileType) {
+        uploadMedia(fileUri, fileType, fireStorageListener);
     }
 
     @Override
-    public void uploadMedia(Uri filePath, FireStorageListener fireStorageListener) {
-        StorageReference storageFileRef = getStorageReference(StorageUtil.getFileName(context, filePath));
+    public void uploadMedia(Uri fileUri, FileType fileType, FireStorageListener fireStorageListener) {
+        String mediaName = StorageUtil.getFileName(context, fileUri);
+        StorageReference storageFileRef = getStorageReference(mediaName);
         storageFileRef.getMetadata()
             .addOnSuccessListener(storageMetadata -> {
-                // File exists
-                getDownloadUrl(fireStorageListener, storageFileRef);
+                // File exists, copy to external storage of application
+                StorageUtil.copyFileToExternalStorage(context, fileUri, fileType, collectionName);
             })
             .addOnFailureListener(exception -> {
                 if (exception instanceof StorageException &&
                         ((StorageException) exception).getErrorCode() == StorageException.ERROR_OBJECT_NOT_FOUND) {
                     // File does not exist, safe to upload
-                    uploadFile(filePath, fireStorageListener, storageFileRef);
-
+                    uploadFile(fileUri, fireStorageListener, storageFileRef);
+                    // Copy to external storage of application
+                    StorageUtil.copyFileToExternalStorage(context, fileUri, fileType, collectionName);
                 } else {
                     // Some other error occurred
                     Toast.makeText(context, "Error checking file existence" +"\n" + exception.getMessage(), Toast.LENGTH_SHORT).show();
@@ -89,30 +90,31 @@ public class FireStorageManager implements FileStorage {
 
     }
 
-    private void uploadFile(Uri filePath, FireStorageListener fireStorageListener, StorageReference storageFileRef) {
+    private void uploadFile(Uri fileUri, FireStorageListener fireStorageListener, StorageReference storageFileRef) {
         storageFileRef
-                .putFile(filePath).continueWithTask(task -> {
-                    if (!task.isSuccessful()) {
-                        throw Objects.requireNonNull(task.getException());
+            .putFile(fileUri).continueWithTask(task -> {
+                if (!task.isSuccessful()) {
+                    throw Objects.requireNonNull(task.getException());
+                }
+                return storageFileRef.getDownloadUrl();
+            }).addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    if(fireStorageListener != null) {
+                        Uri uri = task.getResult();
+                        fireStorageListener.uploadedUriReceived(uri);
                     }
-                    return storageFileRef.getDownloadUrl();
-                }).addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        if(fireStorageListener != null) {
-                            Uri uri = task.getResult();
-                            fireStorageListener.uploadedUriReceived(uri);
-                        }
-                    } else {
-                        Toast.makeText(context, context.getResources().getString(R.string.upload_failed) + "\n" + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
+                } else {
+                    Toast.makeText(context, context.getResources().getString(R.string.upload_failed) + "\n" + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
     }
 
     public void downloadDocumentFileAsBytes(String mediaName){
         downloadFileAsBytes(mediaName, FileType.DOCUMENT, fireStorageListener);
     }
     public void downloadFileAsBytes(String mediaName, FileType fileType, FireStorageListener fireStorageListener){
-        File file = StorageUtil.getExternalStorageFile(context, mediaName, fileType);
+        File file = StorageUtil.getExternalStorageFile(context, mediaName, fileType, collectionName);
+        assert file != null;
         if( file.exists()) {
             fireStorageListener.downloadFileBytesReceived(StorageUtil.readBytesFromFile(file));
         } else {
@@ -142,11 +144,6 @@ public class FireStorageManager implements FileStorage {
     }
 
     @Override
-    public void downloadDocumentFile(String mediaName){
-        downloadDocumentFile(mediaName, fireStorageListener);
-    }
-
-    @Override
     public void downloadDocumentFile(String mediaName, FireStorageListener fireStorageListener){
         downloadFile(mediaName, FileType.DOCUMENT, fireStorageListener);
     }
@@ -163,7 +160,8 @@ public class FireStorageManager implements FileStorage {
 
     @Override
     public void downloadFile(String mediaName, FileType fileType, FireStorageListener fireStorageListener){
-        File file = StorageUtil.getExternalStorageFile(context, mediaName, fileType);
+        File file = StorageUtil.getExternalStorageFile(context, mediaName, fileType, collectionName);
+        assert file != null;
         if( file.exists()) {
             if(fireStorageListener != null) {
                 fireStorageListener.downloadUriReceived(Uri.fromFile(file));

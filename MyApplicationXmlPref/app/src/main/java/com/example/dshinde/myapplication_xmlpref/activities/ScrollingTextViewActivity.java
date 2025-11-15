@@ -1,9 +1,11 @@
 package com.example.dshinde.myapplication_xmlpref.activities;
 
 import android.app.Activity;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.Spanned;
+import android.text.method.LinkMovementMethod;
 import android.text.util.Linkify;
 import android.util.TypedValue;
 import android.view.KeyEvent;
@@ -19,7 +21,19 @@ import android.widget.TextView;
 
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
+import com.example.dshinde.myapplication_xmlpref.helper.Converter;
 import com.example.dshinde.myapplication_xmlpref.helper.JsonHelper;
+import com.example.dshinde.myapplication_xmlpref.helper.MarkdownFormatter;
+import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
+import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
+
+import java.util.List;
+
+import io.noties.markwon.Markwon;
+import io.noties.markwon.core.CorePlugin;
+import io.noties.markwon.ext.tables.TablePlugin;
+import io.noties.markwon.html.HtmlPlugin;
+import io.noties.markwon.linkify.LinkifyPlugin;
 
 public class ScrollingTextViewActivity extends BaseActivity implements View.OnTouchListener{
 
@@ -28,28 +42,40 @@ public class ScrollingTextViewActivity extends BaseActivity implements View.OnTo
     float defaultTextSize;
     private ScaleGestureDetector mScaleGestureDetector;
     private float mScaleFactor = 1.0f;
-    private Activity thisActivity;
-    boolean fullScreen = false;
+    private Markwon markwon;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_scrolling_text_view);
-
+        markwon = Markwon.builder(this)
+                .usePlugin(CorePlugin.create())
+                .usePlugin(TablePlugin.create(this))
+                .usePlugin(LinkifyPlugin.create())
+                .usePlugin(HtmlPlugin.create()) // optional
+                .build();
         textView = (TextView) findViewById(R.id.textView);
         Bundle bundle = getIntent().getExtras();
         setTitle(bundle.getString(Constants.SUBJECT));
-        String data = JsonHelper.formatAsString(bundle.getString(Constants.NOTE_TEXT),true);
+        String filePath = bundle.getString(Constants.PARAM_URL);
+        String data = "";
+        if(filePath == null){
+            List<KeyValue> keyValueList = StorageUtil.getKeyValueListFromCacheDir(getApplicationContext());
+            //data = JsonHelper.formatAsString(Converter.getKeyValuesJsonString(keyValueList),true);
+            data = Converter.getKeyValuesJsonString(keyValueList);
+        } else {
+            data = StorageUtil.getTextFromDocumentFile(this, Uri.parse(filePath));
+        }
         parseText(data);
         defaultTextSize = textView.getTextSize();
         mScaleGestureDetector = new ScaleGestureDetector(this, new ScaleListener());
-        thisActivity = this;
         textView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 toggleFullScreenMode();
             }
         });
+
     }
 
     public void toggleFullScreenMode(){
@@ -103,12 +129,26 @@ public class ScrollingTextViewActivity extends BaseActivity implements View.OnTo
         new Thread() {
             @Override
             public void run() {
-                displayText(Html.fromHtml(JsonHelper.formatAsString(text,true)));
-
-
+                String formattedText = MarkdownFormatter.formatJsonWithMarkdown (text);
+                displayText(formattedText);
+                //displayText(Html.fromHtml(JsonHelper.formatAsString(text,true)));
             }
         }.start();
 
+    }
+
+    private void displayText(String text){
+        runOnUiThread(()-> {
+            markwon.setMarkdown(textView, text);
+            /*
+            textView.setMovementMethod(LinkMovementMethod.getInstance());
+            textView.setOnTouchListener((v, event) -> {
+                v.onTouchEvent(event);
+                return false; // Allow parent click
+            });
+            */
+
+        });
     }
 
     private void displayText(Spanned text){

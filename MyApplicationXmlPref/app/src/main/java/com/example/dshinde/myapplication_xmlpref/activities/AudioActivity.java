@@ -1,14 +1,11 @@
 package com.example.dshinde.myapplication_xmlpref.activities;
 
 import android.annotation.SuppressLint;
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
+import android.os.Looper;
 import android.os.Message;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
@@ -20,77 +17,72 @@ import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.media3.common.MediaItem;
+import androidx.media3.common.Player;
+import androidx.media3.exoplayer.ExoPlayer;
+
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
+import com.example.dshinde.myapplication_xmlpref.common.FileType;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
-import com.example.dshinde.myapplication_xmlpref.listners.AudioServiceListener;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
+import com.example.dshinde.myapplication_xmlpref.listners.FireStorageListener;
 import com.example.dshinde.myapplication_xmlpref.listners.OnSwipeTouchListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
-import com.example.dshinde.myapplication_xmlpref.services.AudioService;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
+import com.example.dshinde.myapplication_xmlpref.services.FileStorage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class AudioActivity extends BaseActivity implements AudioServiceListener {
-    public static final String MEDIA_URI = "mediaUri";
+public class AudioActivity extends BaseActivity {
     public static final String MEDIA_NAME = "mediaName";
     static final int PLAYBACK_MODE_SELECT = 1;
     static final int PLAYBACK_MODE_PLAY = 2;
     private static final String CLASS_TAG = "AudioActivity";
-    public static final String PLAY = "PLAY";
-    public static final String PAUSE = "PAUSE";
     EditText editTextFileUri;
     ImageButton buttonPlay;
     ImageButton buttonPrevious;
     ImageButton buttonNext;
     TextView textViewNote;
     DataStorage dataStorageManager;
+    FileStorage fileStorage;
     String collectionName = null;
     String key;
     String noteText;
     Uri mediaUri;
-    private Intent audioServiceIntent;
-    private AudioService audioService;
+    ExoPlayer mp;
     Gson gson = new GsonBuilder().create();
     SeekBar seekBar;
-    private final Handler handler = new Handler();
-    private boolean isBound = false;
 
-    private final ServiceConnection serviceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            AudioService.LocalBinder binder = (AudioService.LocalBinder) service;
-            audioService = binder.getService();
-            audioService.addListener(AudioActivity.this);
-            isBound = true;
-            updateSeekBar();
-        }
+    public final Handler mHandler = new Handler(Looper.getMainLooper(), msg -> {
+        seekBar.setProgress(msg.arg1);
+        return true;
+    });
 
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            isBound = false;
-        }
-
-    };
-
+    Timer timer;
     int mode, currentNote, totalNotes;
     List<KeyValue> notes;
     List<KeyValue> audioNotes;
     boolean playingNoteSubject;
+    private ActivityResultLauncher<String> filePickerLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.audiovideo_activity_layout);
+        timer = new Timer();
+
         // get parameters
         Bundle bundle = getIntent().getExtras();
         if (bundle != null) {
@@ -112,7 +104,9 @@ public class AudioActivity extends BaseActivity implements AudioServiceListener 
                 initialiseNoteItemToDisplay();
             }
             setTitleDescription();
+            initialiseMediaStore();
             loadUI();
+            initialiseFilePickerLauncher();
             initDataStorageAndLoadData(this);
         }
     }
@@ -127,15 +121,8 @@ public class AudioActivity extends BaseActivity implements AudioServiceListener 
         }
     }
 
-    private void updateSeekBar() {
-        if (isBound) {
-            seekBar.setProgress(audioService.getCurrentPosition());
-            handler.postDelayed(this::updateSeekBar, 1000);
-        }
-    }
-
     private void getNoteItems() {
-        notes = (List<KeyValue>) getIntent().getSerializableExtra("data");
+        notes = StorageUtil.getKeyValueListFromCacheDir(getApplicationContext());
         totalNotes = notes.size();
     }
 
@@ -175,19 +162,24 @@ public class AudioActivity extends BaseActivity implements AudioServiceListener 
     }
 
     private void playOrPause() {
-        if(!isBound || mediaUri == null){
+        if(mediaUri == null){
             return;
         }
-        if (audioService.isPlaying()) {
-            setAudioServiceAction(PAUSE);
+        if (mp.isPlaying()) {
+            mp.pause();
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         } else {
-            setAudioServiceAction(PLAY);
+            if (mp.getDuration() == mp.getCurrentPosition()) {
+                seekBar.setProgress(0);
+            }
+            mp.play();
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            timer.schedule(new ProgressUpdate(), 0, 1000); // using handler/timer task
         }
         setPlayPauseButton();
     }
 
     private void loadUI() {
-        //startService(audioServiceIntent);
         editTextFileUri = findViewById(R.id.fileUri);
         buttonPlay = findViewById(R.id.buttonPlay);
         setPlayButtonListener();
@@ -209,6 +201,7 @@ public class AudioActivity extends BaseActivity implements AudioServiceListener 
         setSwipeListener();
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private void setSwipeListener() {
         if(mode == PLAYBACK_MODE_SELECT) {
             textViewNote.setOnTouchListener(new OnSwipeTouchListener(this) {
@@ -236,8 +229,8 @@ public class AudioActivity extends BaseActivity implements AudioServiceListener 
 
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromTouch) {
-                if (fromTouch && isBound) {
-                    audioService.seekTo(progress);
+                if (fromTouch && mp != null) {
+                    mp.seekTo(progress);
                 }
             }
 
@@ -248,25 +241,17 @@ public class AudioActivity extends BaseActivity implements AudioServiceListener 
         });
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private void setFileSelectorListener() {
-        /*
-        if (mode == PLAY) {
-            // remove file select icon
-            editTextFileUri.setCompoundDrawablesWithIntrinsicBounds(null, null, null, null);
-        } else {
-
-         */
-            editTextFileUri.setOnTouchListener((v, event) -> {
-                if (event.getAction() == MotionEvent.ACTION_UP) {
-                    if (event.getRawX() >= (editTextFileUri.getRight() - editTextFileUri.getCompoundDrawables()[Constants.DRAWABLE_RIGHT].getBounds().width())) {
-                        selectFile(Constants.AUDIO_FILE, Constants.SELECT_AUDIO);
-                        return true;
-                    }
+        editTextFileUri.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_UP) {
+                if (event.getRawX() >= (editTextFileUri.getRight() - editTextFileUri.getCompoundDrawables()[Constants.DRAWABLE_RIGHT].getBounds().width())) {
+                    selectAudioFile();
+                    return true;
                 }
-                return false;
-            });
-            /*
-        }*/
+            }
+            return false;
+        });
     }
 
     private void initDataStorageAndLoadData(Context context) {
@@ -275,21 +260,25 @@ public class AudioActivity extends BaseActivity implements AudioServiceListener 
                 getDataStorageType(),
                 Constants.MEDIA_NOTE_PREFIX + collectionName +
                         (mode == PLAYBACK_MODE_SELECT ? "/" + key : ""),
-                false, false, new DataStorageListener() {
-                    @Override
-                    public void dataChanged(String key, String value) {
-                        Log.d(CLASS_TAG, "dataChanged key: " + key + ", value: " + value);
-                        showInShortToast(getResources().getString(R.string.saved));
-                    }
-
-                    @Override
-                    public void dataLoaded(List<KeyValue> data) {
-                        Log.d(CLASS_TAG, "dataLoaded");
-                        audioNotes = data;
-                        loadAudioNote();
-                    }
-                });
+                false, false, getDataStorageListener());
         dataStorageManager.loadData();
+    }
+
+    private DataStorageListener getDataStorageListener() {
+        return new DataStorageListener() {
+            @Override
+            public void dataChanged(String key, String value) {
+                Log.d(CLASS_TAG, "dataChanged key: " + key + ", value: " + value);
+                showInShortToast(getResources().getString(R.string.saved));
+            }
+
+            @Override
+            public void dataLoaded(List<KeyValue> data) {
+                Log.d(CLASS_TAG, "dataLoaded");
+                audioNotes = data;
+                loadAudioNote();
+            }
+        };
     }
 
     private void loadAudioNote() {
@@ -303,8 +292,7 @@ public class AudioActivity extends BaseActivity implements AudioServiceListener 
                 if(keyValue.getValue() != null) {
                     Map<String, String> value = gson.fromJson(keyValue.getValue(), Map.class);
                     editTextFileUri.setText(value.get(MEDIA_NAME));
-                    mediaUri = Uri.parse(value.get(MEDIA_URI));
-                    setMediaPlayerSource();
+                    getMediaUri(value.get(MEDIA_NAME));
                 }
             } else {
                 key = keyValue.getKey();
@@ -313,8 +301,8 @@ public class AudioActivity extends BaseActivity implements AudioServiceListener 
                 parseAndDisplayText(noteText);
             }
         } else if(audioNote){
-            if(isBound && audioService.isPlaying()) {
-                setAudioServiceAction("STOP");
+            if(mp != null && mp.isPlaying()) {
+                mp.stop();
             }
             setPlayPauseButton();
             seekBar.setProgress(0);
@@ -323,76 +311,114 @@ public class AudioActivity extends BaseActivity implements AudioServiceListener 
         }
     }
 
+    private void getMediaUri(String mediaName) {
+        fileStorage.downloadAudioFile(mediaName);
+    }
+
+    private void initialiseMediaStore() {
+        fileStorage = Factory.getFileStorageInstance(getApplicationContext(), collectionName, new FireStorageListener() {
+            @Override
+            public void downloadUriReceived(Uri fileUri) {
+                mediaUri = fileUri;
+                setMediaPlayerSource();
+            }
+
+            @Override
+            public void downloadFileBytesReceived(byte[] bytes) {
+
+            }
+
+            @Override
+            public void uploadedUriReceived(Uri fileUri) {
+
+            }
+        });
+    }
+
     private void save() {
         String dbKey = (playingNoteSubject ? collectionName : key);
         if (dbKey != null && mediaUri != null) {
             Map<String, String> data = new HashMap<>();
-            data.put(MEDIA_URI, mediaUri.toString());
             data.put(MEDIA_NAME, editTextFileUri.getText().toString());
             dataStorageManager.save((playingNoteSubject ? collectionName : dbKey), gson.toJson(data));
-        }
-    }
-
-    private void remove() {
-        String dbKey = (playingNoteSubject ? collectionName : key);
-        if (dbKey != null) {
-            dataStorageManager.remove(dbKey);
-        }
-    }
-
-    private void selectFile(String fileType, int actionCode) {
-        Log.d(CLASS_TAG, "SelectFile");
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType(fileType);
-        startActivityForResult(intent, actionCode);
-    }
-
-    @SuppressLint("WrongConstant")
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (data != null && data.getData() != null) {
-            mediaUri = data.getData();
-            final int takeFlags = data.getFlags()
-                    & (Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            // Check for the freshest data.
-            getContentResolver().takePersistableUriPermission(mediaUri, takeFlags);
-            editTextFileUri.setText(StorageUtil.getFileName(this, mediaUri));
-            save();
-            setMediaPlayerSource();
+            fileStorage.uploadMedia(mediaUri, FileType.MUSIC);
         }
     }
 
     private void setMediaPlayerSource() {
-        if (mediaUri != null) {
-            audioServiceIntent.setAction(PLAY);
-            audioServiceIntent.setData(mediaUri);
-            seekBar.setProgress(0);
-            startService(audioServiceIntent);
+        if (mediaUri == null) return;
+        try {
+            initialiseMediaPlayerAndPlayMedia();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
-    private void setAudioServiceAction(String command) {
-        audioServiceIntent.setAction(command);
-        startService(audioServiceIntent);
+    private void initialiseMediaPlayerAndPlayMedia() {
+        if (mp == null) {
+            mp = new ExoPlayer.Builder(getApplicationContext()).build();
+        }
+        mp.clearMediaItems();
+        // Build the media item.
+        MediaItem mediaItem = MediaItem.fromUri(mediaUri);
+        // Set the media item to be played.
+        mp.setMediaItem(mediaItem);
+        // Prepare the player.
+        mp.prepare();
+        // Start the playback.
+        mp.play();
+        seekBar.setProgress(0);
+
+        mp.addListener(new Player.Listener() {
+            @Override
+            public void onPlaybackStateChanged(int state) {
+                switch (state) {
+                    case Player.STATE_READY:
+                        // Equivalent to setOnPreparedListener
+                        long duration = mp.getDuration(); // in ms
+                        seekBar.setMax((int) duration);
+                        playOrPause();
+                        Log.d("ExoPlayer", "Duration: " + duration);
+                        break;
+
+                    case Player.STATE_ENDED:
+                        // Equivalent to setOnCompletionListener
+                        Log.d("ExoPlayer", "Playback completed");
+                        setMediaPlayerOnCompletionAction();
+                        break;
+                    case Player.STATE_BUFFERING:
+                    case Player.STATE_IDLE:
+                        break;
+                }
+            }
+        });
     }
 
+    private void setMediaPlayerOnCompletionAction() {
+        setPlayPauseButton();
+        seekBar.setProgress((int)mp.getDuration());
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if(mode == PLAYBACK_MODE_PLAY) {
+            next();
+        }
+    }
 
     private void setPlayPauseButton() {
-        if (audioService.isPlaying()) {
+        if (mp.isPlaying()) {
             buttonPlay.setImageResource(R.drawable.ic_action_pause);
         } else {
             buttonPlay.setImageResource(R.drawable.ic_action_play);
         }
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        audioServiceIntent = new Intent(this, AudioService.class);
-        bindService(audioServiceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+    private void cleanUpMediaPlayer() {
+        if (mp != null) {
+            if (mp.isPlaying()) {
+                mp.stop();
+            }
+            mp.release();
+            mp = null;
+        }
     }
 
     @Override
@@ -401,23 +427,54 @@ public class AudioActivity extends BaseActivity implements AudioServiceListener 
         Log.d(CLASS_TAG, "onStop");
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         dataStorageManager.removeDataStorageListeners();
-        if (isBound) {
-            unbindService(serviceConnection);
-            isBound = false;
+        cleanUpMediaPlayer();
+    }
+
+    private class ProgressUpdate extends TimerTask {
+
+        public ProgressUpdate() {
+            super();
+        }
+
+        @Override
+        public void run() {
+            runOnUiThread(AudioActivity.this::notifyProgressBarWithCurrentPosition);
         }
     }
 
-    @Override
-    public void playStarted() {
-        seekBar.setMax(audioService.getDuration());
-    }
-
-    @Override
-    public void playCompleted() {
-        setPlayPauseButton();
-        seekBar.setProgress(audioService.getDuration());
-        if(mode == PLAYBACK_MODE_PLAY) {
-            next();
+    private void notifyProgressBarWithCurrentPosition() {
+        if (mp != null && mp.isPlaying()) {
+            long currentPosition = mp.getCurrentPosition();
+            Message msg = new Message();
+            msg.arg1 = (int)currentPosition;
+            mHandler.dispatchMessage(msg);
         }
     }
+
+    private void selectAudioFile() {
+        Log.d(CLASS_TAG, "selectAudioFile");
+        filePickerLauncher.launch(Constants.AUDIO_FILE);
+    }
+
+    private void initialiseFilePickerLauncher() {
+        // Initialize the ActivityResultLauncher
+        // The contract is GetContent(), which takes a String (MIME type) as input
+        // and returns a Uri as output.
+        filePickerLauncher = registerForActivityResult(
+                new ActivityResultContracts.GetContent(),
+                this::saveSelectedMediaAndPlayMedia);
+    }
+
+    private void saveSelectedMediaAndPlayMedia(Uri uri) {
+        // Handle the returned Uri here
+        if (uri != null) {
+            mediaUri = uri;
+            setMediaPlayerSource();
+            editTextFileUri.setText(StorageUtil.getFileName(getApplicationContext(), mediaUri));
+            save();
+        } else {
+            Log.d(CLASS_TAG, "No file selected");
+        }
+    }
+
 }

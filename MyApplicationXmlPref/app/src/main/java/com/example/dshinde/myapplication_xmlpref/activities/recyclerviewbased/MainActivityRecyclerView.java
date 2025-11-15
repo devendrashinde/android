@@ -23,6 +23,7 @@ import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.lifecycle.Observer;
@@ -37,6 +38,7 @@ import androidx.work.WorkManager;
 
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.activities.AudioVideoActivity;
+import com.example.dshinde.myapplication_xmlpref.activities.BackupRestoreMediaFilesActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.BaseActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.ImageCropperActivity;
 import com.example.dshinde.myapplication_xmlpref.activities.PhotoGalleryActivity;
@@ -47,6 +49,7 @@ import com.example.dshinde.myapplication_xmlpref.adapters.MarginItemDecoration;
 import com.example.dshinde.myapplication_xmlpref.adapters.RecyclerViewKeyValueAdapter;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.Converter;
+import com.example.dshinde.myapplication_xmlpref.helper.DynamicControls;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
 import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
@@ -60,7 +63,6 @@ import com.example.dshinde.myapplication_xmlpref.services.SharedPrefManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -68,7 +70,6 @@ import java.util.Map;
 import java.util.Optional;
 
 public class MainActivityRecyclerView extends BaseActivity  {
-    private static final int REQ_CODE = 0;
     EditText valueField;
     RecyclerView listView;
     RecyclerViewKeyValueAdapter listAdapter;
@@ -76,9 +77,9 @@ public class MainActivityRecyclerView extends BaseActivity  {
     DocumentFile selectedDir;
     ReadWriteOnceDataStorage readWriteOnceDataStorage;
     String key;
-    String databasePathNotes = Constants.DATABASE_PATH_NOTES;
+    final String databasePathNotes = Constants.DATABASE_PATH_NOTES;
     private static final String CLASS_TAG = "MainActivityRV";
-    Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     // activities started for results
     ActivityResultLauncher<Intent> imageCropperActivityResultLauncher;
@@ -99,6 +100,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
         Log.d(CLASS_TAG, "loadUI");
         setContentView(R.layout.activity_main_recycler_view);
         valueField = findViewById(R.id.VALUE_1);
+        DynamicControls.setInputFilterOnValueField(valueField, Constants.BLOCK_CHARACTERS);
         listView = findViewById(R.id.list);
         populateListView();
         setValueFieldWatcher();
@@ -199,9 +201,6 @@ public class MainActivityRecyclerView extends BaseActivity  {
             case R.id.menu_edit:
                 edit();
                 return true;
-            case R.id.menu_remove:
-                remove();
-                return true;
             case R.id.menu_share:
                 share();
                 return true;
@@ -220,7 +219,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
             case R.id.menu_daylight:
                 return true;
             case R.id.menu_test:
-                selectAndCropPhoto();
+                backupAndRestoreMediaFiles();
                 return true;
             case R.id.menu_design_screen:
                 designScreen();
@@ -242,17 +241,12 @@ public class MainActivityRecyclerView extends BaseActivity  {
         startActivity(intent);
     }
 
-
-
     private void startRelationshipActivity() {
         String fileName = valueField.getText().toString();
         Intent intent = new Intent(MainActivityRecyclerView.this, RelationshipActivity.class);
         intent.putExtra(Constants.PARAM_FILENAME, fileName);
         intent.putExtra(Constants.USERID, userId);
         startActivity(intent);
-    }
-
-    public void remove() {
     }
 
     public void save() {
@@ -279,10 +273,12 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     public void edit() {
-        String fileName = valueField.getText().toString();
+        edit(valueField.getText().toString());
+    }
+    public void edit(@NonNull String fileName) {
         if (!fileName.isEmpty()) {
             if(fileName.equals(Constants.SHABDA_KOSH)){
-                startShabdaKoshActivity(fileName);
+                startDictionaryActivity(fileName);
             } else {
 
                 startActivityForAction(fileName, "EDIT");
@@ -290,7 +286,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
         }
     }
 
-    private void startShabdaKoshActivity(String fileName) {
+    private void startDictionaryActivity(String fileName) {
         Intent intent = new Intent(MainActivityRecyclerView.this, ShabdaKoshActivity.class);
         intent.putExtra(Constants.USERID, userId);
         startActivity(intent);
@@ -339,7 +335,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     private RecyclerViewKeyValueItemListener getOnItemClickListenerToListView() {
-        RecyclerViewKeyValueItemListener listener = new RecyclerViewKeyValueItemListener() {
+        return new RecyclerViewKeyValueItemListener() {
             @Override
             public void onItemClick(KeyValue kv) {
                 key = kv.getKey();
@@ -354,7 +350,6 @@ public class MainActivityRecyclerView extends BaseActivity  {
                 return true;
             }
         };
-        return listener;
     }
 
     private void showPopup(String value) {
@@ -365,8 +360,11 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     @Override
-    protected void processSelectedOption(String id, String selectedOption, String key, String value) {
+    protected void processSelectedOption(@NonNull String id, @NonNull String selectedOption, String key, String value) {
         switch (selectedOption) {
+            case Constants.EDIT_NOTE:
+                edit(value);
+                break;
             case Constants.VIEW_NOTE:
                 viewNote(value);
                 break;
@@ -407,19 +405,30 @@ public class MainActivityRecyclerView extends BaseActivity  {
         if(action.equals(Constants.PLAY_NOTE)) {
             intent.putExtra("key", title);
         }
-        intent.putExtra("data", (Serializable) values);
+        StorageUtil.writeKeyValueListToCacheDir(getApplicationContext(), values);
         startActivity(intent);
     }
 
-    private void startViewNoteActivity(String title, String text) {
-        if (text != null && !text.isEmpty()) {
+    private void startViewNoteActivity(String title, List<KeyValue> keyValues) {
+        if (keyValues != null && !keyValues.isEmpty()) {
             Intent intent = new Intent(MainActivityRecyclerView.this,
                     ScrollingTextViewActivity.class);
             intent.putExtra("subject", title);
-            intent.putExtra("text", text);
+            StorageUtil.writeKeyValueListToCacheDir(getApplicationContext(), keyValues);
             startActivity(intent);
         }
     }
+
+    private void startViewFileActivity(String title, Uri fileUri) {
+        if (fileUri != null) {
+            Intent intent = new Intent(MainActivityRecyclerView.this,
+                    ScrollingTextViewActivity.class);
+            intent.putExtra("subject", title);
+            intent.putExtra(Constants.PARAM_URL, fileUri.toString());
+            startActivity(intent);
+        }
+    }
+
 
     private void setEditView(String value) {
         valueField.setText(value);
@@ -430,15 +439,6 @@ public class MainActivityRecyclerView extends BaseActivity  {
         if (!fileName.isEmpty()) {
             copy(fileName);
         }
-    }
-
-    public void doSettings() {
-        /*
-        Intent intent = new Intent(MainActivityRecyclerView.this,
-                CafeSettingsActivity.class);
-        intent.putExtra(Constants.USERID, userId);
-        startActivity(intent);
-         */
     }
 
     private void designScreen() {
@@ -464,7 +464,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
      */
     private void addToDictionary() {
         String collectionName = valueField.getText().toString();
-        if (collectionName != null && !collectionName.isEmpty()) {
+        if (!collectionName.isEmpty()) {
             final Data data = new Data.Builder()
                     .putString(Constants.PARAM_NOTE, collectionName)
                     .putString(Constants.PARAM_DICTIONARY, Constants.SHABDA_KOSH)
@@ -531,10 +531,6 @@ public class MainActivityRecyclerView extends BaseActivity  {
         }
     }
 
-    public void export() {
-        startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE), StorageUtil.PICK_DOCUMENT_FOLDER_FOR_EXPORT);
-    }
-
     private void export(DocumentFile dir) {
         // TODO getDataString in dataStorageManager
         selectedDir = dir;
@@ -576,10 +572,6 @@ public class MainActivityRecyclerView extends BaseActivity  {
                     });
 
         }
-    }
-
-    public void restore() {
-
     }
 
     public void viewFile() {
@@ -635,8 +627,8 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     @Override
-    protected void doView(String collectionName, String data) {
-        startViewNoteActivity(collectionName, data);
+    protected void doView(String fileName, Uri fileUri) {
+        startViewFileActivity(fileName, fileUri);
     }
 
     @Override
@@ -661,7 +653,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
                             if screen config is found then start ScreenDesignActivity
                             otherwise start normal edit activity
                              */
-                            if (data.size() > 0) {
+                            if (!data.isEmpty()) {
                                 String screenConfig = Converter.getValuesJsonString(data);
                                 startDesignOrEditActivity(collection, Constants.REQUEST_CODE_SCREEN_CAPTURE, screenConfig);
                             } else {
@@ -669,14 +661,14 @@ public class MainActivityRecyclerView extends BaseActivity  {
                             }
                             break;
                         case Constants.VIEW:
-                            startViewNoteActivity(collection, Converter.getKeyValuesJsonString(data));
+                            startViewNoteActivity(collection, data);
                             break;
                         case Constants.PLAY_NOTE_ITEMS:
                         case Constants.PLAY_NOTE:
                             startAudioNoteActivity(collection, data, action);
                             break;
                         case Constants.BACKUP:
-                            if (data.size() > 0) {
+                            if (!data.isEmpty()) {
                                 String path = StorageUtil.saveAsObjectToDocumentFile(getApplicationContext(), selectedDir, collection, gson.toJson(data));
                                 if(path != null ){
                                     runOnUiThread(()-> showInLongToast(getResources().getString(R.string.save_to) + " " + path ));
@@ -690,6 +682,12 @@ public class MainActivityRecyclerView extends BaseActivity  {
             });
     }
 
+    private void backupAndRestoreMediaFiles() {
+        Intent intent = new Intent(this, BackupRestoreMediaFilesActivity.class);
+        imageCropperActivityResultLauncher.launch(intent);
+    }
+
+
     private void selectAndCropPhoto() {
         Intent intent = new Intent(this, ImageCropperActivity.class);
         imageCropperActivityResultLauncher.launch(intent);
@@ -697,18 +695,18 @@ public class MainActivityRecyclerView extends BaseActivity  {
 
     private void registerImageCropperActivityForResults() {
         imageCropperActivityResultLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                new ActivityResultCallback<ActivityResult>() {
-                    @Override
-                    public void onActivityResult(ActivityResult result) {
-                        if (result.getResultCode() == Constants.RESULT_CODE_OK) {
-                            // There are no request codes
-                            Intent data = result.getData();
-                            Uri imageUri = data.getData();
-                            //saveImage(imageUri);
-                        }
+            new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+                    if (result.getResultCode() == Constants.RESULT_CODE_OK) {
+                        // There are no request codes
+                        Intent data = result.getData();
+                        Uri imageUri = data.getData();
+                        //saveImage(imageUri);
                     }
-                });
+                }
+            });
     }
 
     private void saveImage(Uri imageUri) {

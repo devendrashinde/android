@@ -1,11 +1,12 @@
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
 
 android {
     defaultConfig {
         applicationId "com.example.dshinde.myapplication_xmlpref"
-        minSdkVersion 26
-        compileSdk 34
-        targetSdkVersion 34
+        minSdkVersion 26        // Android 8.0+
+        compileSdk 35           // Android 15 (latest preview)
+        targetSdkVersion 34     // Android 14
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -18,9 +19,14 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = 1.8
-        targetCompatibility = 1.8
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
+
+    kotlinOptions {
+        jvmTarget = "1.8" // Or your desired Java version, matching compileOptions
+    }
+
     sourceSets { main { res.srcDirs = ['src/main/res', 'src/main/res/layout-land'] } }
     namespace 'com.example.dshinde.myapplication_xmlpref'
     buildFeatures {
@@ -29,66 +35,101 @@ android {
 }
 
 dependencies {
+    // Kotlin
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+
+    // Local .jar files
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.3'
-    implementation 'androidx.appcompat:appcompat:1.4.1'
+
+    // ---------------------------
+    // AndroidX Core & UI
+    // ---------------------------
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
-    implementation 'androidx.vectordrawable:vectordrawable-animated:1.1.0'
+    implementation 'androidx.vectordrawable:vectordrawable-animated:1.2.0'
     implementation 'androidx.cardview:cardview:1.0.0'
+    implementation 'androidx.preference:preference-ktx:1.2.1'
+    implementation 'androidx.activity:activity-ktx:1.9.3'
+    implementation 'androidx.navigation:navigation-fragment-ktx:2.8.4'
+    implementation 'androidx.navigation:navigation-ui-ktx:2.8.4'
+    implementation 'androidx.work:work-runtime:2.9.1'
     implementation 'androidx.biometric:biometric:1.1.0'
-    implementation 'com.google.android.material:material:1.5.0'
 
-    implementation 'com.google.android.flexbox:flexbox:3.0.0'
-    implementation 'com.google.code.gson:gson:2.8.9'
-    implementation 'com.google.firebase:firebase-database:20.0.4'
-    implementation 'com.google.firebase:firebase-storage:20.0.1'
-    // Firebase Authentication
-    implementation 'com.google.firebase:firebase-core:20.1.2'
-    implementation 'com.google.firebase:firebase-auth:21.0.3'
+    // ---------------------------
+    // Material Components
+    // ---------------------------
+    implementation 'com.google.android.material:material:1.12.0'
 
-    // Google Sign In SDK (only required for Google Sign In)
-    implementation 'com.google.android.gms:play-services-auth:20.2.0'
+    // ---------------------------
+    // Firebase (using BoM)
+    // ---------------------------
+    implementation platform('com.google.firebase:firebase-bom:33.6.0')
+    implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'com.google.firebase:firebase-database'
+    implementation 'com.google.firebase:firebase-firestore'
+    implementation 'com.google.firebase:firebase-storage'
+    implementation 'com.google.firebase:firebase-appcheck-debug'
 
     // Firebase UI
-    implementation 'com.firebaseui:firebase-ui-auth:8.0.0'
-    implementation 'com.firebaseui:firebase-ui-database:8.0.0'
+    implementation 'com.firebaseui:firebase-ui-auth:8.0.2'
+    implementation 'com.firebaseui:firebase-ui-database:8.0.2'
 
-    //Glide
+    // Google Sign-In SDK
+    implementation 'com.google.android.gms:play-services-auth:21.4.0'
+
+    // Google Maps
+    implementation 'com.google.android.gms:play-services-maps:19.2.0'
+
+    // ---------------------------
+    // Media / ExoPlayer (Media3)
+    // ---------------------------
+    implementation "androidx.media3:media3-exoplayer:1.4.1"
+    implementation "androidx.media3:media3-exoplayer-dash:1.4.1"
+    implementation "androidx.media3:media3-ui:1.4.1"
+
+    // ---------------------------
+    // Image Loading / Display
+    // ---------------------------
     implementation 'com.github.bumptech.glide:glide:4.15.1'
-    implementation 'androidx.navigation:navigation-fragment:2.8.4'
-    implementation 'androidx.navigation:navigation-ui:2.8.4'
-    implementation 'androidx.activity:activity:1.8.0'
-    implementation 'androidx.preference:preference:1.2.1'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.15.1'
-
+    implementation 'com.squareup.picasso:picasso:2.71828'
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
-
-    implementation 'com.github.DImuthuUpe:AndroidPdfViewer:2.8.1'
-
     implementation 'com.vanniktech:android-image-cropper:4.6.0'
-    // GraphView
+
+    // ---------------------------
+    // Markdown rendering
+    // ---------------------------
+    implementation 'io.noties.markwon:core:4.6.2'
+    implementation 'io.noties.markwon:image:4.6.2'
+    implementation 'io.noties.markwon:image-glide:4.6.2'
+    implementation 'io.noties.markwon:linkify:4.6.2'
+    implementation 'io.noties.markwon:ext-tables:4.6.2'
+    implementation 'io.noties.markwon:syntax-highlight:4.6.2'
+    implementation 'io.noties.markwon:html:4.6.2'
+
+    // ---------------------------
+    // Other utilities
+    // ---------------------------
+    implementation 'com.google.android.flexbox:flexbox:3.0.0'
+    implementation 'com.google.code.gson:gson:2.11.0'
+    implementation 'org.jsoup:jsoup:1.16.1'
+    implementation 'com.google.guava:guava:33.3.1-android'
     implementation 'com.jjoe64:graphview:4.2.1'
 
+    // PDF viewer
+    implementation 'com.github.DImuthuUpe:AndroidPdfViewer:2.8.1'
+
+    // ---------------------------
+    // Testing
+    // ---------------------------
     testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
-    implementation 'androidx.appcompat:appcompat:1.4.1'
-
-    implementation 'com.google.firebase:firebase-firestore:24.1.1'
-    implementation 'com.google.android.material:material:1.7.0-alpha01'
-
-    // jsoup
-    implementation 'org.jsoup:jsoup:1.16.1'
-
-    // google maps
-    implementation 'com.google.android.gms:play-services-maps:18.1.0'
-
-    implementation 'androidx.work:work-runtime:2.7.1'
-
-    // ACRA library for debugging application
-    implementation 'ch.acra:acra:4.9.2'
-
-    implementation 'com.squareup.picasso:picasso:2.71828'
+    androidTestImplementation 'androidx.test.ext:junit:1.3.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.7.0'
+}
+configurations.configureEach {
+    exclude group: 'org.jetbrains', module: 'annotations-java5'
 }
 
 apply plugin: 'com.google.gms.google-services'  // Google Play services Gradle plugin

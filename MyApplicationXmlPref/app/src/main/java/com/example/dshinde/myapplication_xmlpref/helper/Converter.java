@@ -5,7 +5,6 @@ import android.graphics.Canvas;
 import android.view.View;
 
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import org.json.JSONArray;
@@ -27,7 +26,7 @@ public class Converter {
             try {
                 formDetailsJson.put(keyValue.getKey(), keyValue.getValue());
                 jsonArray.put(formDetailsJson);
-            } catch (Exception e) {
+            } catch (Exception ignored) {
 
             }
         }

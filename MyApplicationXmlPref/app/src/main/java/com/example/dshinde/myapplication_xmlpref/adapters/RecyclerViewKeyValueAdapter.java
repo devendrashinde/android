@@ -2,6 +2,9 @@ package com.example.dshinde.myapplication_xmlpref.adapters;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.text.Spannable;
+import android.text.method.LinkMovementMethod;
+import android.text.method.MovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,21 +18,28 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.helper.JsonHelper;
+import com.example.dshinde.myapplication_xmlpref.helper.MarkdownFormatter;
 import com.example.dshinde.myapplication_xmlpref.listners.RecyclerViewKeyValueItemListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import io.noties.markwon.Markwon;
+import io.noties.markwon.core.CorePlugin;
+import io.noties.markwon.ext.tables.TablePlugin;
+import io.noties.markwon.linkify.LinkifyPlugin;
+
 public class RecyclerViewKeyValueAdapter extends RecyclerView.Adapter<RecyclerViewKeyValueAdapter.RecyclerViewKeyValueViewHolder> implements Filterable {
     private List<KeyValue> kvList;
     private List<KeyValue> origList = new ArrayList<>();
     RecyclerViewKeyValueItemListener recyclerViewKeyValueItemListener;
     private Context context;
-    private int layoutResource;
+    private final int layoutResource;
     private Filter kvFilter;
     private int lastItemClicked;
     private int selectedPosition=-1;
+    private final Markwon markwon;
 
     public RecyclerViewKeyValueAdapter(List<KeyValue> kvList, Context ctx, int layoutResource) {
         this(kvList, ctx, layoutResource, null);
@@ -42,6 +52,12 @@ public class RecyclerViewKeyValueAdapter extends RecyclerView.Adapter<RecyclerVi
         this.layoutResource = layoutResource;
         this.origList = kvList;
         this.recyclerViewKeyValueItemListener = recyclerViewKeyValueItemListener;
+
+        this.markwon = Markwon.builder(context)
+                .usePlugin(CorePlugin.create())
+                .usePlugin(TablePlugin.create(context))
+                .usePlugin(LinkifyPlugin.create())
+                .build();
     }
 
     @Override
@@ -152,12 +168,18 @@ public class RecyclerViewKeyValueAdapter extends RecyclerView.Adapter<RecyclerVi
 
         // Set item views based on your views and data model
         viewHolder.keyView.setText(keyValue.getKey());
-
+        /*
         if(JsonHelper.isJSONValid(keyValue.getValue())) {
             viewHolder.valueView.setText(HtmlCompat.fromHtml(JsonHelper.formatAsString(keyValue.getValue(), true),HtmlCompat.FROM_HTML_MODE_LEGACY));
         } else {
-            viewHolder.valueView.setText(getValue(keyValue));
+            markwon.setMarkdown(viewHolder.valueView, getValue(keyValue));
         }
+        */
+        markwon.setMarkdown(viewHolder.valueView, MarkdownFormatter.formatJsonWithMarkdown(keyValue.getValue()));
+        // ✅ Make sure touch events on the TextView don’t block itemView clicks
+        viewHolder.valueView.setMovementMethod(null);
+        viewHolder.valueView.setClickable(false);
+        viewHolder.valueView.setLongClickable(false);
     }
 
     private void highlightItem(RecyclerViewKeyValueViewHolder viewHolder, int position) {

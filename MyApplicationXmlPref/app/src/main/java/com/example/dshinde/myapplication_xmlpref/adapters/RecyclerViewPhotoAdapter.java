@@ -37,7 +37,6 @@ public class RecyclerViewPhotoAdapter extends RecyclerView.Adapter<RecyclerViewP
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.activity_photocard_recyclerview, parent, false);
         return new RecyclerViewHolder(view);
     }
-
     @Override
     public void onBindViewHolder(@NonNull RecyclerViewHolder holder, int position) {
 

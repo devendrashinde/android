@@ -43,8 +43,10 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.example.dshinde.myapplication_xmlpref.R;
+import com.example.dshinde.myapplication_xmlpref.activities.recyclerviewbased.PicklistActivityRecyclerView;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.common.ControlType;
+import com.example.dshinde.myapplication_xmlpref.common.FileType;
 import com.example.dshinde.myapplication_xmlpref.common.YesNo;
 import com.example.dshinde.myapplication_xmlpref.helper.DynamicControls;
 import com.example.dshinde.myapplication_xmlpref.helper.ExpressionSolver;
@@ -272,6 +274,7 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private void createControls() {
         Log.d(CLASS_TAG, "enter(createControls)");
+        boolean mediaStorageRequired = false;
         for (ScreenControl screenControl : controls) {
             switch (screenControl.getControlType()) {
                 case Text:
@@ -305,12 +308,11 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
                     addDropDownList(screenControl);
                     break;
                 case Document:
+                    getMediaStorageInstance();
                     addDocumentControl(screenControl);
                     break;
                 case Photo:
-                    if(mediaStorage == null) {
-                        mediaStorage = Factory.getFileStorageInstance(this);
-                    }
+                    getMediaStorageInstance();
                     addPhotoControl(screenControl);
                     break;
                 default:
@@ -330,6 +332,12 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
             }
         }
         Log.d(CLASS_TAG, "exit(createControls)");
+    }
+
+    private void getMediaStorageInstance() {
+        if(mediaStorage == null) {
+            mediaStorage = Factory.getFileStorageInstance(this);
+        }
     }
 
     private void addExpression(ScreenControl screenControl) {
@@ -733,20 +741,23 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
     }
 
     private void checkMediaAndUploadToStorage(){
+        FileType fileType = null;
         for (ScreenControl screenControl : controls) {
             if(screenControl.getMediaControl() != null && screenControl.getMediaUri() != null){
                 data.put(screenControl.getControlId(), StorageUtil.getFileName(this, screenControl.getMediaUri()));
                 switch (screenControl.getControlType()){
                     case Photo:
+                        fileType = FileType.PICTURE;
                         data.put(MediaFields.PHOTO_MEDIA, getCommaSeparated(data.get(MediaFields.PHOTO_MEDIA), screenControl.getControlId()));
                         break;
                     case Document:
+                        fileType = FileType.DOCUMENT;
                         data.put(MediaFields.DOCS_MEDIA, getCommaSeparated(data.get(MediaFields.DOCS_MEDIA), screenControl.getControlId()));
                         break;
                     default:
                         break;
                 }
-                saveFile(screenControl);
+                saveFile(screenControl, fileType);
             }
         }
     }
@@ -880,9 +891,9 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
         super.onStop();
     }
 
-    private void saveFile(ScreenControl screenControl) {
+    private void saveFile(ScreenControl screenControl, FileType fileType) {
         Uri filePath = screenControl.getMediaUri();
-        mediaStorage.uploadMedia(filePath);
+        mediaStorage.uploadMedia(filePath, fileType);
     }
 
     private class PhotoListener implements FireStorageListener {
@@ -942,25 +953,25 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private void registerImageCropperActivityForResults() {
         imageCropperActivityResultLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                new ActivityResultCallback<ActivityResult>() {
-                    @Override
-                    public void onActivityResult(ActivityResult result) {
-                        if (result.getResultCode() == Constants.RESULT_CODE_OK) {
-                            // There are no request codes
-                            Intent data = result.getData();
-                            assert data != null;
-                            Uri imageUri = data.getData();
-                            currentScreenControl.setMediaUri(imageUri);
-                            ImageView currentView = (ImageView) currentScreenControl.getMediaControl();
-                            currentView.setImageURI(imageUri);
-                        }
+            new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+                    if (result.getResultCode() == Constants.RESULT_CODE_OK) {
+                        // There are no request codes
+                        Intent data = result.getData();
+                        assert data != null;
+                        Uri imageUri = data.getData();
+                        currentScreenControl.setMediaUri(imageUri);
+                        ImageView currentView = (ImageView) currentScreenControl.getMediaControl();
+                        currentView.setImageURI(imageUri);
                     }
-                });
+                }
+            });
     }
 
     private void pickFromMyNote(String options) {
-        Intent intent = new Intent(this, ImageCropperActivity.class);
+        Intent intent = new Intent(this, PicklistActivityRecyclerView.class);
         intent.putExtra(Constants.PARAM_FILENAME, options.replaceAll("\\n", "/"));
         intent.putExtra(Constants.USERID, userId);
         selectMyNoteActivityResultLauncher.launch(intent);
@@ -968,19 +979,19 @@ public class DynamicLinearLayoutActivity extends AppCompatActivity {
 
     private void registerPicklistActivityForResults() {
         selectMyNoteActivityResultLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                new ActivityResultCallback<ActivityResult>() {
-                    @Override
-                    public void onActivityResult(ActivityResult result) {
-                        if (result.getResultCode() == Constants.RESULT_CODE_OK) {
-                            Intent data = result.getData();
-                            if( data != null) {
-                                EditText editText = (EditText) currentScreenControl.getValueControl();
-                                editText.setText(Objects.requireNonNull(data.getExtras()).getString("data"));
-                            }
+            new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+                    if (result.getResultCode() == Constants.RESULT_CODE_OK) {
+                        Intent data = result.getData();
+                        if( data != null) {
+                            EditText editText = (EditText) currentScreenControl.getValueControl();
+                            editText.setText(Objects.requireNonNull(data.getExtras()).getString("data"));
                         }
                     }
-                });
+                }
+            });
     }
 
 }

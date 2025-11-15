@@ -8,6 +8,7 @@ import com.example.dshinde.myapplication_xmlpref.common.Constants;
 import com.example.dshinde.myapplication_xmlpref.helper.Converter;
 import com.example.dshinde.myapplication_xmlpref.helper.DynamicControls;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
+import com.example.dshinde.myapplication_xmlpref.helper.StorageUtil;
 import com.example.dshinde.myapplication_xmlpref.helper.Utils;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
@@ -44,7 +45,7 @@ public class DataAnalyticActivity extends BaseActivity {
         if (bundle != null) {
             userId = bundle.getString(Constants.USERID);
             collectionName = bundle.getString(Constants.PARAM_NOTE);
-            notes = (List<KeyValue>) getIntent().getSerializableExtra(Constants.PARAM_DATA);
+            notes = StorageUtil.getKeyValueListFromCacheDir(getApplicationContext());
             totalNotes = notes.size();
             setTitle(collectionName);
             getScreenDesignData(collectionName);

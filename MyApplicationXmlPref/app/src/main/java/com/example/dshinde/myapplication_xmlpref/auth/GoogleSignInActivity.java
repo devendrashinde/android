@@ -63,6 +63,7 @@ public class GoogleSignInActivity extends BaseActivity implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(TAG, "onCreate:");
         setContentView(R.layout.activity_google);
 
         // Views
@@ -94,6 +95,7 @@ public class GoogleSignInActivity extends BaseActivity implements
     @Override
     public void onStart() {
         super.onStart();
+        Log.d(TAG, "onStart:");
         // Check if user is signed in (non-null) and update UI accordingly.
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if(currentUser != null) {
@@ -108,7 +110,7 @@ public class GoogleSignInActivity extends BaseActivity implements
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
+        Log.d(TAG, "onActivityResult:");
         // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent(...);
         if (requestCode == RC_SIGN_IN) {
             Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
@@ -155,12 +157,14 @@ public class GoogleSignInActivity extends BaseActivity implements
 
     // [START signin]
     private void signIn() {
+        Log.d(TAG, "signIn:");
         Intent signInIntent = mGoogleSignInClient.getSignInIntent();
         startActivityForResult(signInIntent, RC_SIGN_IN);
     }
     // [END signin]
 
     private void signOut() {
+        Log.d(TAG, "signOut:");
         // Firebase sign out
         mAuth.signOut();
 
@@ -189,6 +193,7 @@ public class GoogleSignInActivity extends BaseActivity implements
     }
 
     private void updateUI(FirebaseUser user) {
+        Log.d(TAG, "updateUI:");
         if (user != null) {
             mStatusTextView.setText(getString(R.string.google_status_fmt, user.getEmail()));
             mDetailTextView.setText("");
@@ -213,6 +218,7 @@ public class GoogleSignInActivity extends BaseActivity implements
     }
 
     private void startMainActivity(String userId){
+        Log.d(TAG, "startMainActivity:");
         Intent intent = new Intent(this, MainActivityRecyclerView.class);
         intent.putExtra("userId", userId);
         startActivity(intent);

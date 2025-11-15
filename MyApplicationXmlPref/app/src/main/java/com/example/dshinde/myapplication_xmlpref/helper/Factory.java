@@ -18,15 +18,20 @@ import com.example.dshinde.myapplication_xmlpref.services.SharedPrefDataStorageM
 
 public class Factory {
 
-
     public static FileStorage getFileStorageInstance(Context context){
-        return getFileStorageInstance(context, null);
+        return getFileStorageInstance(context, null, null);
     }
 
     public static FileStorage getFileStorageInstance(Context context, FireStorageListener fireStorageListener){
-        MyNotesApplication app = (MyNotesApplication) context.getApplicationContext();
-        String storagePath = Constants.STORAGE_PATH_NOTES + "/" + app.getUserId();
-        return new FireStorageManager(context, storagePath, fireStorageListener);
+        return getFileStorageInstance(context, null, fireStorageListener);
+    }
+
+    public static FileStorage getFileStorageInstance(Context context, String collectionName){
+        return getFileStorageInstance(context, collectionName, null);
+    }
+
+    public static FileStorage getFileStorageInstance(Context context, String collectionName, FireStorageListener fireStorageListener){
+        return new FireStorageManager(context, collectionName, fireStorageListener);
     }
 
     public static DataStorage getDataStorageInstance(Context context, DataStorageType dataStorageType, String name, boolean autoKey, boolean descendingOrder){
