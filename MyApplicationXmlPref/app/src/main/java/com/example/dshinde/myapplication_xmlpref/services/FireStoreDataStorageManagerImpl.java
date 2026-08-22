@@ -165,6 +165,11 @@ public class FireStoreDataStorageManagerImpl extends DataStorageManager {
         save(values);
     }
 
+    @Override
+    public List<KeyValue> searchNoteDetails(String searchText) {
+        return Collections.emptyList();
+    }
+
     public void removeDataStorageListeners() {
         super.removeDataStorageListeners();
         if(registration != null) {

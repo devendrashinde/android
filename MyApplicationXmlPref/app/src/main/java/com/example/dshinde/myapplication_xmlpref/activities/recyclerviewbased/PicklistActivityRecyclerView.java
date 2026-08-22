@@ -76,9 +76,8 @@ public class PicklistActivityRecyclerView extends BaseActivity  {
     }
 
     private void initDataStorageAndLoadData(Context context) {
-        Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
+        Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageInstance");
         dataStorageManager = Factory.getDataStorageInstance(context,
-                getDataStorageType(),
                 collectionName,
                 false,
                 false, new DataStorageListener() {

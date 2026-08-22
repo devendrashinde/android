@@ -257,7 +257,6 @@ public class AudioActivity extends BaseActivity {
     private void initDataStorageAndLoadData(Context context) {
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageInstance");
         dataStorageManager = Factory.getDataStorageInstance(context,
-                getDataStorageType(),
                 Constants.MEDIA_NOTE_PREFIX + collectionName +
                         (mode == PLAYBACK_MODE_SELECT ? "/" + key : ""),
                 false, false, getDataStorageListener());

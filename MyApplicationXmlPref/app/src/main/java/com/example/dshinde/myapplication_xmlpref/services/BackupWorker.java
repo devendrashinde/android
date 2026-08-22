@@ -1,6 +1,7 @@
 package com.example.dshinde.myapplication_xmlpref.services;
 
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.util.Log;
 
@@ -34,13 +35,42 @@ public class BackupWorker extends Worker {
     @Override
     public Result doWork() {
         Context context = getApplicationContext();
-        DocumentFile backupFolder = DocumentFile.fromTreeUri(context, Uri.parse(getInputData().getString(Constants.PARAM_FOLDER)));
-        doBackup(context, Constants.DATABASE_PATH_NOTES, backupFolder);
-        return Result.success();
+
+        try {
+            String operation = getInputData().getString(Constants.BACKUP_OPERATION);
+
+            // SYNC: no folder uri needed if (Constants.SYNC.equals(operation)) {
+            if (Constants.SYNC.equals(operation)) {
+                Intent i = new Intent(context, BackupBackgroundService.class);
+                i.putExtra(Constants.BACKUP_OPERATION, Constants.SYNC);
+                context.sendBroadcast(i);
+                return Result.success();
+            }
+
+            // BACKUP: folder uri required
+            String uriString = getInputData().getString(Constants.PARAM_FOLDER);
+            if (uriString == null || uriString.isEmpty()) {
+                Log.e(TAG, "Missing backup folder uri");
+                return Result.failure();
+            }
+
+            Uri treeUri = Uri.parse(uriString);
+            DocumentFile backupFolder = DocumentFile.fromTreeUri(context, treeUri);
+            if (backupFolder == null || !backupFolder.canWrite()) {
+                Log.e(TAG, "Invalid/non-writable backup folder");
+                return Result.failure();
+            }
+
+            doBackup(context, Constants.DATABASE_PATH_NOTES, backupFolder);
+            return Result.success();
+        } catch (Exception e) {
+            Log.e(TAG, "BackupWorker failed", e);
+            return Result.retry();
+        }
     }
 
     private void doBackup(Context context, String note, DocumentFile backupFolder) {
-        ReadWriteOnceDataStorage readWriteOnceDataStorage = Factory.getReadOnceFireDataStorageInstance(note,
+        ReadWriteOnceDataStorage readWriteOnceDataStorage = Factory.getReadWriteOnceDataStorageInstance(context, note,
             new DataStorageListener() {
                 @Override
                 public void dataChanged(String key, String value) {
@@ -48,7 +78,7 @@ public class BackupWorker extends Worker {
 
                 @Override
                 public void dataLoaded(List<KeyValue> data) {
-                    if (data.size() > 0) {
+                    if (!data.isEmpty()) {
                         String path = StorageUtil.saveAsObjectToDocumentFile(context, backupFolder, note, gson.toJson(data));
                         if(path != null ) {
                             Log.d(TAG, note + " saved");

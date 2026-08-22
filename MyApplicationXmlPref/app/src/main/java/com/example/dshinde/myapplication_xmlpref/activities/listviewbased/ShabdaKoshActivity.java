@@ -53,7 +53,6 @@ public class ShabdaKoshActivity extends BaseActivity {
     private void initDataStorageAndLoadData(String noteItem) {
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageInstance");
         dataStorageManager = Factory.getDataStorageInstance(this,
-                getDataStorageType(),
                 collectionName + "/" + noteItem,
                 false, false,
                 new DataStorageListener() {

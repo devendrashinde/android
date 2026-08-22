@@ -48,6 +48,8 @@ import com.example.dshinde.myapplication_xmlpref.activities.listviewbased.Shabda
 import com.example.dshinde.myapplication_xmlpref.adapters.MarginItemDecoration;
 import com.example.dshinde.myapplication_xmlpref.adapters.RecyclerViewKeyValueAdapter;
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
+import com.example.dshinde.myapplication_xmlpref.common.DataStorageConfig;
+import com.example.dshinde.myapplication_xmlpref.common.DataStorageType;
 import com.example.dshinde.myapplication_xmlpref.helper.Converter;
 import com.example.dshinde.myapplication_xmlpref.helper.DynamicControls;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
@@ -59,7 +61,6 @@ import com.example.dshinde.myapplication_xmlpref.services.AddNoteToDictionaryWor
 import com.example.dshinde.myapplication_xmlpref.services.BackupWorker;
 import com.example.dshinde.myapplication_xmlpref.services.DataStorage;
 import com.example.dshinde.myapplication_xmlpref.services.ReadWriteOnceDataStorage;
-import com.example.dshinde.myapplication_xmlpref.services.SharedPrefManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -68,6 +69,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivityRecyclerView extends BaseActivity  {
     EditText valueField;
@@ -80,6 +83,9 @@ public class MainActivityRecyclerView extends BaseActivity  {
     final String databasePathNotes = Constants.DATABASE_PATH_NOTES;
     private static final String CLASS_TAG = "MainActivityRV";
     final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    private volatile String latestSearchText = "";
+    private final ExecutorService backgroundExecutor = Executors.newSingleThreadExecutor();
+    boolean isProgrammaticTextChange = false;
 
     // activities started for results
     ActivityResultLauncher<Intent> imageCropperActivityResultLauncher;
@@ -110,10 +116,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
     private void initDataStorageAndLoadData(Context context) {
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageInstance");
         dataStorageManager = Factory.getDataStorageInstance(context,
-                getDataStorageType(),
-                databasePathNotes,
-                true,
-                false, new DataStorageListener() {
+                databasePathNotes, true, false, new DataStorageListener() {
                     @Override
                     public void dataChanged(String key, String value) {
                         Log.d(CLASS_TAG, "dataChanged key: " + key + ", value: " + value);
@@ -155,13 +158,44 @@ public class MainActivityRecyclerView extends BaseActivity  {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (isProgrammaticTextChange) return;
                 // as user is typing test, need to clear earlier key if any and user need to select the record from list
                 key = null;
-                if (count < before) {
-                    // We're deleting char so we need to reset the adapter data
-                    listAdapter.resetData();
+                //
+                final String text = (s == null) ? "" : s.toString().trim();
+                if (text.isEmpty()) {
+                    latestSearchText = "";
+                    // existing reset behavior
+                    listAdapter.setData(dataStorageManager.getValues());
+                    return;
                 }
-                listAdapter.getFilter().filter(s.toString());
+                //
+                if (DataStorageConfig.getDefaultType() == DataStorageType.ROOM_DB &&
+                        (text.startsWith("%") || text.endsWith("%"))) {
+                    latestSearchText = text;
+                    String searchText = text.replaceAll("%", "").trim();
+                    if(searchText.isEmpty()) {
+                        return;
+                    }
+                    backgroundExecutor.execute(() -> {
+                        try {
+                            List<KeyValue> results = dataStorageManager.searchNoteDetails(searchText);
+
+                            // ignore stale search results
+                            if (!text.equals(latestSearchText)) return;
+
+                            runOnUiThread(() -> listAdapter.setData(results));
+                        } catch (Exception e) {
+                            Log.e(CLASS_TAG, "ROOM_DB search failed", e);
+                        }
+                    });
+                } else {
+                    if (count < before) {
+                        // We're deleting char so we need to reset the adapter data
+                        listAdapter.resetData();
+                    }
+                    listAdapter.getFilter().filter(s.toString());
+                }
             }
 
             @Override
@@ -188,48 +222,51 @@ public class MainActivityRecyclerView extends BaseActivity  {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
-        switch (item.getItemId()) {
-            case R.id.menu_save:
-                save();
-                return true;
-            case R.id.menu_clear:
-                clear();
-                return true;
-            case R.id.menu_copy:
-                copy();
-                return true;
-            case R.id.menu_edit:
-                edit();
-                return true;
-            case R.id.menu_share:
-                share();
-                return true;
-            case R.id.menu_export:
-                export();
-                return true;
-            case R.id.menu_backup:
-                backup();
-                return true;
-            case R.id.menu_import:
-                importFile();
-                return true;
-            case R.id.menu_view:
-                viewFile();
-                return true;
-            case R.id.menu_daylight:
-                return true;
-            case R.id.menu_test:
-                backupAndRestoreMediaFiles();
-                return true;
-            case R.id.menu_design_screen:
-                designScreen();
-                return true;
-            case R.id.menu_add_to_dictionary:
-                addToDictionary();
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
+        int id = item.getItemId();
+
+        if (id == R.id.menu_save) {
+            save();
+            return true;
+        } else if (id == R.id.menu_clear) {
+            clear();
+            return true;
+        } else if (id == R.id.menu_copy) {
+            copy();
+            return true;
+        } else if (id == R.id.menu_edit) {
+            edit();
+            return true;
+        } else if (id == R.id.menu_share) {
+            share();
+            return true;
+        } else if (id == R.id.menu_export) {
+            export();
+            return true;
+        } else if (id == R.id.menu_backup) {
+            backup();
+            return true;
+        } else if (id == R.id.menu_sync) {
+            sync();
+            return true;
+        } else if (id == R.id.menu_import) {
+            importFile();
+            return true;
+        } else if (id == R.id.menu_view) {
+            viewFile();
+            return true;
+        } else if (id == R.id.menu_daylight) {
+            return true;
+        } else if (id == R.id.menu_test) {
+            backupAndRestoreMediaFiles();
+            return true;
+        } else if (id == R.id.menu_design_screen) {
+            designScreen();
+            return true;
+        } else if (id == R.id.menu_add_to_dictionary) {
+            addToDictionary();
+            return true;
         }
+        return super.onOptionsItemSelected(item);
     }
 
     private void startPhotoGalleryActivity() {
@@ -255,7 +292,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
         value = value.replaceAll("\\s+"," ").trim();
         int index = dataStorageManager.getKeyIndex(value);
         if(index < 0) {
-            dataStorageManager.save(key, value);
+            dataStorageManager.save(null, value);
             clear();
         }
     }
@@ -265,7 +302,7 @@ public class MainActivityRecyclerView extends BaseActivity  {
         if (!fileName.isEmpty()) {
             Intent sendIntent = new Intent();
             sendIntent.setAction(Intent.ACTION_SEND);
-            String textToShare = fileName + Constants.CR_LF + SharedPrefManager.getDataString(this, fileName);
+            String textToShare = fileName + Constants.CR_LF + dataStorageManager.getDataString(fileName);
             sendIntent.putExtra(Intent.EXTRA_TEXT, textToShare);
             sendIntent.setType(Constants.TEXT_PLAIN);
             startActivity(sendIntent);
@@ -301,7 +338,8 @@ public class MainActivityRecyclerView extends BaseActivity  {
 
     public void clear() {
         key = null;
-        setEditView("");
+        latestSearchText = "";
+        setEditView(null);
         valueField.requestFocus();
     }
 
@@ -338,15 +376,22 @@ public class MainActivityRecyclerView extends BaseActivity  {
         return new RecyclerViewKeyValueItemListener() {
             @Override
             public void onItemClick(KeyValue kv) {
-                key = kv.getKey();
-                setEditView(kv.getValue());
+                Log.d(CLASS_TAG, "onItemClick key: " + kv.getKey() + ", value: " + kv.getValue());
+                String value = kv.getValue();
+                if( latestSearchText != null && !latestSearchText.isEmpty()) {
+                    value = kv.getKey();
+                }
+                setEditView(value);
             }
 
             @Override
             public boolean onItemLongClick(KeyValue kv) {
                 String value = kv.getValue();
+                if( latestSearchText != null && !latestSearchText.isEmpty()) {
+                    value = kv.getKey();
+                }
                 setEditView(value);
-                showPopup(kv.getValue());
+                showPopup(value);
                 return true;
             }
         };
@@ -405,8 +450,16 @@ public class MainActivityRecyclerView extends BaseActivity  {
         if(action.equals(Constants.PLAY_NOTE)) {
             intent.putExtra("key", title);
         }
-        StorageUtil.writeKeyValueListToCacheDir(getApplicationContext(), values);
-        startActivity(intent);
+        backgroundExecutor.execute(() -> {
+            try {
+                StorageUtil.writeKeyValueListToCacheDir(getApplicationContext(), values);
+                runOnUiThread(() -> {
+                    startActivity(intent);
+                });
+            } catch (Exception e) {
+                Log.e(CLASS_TAG, "Failed to write notes do Cache Dir", e);
+            }
+        });
     }
 
     private void startViewNoteActivity(String title, List<KeyValue> keyValues) {
@@ -414,8 +467,16 @@ public class MainActivityRecyclerView extends BaseActivity  {
             Intent intent = new Intent(MainActivityRecyclerView.this,
                     ScrollingTextViewActivity.class);
             intent.putExtra("subject", title);
-            StorageUtil.writeKeyValueListToCacheDir(getApplicationContext(), keyValues);
-            startActivity(intent);
+            backgroundExecutor.execute(() -> {
+                try {
+                    StorageUtil.writeKeyValueListToCacheDir(getApplicationContext(), keyValues);
+                    runOnUiThread(() -> {
+                        startActivity(intent);
+                    });
+                } catch (Exception e) {
+                    Log.e(CLASS_TAG, "Failed to write notes do Cache Dir", e);
+                }
+            });
         }
     }
 
@@ -429,9 +490,18 @@ public class MainActivityRecyclerView extends BaseActivity  {
         }
     }
 
-
     private void setEditView(String value) {
-        valueField.setText(value);
+        if(value == null) {
+            valueField.setText("");
+            return;
+        }
+        isProgrammaticTextChange = true;
+        try {
+            valueField.setText(value);
+            valueField.setSelection(valueField.getText().length());
+        } finally {
+            isProgrammaticTextChange = false;
+        }
     }
 
     public void copy() {
@@ -526,9 +596,6 @@ public class MainActivityRecyclerView extends BaseActivity  {
 
     private void performCopy(String srcFile, String destFile) {
         // TODO implement copy
-        if (SharedPrefManager.copy(this, srcFile, destFile)) {
-            dataStorageManager.save(null, destFile);
-        }
     }
 
     private void export(DocumentFile dir) {
@@ -546,34 +613,50 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     private void backup(DocumentFile dir) {
+        enqueueBackup(dir );
+    }
+
+    private void sync() {
+
+        final Data data = new Data.Builder()
+                .putString(Constants.BACKUP_OPERATION, Constants.SYNC)
+                .build();
+
+        enqueueOperation(data, Constants.SYNC);
+
+    }
+
+    private void enqueueOperation(Data data, String operation) {
+        Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .setRequiresBatteryNotLow(true)
+                .build();
+
+        final OneTimeWorkRequest workRequest = new OneTimeWorkRequest.Builder(BackupWorker.class)
+                .setConstraints(constraints)
+                .setInputData(data)
+                .build();
+
+        WorkManager.getInstance(this).enqueue(workRequest);
+
+        WorkManager.getInstance(getApplicationContext()).getWorkInfoByIdLiveData(workRequest.getId())
+                .observe(this, workInfo -> {
+                    String label = operation + " status: ";
+                    showInLongToast(label + workInfo.getState().name());
+                });
+    }
+
+    private void enqueueBackup(DocumentFile dir) {
         selectedDir = dir;
         if (dir != null && !dataStorageManager.getValues().isEmpty()) {
             final Data data = new Data.Builder()
                     .putString(Constants.PARAM_FOLDER, dir.getUri().toString())
-                    .build();
-            Constraints constraints = new Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED)
-                    .setRequiresBatteryNotLow(true)
-                    .build();
-            final OneTimeWorkRequest workRequest = new OneTimeWorkRequest.Builder(BackupWorker.class)
-                    .setConstraints(constraints)
-                    .setInputData(data)
+                    .putString(Constants.BACKUP_OPERATION, Constants.BACKUP)
                     .build();
 
-            WorkManager.getInstance(this).enqueue(workRequest);
-
-            // Get the work status
-            WorkManager.getInstance(getApplicationContext()).getWorkInfoByIdLiveData(workRequest.getId())
-                    .observe(this, new Observer<WorkInfo>() {
-                        @Override
-                        public void onChanged(WorkInfo workInfo) {
-                            showInLongToast("Backup status: " + workInfo.getState().name());
-                        }
-                    });
-
+            enqueueOperation(data, Constants.BACKUP);
         }
     }
-
     public void viewFile() {
         selectFile(StorageUtil.PICK_FILE_FOR_VIEW, false);
     }
@@ -638,21 +721,16 @@ public class MainActivityRecyclerView extends BaseActivity  {
     }
 
     private void startActivityForAction(String collection, String action) {
-        readWriteOnceDataStorage = Factory.getReadOnceFireDataStorageInstance(
+        readWriteOnceDataStorage = Factory.getReadWriteOnceDataStorageInstance(
+            this,
             (action.equals("EDIT") ? Constants.SCREEN_DESIGN_NOTE_PREFIX : "") + collection,
             new DataStorageListener() {
                 @Override
-                public void dataChanged(String key, String value) {
-                }
-
+                public void dataChanged(String key, String value) {}
                 @Override
                 public void dataLoaded(List<KeyValue> data) {
                     switch (action) {
                         case Constants.EDIT:
-                            /*
-                            if screen config is found then start ScreenDesignActivity
-                            otherwise start normal edit activity
-                             */
                             if (!data.isEmpty()) {
                                 String screenConfig = Converter.getValuesJsonString(data);
                                 startDesignOrEditActivity(collection, Constants.REQUEST_CODE_SCREEN_CAPTURE, screenConfig);
@@ -679,7 +757,8 @@ public class MainActivityRecyclerView extends BaseActivity  {
                     }
                     readWriteOnceDataStorage.removeDataStorageListeners();
                 }
-            });
+            }
+        );
     }
 
     private void backupAndRestoreMediaFiles() {
@@ -717,5 +796,11 @@ public class MainActivityRecyclerView extends BaseActivity  {
             data.put(key, imageUri.toString());
             dataStorageManager.save(key, gson.toJson(data));
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        backgroundExecutor.shutdownNow();
     }
 }

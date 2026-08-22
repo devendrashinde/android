@@ -105,7 +105,7 @@ public class RelationshipActivity extends BaseActivity {
 
     private void initDataStorageAndLoadData() {
 
-        readWriteOnceDataStorage = Factory.getReadOnceFireDataStorageInstance(
+        readWriteOnceDataStorage = Factory.getReadWriteOnceDataStorageInstance(this,
             collectionName,
             new DataStorageListener() {
                 @Override

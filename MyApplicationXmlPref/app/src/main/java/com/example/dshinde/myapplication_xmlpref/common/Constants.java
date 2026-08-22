@@ -78,4 +78,6 @@ public class Constants {
     public static final String PARAM_URL = "url";
 
     public static final String BLOCK_CHARACTERS = "/\"\\";
+    public static final String SYNC = "sync_firebase_to_room";
+    public static final String BACKUP_OPERATION = "operation";
 }

@@ -92,13 +92,13 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
     private void addReadDataOnce(){
         valueEventListener = new ValueEventListener() {
             @Override
-            public void onDataChange(DataSnapshot snapshot) {
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
                 Log.d(CLASS_TAG, "addReadDataOnce->onDataChange");
                 loadAllData(snapshot);
 
             }
             @Override
-            public void onCancelled(DatabaseError databaseError) {
+            public void onCancelled(@NonNull DatabaseError databaseError) {
                 Log.d(CLASS_TAG, "addReadDataOnce->error occurred " + databaseError);
             }
         };
@@ -108,13 +108,13 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
     private void addChangedDataListener() {
         childEventListener = new ChildEventListener() {
             @Override
-            public void onChildAdded(DataSnapshot dataSnapshot, String prevChildKey) {
+            public void onChildAdded(@NonNull DataSnapshot dataSnapshot, String prevChildKey) {
                 Log.d(CLASS_TAG, "data added");
                 loadItem(dataSnapshot, DataChangeType.ADDED, true);
             }
 
             @Override
-            public void onChildChanged(DataSnapshot dataSnapshot, String prevChildKey) {
+            public void onChildChanged(@NonNull DataSnapshot dataSnapshot, String prevChildKey) {
                 Log.d(CLASS_TAG, "data modified");
                 loadItem(dataSnapshot, DataChangeType.MODIFIED, true);
             }
@@ -141,13 +141,13 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
         Log.d(CLASS_TAG, "addAllDataListener");
         valueEventListener = new ValueEventListener() {
             @Override
-            public void onDataChange(DataSnapshot snapshot) {
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
                 Log.d(CLASS_TAG, "addAllDataListener->onDataChange");
                 loadAllData(snapshot);
             }
 
             @Override
-            public void onCancelled(DatabaseError databaseError) {
+            public void onCancelled(@NonNull DatabaseError databaseError) {
                 Log.d(CLASS_TAG, "addAllDataListener->error occurred " + databaseError);
             }
         };
@@ -323,6 +323,11 @@ public class FireDbDataStorageManagerImpl extends DataStorageManager {
             values.add(new KeyValue(entry.getKey(), entry.getValue()));
         }
         save(values);
+    }
+
+    @Override
+    public List<KeyValue> searchNoteDetails(String searchText) {
+        return Collections.emptyList();
     }
 
     public void removeDataStorageListeners() {

@@ -42,14 +42,14 @@ public class FireDbReadWriteOnceDataStorageImpl extends ReadWriteOnceDataStorage
     private void readDataOnce(){
         valueEventListener = new ValueEventListener() {
             @Override
-            public void onDataChange(DataSnapshot snapshot) {
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if(!listeners.isEmpty()) {
                     loadData(snapshot);
                 }
             }
 
             @Override
-            public void onCancelled(DatabaseError databaseError) {
+            public void onCancelled(@NonNull DatabaseError databaseError) {
 
             }
         };

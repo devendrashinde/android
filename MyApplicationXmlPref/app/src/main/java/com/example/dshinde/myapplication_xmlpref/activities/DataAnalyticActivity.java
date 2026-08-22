@@ -53,7 +53,7 @@ public class DataAnalyticActivity extends BaseActivity {
     }
 
     private void getScreenDesignData(String collection) {
-        readWriteOnceDataStorage = Factory.getReadOnceFireDataStorageInstance(
+        readWriteOnceDataStorage = Factory.getReadWriteOnceDataStorageInstance(this,
             Constants.SCREEN_DESIGN_NOTE_PREFIX + collection,
             new DataStorageListener() {
                 @Override

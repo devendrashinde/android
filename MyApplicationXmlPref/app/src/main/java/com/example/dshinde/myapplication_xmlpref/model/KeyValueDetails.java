@@ -1,6 +1,5 @@
 package com.example.dshinde.myapplication_xmlpref.model;
 
-import com.example.dshinde.myapplication_xmlpref.services.SharedPrefManager;
 import com.google.firebase.database.Exclude;
 import com.google.firebase.database.IgnoreExtraProperties;
 
@@ -41,10 +40,10 @@ public class KeyValueDetails {
         String value = null;
         List<KeyValue> values = new ArrayList<>();
         for (Map.Entry<String, String> entry : items.entrySet()) {
-            if (entry.getKey().equalsIgnoreCase(SharedPrefManager.KEY)){
+            if (entry.getKey().equalsIgnoreCase("key")){
                 key = entry.getValue();
             }
-            if (entry.getKey().equalsIgnoreCase(SharedPrefManager.VALUE)){
+            if (entry.getKey().equalsIgnoreCase("value")){
                 value = entry.getValue();
             }
             values.add(new KeyValue(key, value));

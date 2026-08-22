@@ -64,8 +64,11 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // get parameters
         Bundle bundle = getIntent().getExtras();
+        if (bundle == null) {
+            finish();
+            return;
+        }
         collectionName = bundle.getString(Constants.PARAM_FILENAME);
         userId = bundle.getString(Constants.USERID);
         loadUI();
@@ -76,21 +79,25 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
 
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
         dataStorageManager = Factory.getDataStorageInstance(context,
-                getDataStorageType(),
                 noteName,
                 false, false,
                 new DataStorageListener() {
                     @Override
                     public void dataChanged(String key, String value) {
                         Log.d(CLASS_TAG, "dataChanged key: " + key + ", value: " + value);
-                        loadDataInListView(dataStorageManager.getValues());
+                        List<KeyValue> latest = dataStorageManager.getValues();
+                        if (latest != null) {
+                            loadDataInListView(latest);
+                        } else {
+                            dataStorageManager.loadData();
+                        }
                     }
 
                     @Override
                     public void dataLoaded(List<KeyValue> data) {
                         Log.d(CLASS_TAG, "dataLoaded");
                         loadDataInListView(data);
-                        if (data.size() > 0) {
+                        if (data != null && !data.isEmpty()) {
                             enableTextToSpeech();
                         }
                     }
@@ -299,6 +306,7 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
         String key = keyField.getText().toString().trim();
         String value = valueField.getText().toString().trim();
         dataStorageManager.save(key, value);
+        dataStorageManager.loadData();
         showEditView(false);
         clear();
     }
@@ -309,9 +317,11 @@ public class Main2ActivityRecyclerView extends BaseActivity implements ListviewA
     }
 
     public void remove() {
-        String key = keyField.getText().toString();
-        clear();
+        String key = keyField.getText().toString().trim();
+        if (key.isEmpty()) return;
         dataStorageManager.remove(key);
+        dataStorageManager.loadData();
+        clear();
     }
 
     public void clear(View view) {

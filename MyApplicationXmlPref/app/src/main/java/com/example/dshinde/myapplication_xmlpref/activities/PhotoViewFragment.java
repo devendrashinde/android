@@ -11,9 +11,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.bumptech.glide.Glide;
 import com.example.dshinde.myapplication_xmlpref.R;
 import com.example.dshinde.myapplication_xmlpref.helper.Factory;
-import com.example.dshinde.myapplication_xmlpref.helper.GlideApp;
 import com.example.dshinde.myapplication_xmlpref.listners.FireStorageListener;
 import com.example.dshinde.myapplication_xmlpref.model.MediaFields;
 import com.example.dshinde.myapplication_xmlpref.services.FileStorage;
@@ -70,7 +70,7 @@ public class PhotoViewFragment extends Fragment {
 
     private void load(Uri uri) {
 
-        GlideApp.with(getContext()).load(uri).into(photoView);
+        Glide.with(getContext()).load(uri).into(photoView);
     }
 
     private void loadNextPhoto(){

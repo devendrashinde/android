@@ -1,21 +1,24 @@
 package com.example.dshinde.myapplication_xmlpref.model;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.room.Ignore;
 
 import com.example.dshinde.myapplication_xmlpref.common.Constants;
-import com.example.dshinde.myapplication_xmlpref.services.SharedPrefManager;
 import com.google.firebase.database.Exclude;
 import com.google.firebase.database.IgnoreExtraProperties;
 
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @IgnoreExtraProperties
 public class KeyValue implements Serializable {
     private String key;
     private String value;
 
+    @Ignore
     public KeyValue(){
     }
 
@@ -63,10 +66,24 @@ public class KeyValue implements Serializable {
 
     @Override
     public boolean equals(@Nullable Object obj) {
-        if(obj == null) return false;
-        if(this.key == null) return false;
-        KeyValue kv = (KeyValue) obj;
-        if(kv.getKey() == null) return false;
-        return this.key.equals(kv.getKey());
+        if (this == obj) return true;
+        if (!(obj instanceof KeyValue)) return false;
+        KeyValue other = (KeyValue) obj;
+        return Objects.equals(key, other.key)
+                && Objects.equals(value, other.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(key, value);
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return "KeyValue{" +
+                "key='" + key + '\'' +
+                ", value='" + value + '\'' +
+                '}';
     }
 }

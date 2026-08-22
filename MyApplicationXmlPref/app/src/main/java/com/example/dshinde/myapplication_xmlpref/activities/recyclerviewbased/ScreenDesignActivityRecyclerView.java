@@ -167,8 +167,8 @@ public class ScreenDesignActivityRecyclerView extends BaseActivity {
     }
 
     private void initDataStorageAndLoadData(Context context) {
-        Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageIntsance");
-        dataStorageManager = Factory.getDataStorageInstance(context, getDataStorageType(),
+        Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageInstance");
+        dataStorageManager = Factory.getDataStorageInstance(context,
                 (isDesignMode() ? Constants.SCREEN_DESIGN_NOTE_PREFIX : "") + collectionName,
                 false, false, getDataStorageListener());
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->loadData");

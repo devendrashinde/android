@@ -49,21 +49,7 @@ public class AddNoteToDictionaryWorker extends Worker {
     private void addToDictionary() {
         Log.d(TAG, "Adding  " + collectionToAdd + " to " + dictionaryName);
         dictionary = Factory.getDataStorageInstance(getApplicationContext(),
-                DataStorageType.FIREBASE_DB,
-                dictionaryName, false,
-                false, new DataStorageListener() {
-                    @Override
-                    public void dataChanged(String key, String value) {
-                    }
-
-                    @Override
-                    public void dataLoaded(List<KeyValue> data) {
-                        dictionary.disableSort();
-                        dictionary.disableNotifyDataChange();
-                        Log.d(TAG, "Adding  " + collectionToAdd + " to " + dictionaryName);
-                        getDataOfCollectionToBeAdded();
-                    }
-                });
+                Constants.SHABDA_KOSH, true, false);
         dictionary.disableSort();
         dictionary.disableNotifyDataChange();
         Log.d(TAG, "Adding  " + collectionToAdd + " to " + dictionaryName);
@@ -72,7 +58,7 @@ public class AddNoteToDictionaryWorker extends Worker {
     }
 
     private void getDataOfCollectionToBeAdded() {
-        Factory.getReadOnceFireDataStorageInstance(collectionToAdd,
+        Factory.getReadWriteOnceDataStorageInstance(getApplicationContext(), collectionToAdd,
             new DataStorageListener() {
                 @Override
                 public void dataChanged(String key, String value) {
@@ -86,8 +72,8 @@ public class AddNoteToDictionaryWorker extends Worker {
     }
 
     private void getDataOfWordFromDictionary(String reference, String word) {
-        Factory.getReadOnceFireDataStorageInstance(
-            dictionaryName + "/" + word,
+        Factory.getReadWriteOnceDataStorageInstance(getApplicationContext(),
+                dictionaryName + "/" + word,
             new DataStorageListener() {
                 @Override
                 public void dataChanged(String key, String value) {

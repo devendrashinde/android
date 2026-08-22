@@ -87,6 +87,11 @@
         app:showAsAction="ifRoom"
         />
     <item
+        android:id="@+id/menu_sync"
+        android:title="@string/sync_local_data"
+        app:showAsAction="ifRoom"
+        />
+    <item
         android:id="@+id/menu_test"
         android:title="@string/test"
         app:showAsAction="ifRoom"

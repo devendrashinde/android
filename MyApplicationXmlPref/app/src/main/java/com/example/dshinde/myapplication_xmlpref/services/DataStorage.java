@@ -1,5 +1,7 @@
 package com.example.dshinde.myapplication_xmlpref.services;
 
+import androidx.annotation.Nullable;
+
 import com.example.dshinde.myapplication_xmlpref.common.DataChangeType;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageListener;
 import com.example.dshinde.myapplication_xmlpref.listners.DataStorageObservable;
@@ -9,6 +11,7 @@ import com.example.dshinde.myapplication_xmlpref.model.KeyValue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 public interface DataStorage extends DataStorageObservable {
 
     public static final String KEY = "key";
@@ -36,7 +39,7 @@ public interface DataStorage extends DataStorageObservable {
 
     void enableNotifyDataChange();
 
-    void save(String key, String value);
+    void save(@Nullable String key, String value);
 
     void saveTransaction(String key, String value, DataStorageTransactionWorker dataStorageTransactionWorker);
 
@@ -63,4 +66,6 @@ public interface DataStorage extends DataStorageObservable {
     void loadData(Map<String, String> data, boolean removeExistingData);
 
     void updateDataSource(String key, String value);
+
+    List<KeyValue> searchNoteDetails(String searchText);
 }

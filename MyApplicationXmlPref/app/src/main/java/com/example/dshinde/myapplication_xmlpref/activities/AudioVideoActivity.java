@@ -44,6 +44,12 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import io.noties.markwon.Markwon;
+import io.noties.markwon.core.CorePlugin;
+import io.noties.markwon.ext.tables.TablePlugin;
+import io.noties.markwon.html.HtmlPlugin;
+import io.noties.markwon.linkify.LinkifyPlugin;
+
 public class AudioVideoActivity extends BaseActivity {
     public static final String MEDIA_NAME = "mediaName";
     static final int PLAYBACK_MODE_SELECT = 1;
@@ -63,6 +69,7 @@ public class AudioVideoActivity extends BaseActivity {
     MediaPlayer mp = new MediaPlayer();
     Gson gson = new GsonBuilder().create();
     SeekBar seekBar;
+    private Markwon markwon;
 
     public final Handler mHandler = new Handler(Looper.getMainLooper(), msg -> {
         seekBar.setProgress(msg.arg1);
@@ -82,6 +89,13 @@ public class AudioVideoActivity extends BaseActivity {
 
         setContentView(R.layout.audiovideo_activity_layout);
         timer = new Timer();
+
+        markwon = Markwon.builder(this)
+                .usePlugin(CorePlugin.create())
+                .usePlugin(TablePlugin.create(this))
+                .usePlugin(LinkifyPlugin.create())
+                .usePlugin(HtmlPlugin.create()) // optional
+                .build();
 
         // get parameters
         Bundle bundle = getIntent().getExtras();
@@ -132,7 +146,8 @@ public class AudioVideoActivity extends BaseActivity {
 
     private void parseAndDisplayText(String text) {
         final String finalText = (text != null && !text.isEmpty()) ? text : "";
-        runOnUiThread(() -> textViewNote.setText(finalText));
+        //textViewNote.setText(finalText)
+        runOnUiThread(() -> markwon.setMarkdown(textViewNote, finalText));
     }
 
     private void setPlayButtonListener() {
@@ -257,7 +272,6 @@ public class AudioVideoActivity extends BaseActivity {
     private void initDataStorageAndLoadData(Context context) {
         Log.d(CLASS_TAG, "initDataStorageAndLoadData->getDataStorageInstance");
         dataStorageManager = Factory.getDataStorageInstance(context,
-                getDataStorageType(),
                 Constants.MEDIA_NOTE_PREFIX + collectionName +
                         (mode == PLAYBACK_MODE_SELECT ? "/" + key : ""),
                 false, false, getDataStorageListener());
